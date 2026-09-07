@@ -56,6 +56,22 @@ describe("bàn quá giờ chưa thu tiền", () => {
     expect(ra[0]!.phutQuaGio).toBe(0);
   });
 
+  it("mang theo số tiền nợ — đó là thứ quyết định bàn nào đi đòi trước", () => {
+    const ra = locBanQuaGio([
+      phien({ overdueSince: "2026-09-07T14:00:00Z", unpaidAmount: 1_250_000 }),
+    ], BAY_GIO);
+
+    expect(ra[0]!.tienNo).toBe(1_250_000);
+  });
+
+  it("máy chủ chưa gửi số tiền thì về 0, không phải NaN", () => {
+    // `unpaidAmount` là trường tuỳ chọn: một máy chủ cũ hơn không gửi nó. `undefined` chảy vào
+    // toLocaleString sẽ ra "NaN đ" trên màn hình quầy — tệ hơn hẳn một số 0 trung thực.
+    const ra = locBanQuaGio([phien({ overdueSince: "2026-09-07T14:00:00Z" })], BAY_GIO);
+
+    expect(ra[0]!.tienNo).toBe(0);
+  });
+
   it("đọc số phút thành giờ cho người, không bắt nhẩm", () => {
     expect(docPhut(45)).toBe("45 phút");
     expect(docPhut(60)).toBe("1 giờ");

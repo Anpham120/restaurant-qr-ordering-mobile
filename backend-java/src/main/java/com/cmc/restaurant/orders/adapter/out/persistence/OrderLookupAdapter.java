@@ -90,4 +90,13 @@ public class OrderLookupAdapter implements OrderLookup {
 		}
 		return counts;
 	}
+
+	@Override
+	public Map<String, java.math.BigDecimal> unpaidAmountByTableSession() {
+		Map<String, java.math.BigDecimal> tien = new HashMap<>();
+		for (OrderRepository.TableSessionOrderCount row : orderRepository.countActiveByTableSession()) {
+			tien.put(row.getTableSessionId(), row.getUnpaidAmount());
+		}
+		return tien;
+	}
 }

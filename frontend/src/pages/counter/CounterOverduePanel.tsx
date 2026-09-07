@@ -4,7 +4,7 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { ApiError } from "@cmc/api-client";
 import { api } from "../../services/apiClient";
 import { useOpsConfirm } from "../../components/operations/OpsConfirmProvider";
-import { docPhut, tailBanQuaGio, type BanQuaGio } from "../../services/overdueTableService";
+import { docPhut, docTien, tailBanQuaGio, type BanQuaGio } from "../../services/overdueTableService";
 import "../../components/operations/operations.css";
 
 /**
@@ -57,8 +57,8 @@ export function CounterOverduePanel() {
     // bỏ một khoản tiền, và nó chỉ cách thao tác đúng một cú bấm lệch tay.
     if (!(await confirm({
       title: `Đóng bàn ${muc.tenBan} khi chưa thu tiền?`,
-      message: `Bàn còn ${muc.soDonDangMo} đơn chưa thanh toán, quá giờ ${docPhut(muc.phutQuaGio)}. `
-        + "Đóng bàn là bỏ khoản này, và lý do sẽ được ghi lại kèm tên bạn.",
+      message: `Bàn còn ${docTien(muc.tienNo)} chưa thu, ${muc.soDonDangMo} đơn, quá giờ `
+        + `${docPhut(muc.phutQuaGio)}. Đóng bàn là bỏ khoản này, và lý do sẽ được ghi lại kèm tên bạn.`,
       confirmLabel: "Ép đóng",
       danger: true,
       requireText: muc.tableCode,
@@ -96,11 +96,11 @@ export function CounterOverduePanel() {
         <ul className="ops-command-list">
           {ban.map((muc) => (
             <li key={muc.sessionId}>
-              {/* Danh sách VIỆC, không phải bảng số: mỗi dòng bấm thẳng sang hoá đơn của bàn đó,
-                  nơi có số tiền thật — danh sách phiên không mang số tiền. */}
+              {/* Danh sách VIỆC, không phải bảng số: tiền đứng trước vì đó là thứ quyết định bàn
+                  nào đi đòi trước, và mỗi dòng bấm thẳng sang hoá đơn của bàn đó. */}
               <Link to={`/tables?tab=sessions&table=${encodeURIComponent(muc.tableCode)}`}>
                 Bàn {muc.tenBan} · quá giờ {docPhut(muc.phutQuaGio)}
-                <small>{muc.soDonDangMo} đơn chưa thanh toán</small>
+                <small>{docTien(muc.tienNo)} · {muc.soDonDangMo} đơn chưa thanh toán</small>
               </Link>
 
               {dangMoLyDo === muc.sessionId ? (

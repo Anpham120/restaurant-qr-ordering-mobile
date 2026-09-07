@@ -138,6 +138,15 @@ public interface OrderRepository extends JpaRepository<OrderEntity, String> {
 		String getTableSessionId();
 
 		int getActiveCount();
+
+		/**
+		 * Tổng tiền của các đơn còn hoạt động trong phiên.
+		 *
+		 * <p>Gộp vào CÙNG truy vấn với phép đếm chứ không thêm truy vấn thứ hai: hai câu hỏi này
+		 * luôn được hỏi cùng lúc và cùng một tập dòng. Tách ra là mở đường cho hai con số đọc ở
+		 * hai thời điểm khác nhau rồi hiện cạnh nhau như thể chúng cùng một lúc.
+		 */
+		java.math.BigDecimal getUnpaidAmount();
 	}
 
 	/**
@@ -145,7 +154,8 @@ public interface OrderRepository extends JpaRepository<OrderEntity, String> {
 	 *
 	 * <p>Bỏ phiên null: đơn mang về (không gắn bàn) không thuộc phiên nào.
 	 */
-	@Query("select o.tableSessionId as tableSessionId, count(o) as activeCount from OrderEntity o "
+	@Query("select o.tableSessionId as tableSessionId, count(o) as activeCount, "
+			+ "coalesce(sum(o.totalAmount), 0) as unpaidAmount from OrderEntity o "
 			+ "where o.tableSessionId is not null "
 			+ "and o.status <> com.cmc.restaurant.orders.domain.OrderStatus.Completed "
 			+ "and o.status <> com.cmc.restaurant.orders.domain.OrderStatus.Cancelled "

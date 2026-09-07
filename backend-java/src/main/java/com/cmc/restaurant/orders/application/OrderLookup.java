@@ -66,4 +66,7 @@ public interface OrderLookup {
 	 * lẻ là N+1. Phiên không có đơn nào thì KHÔNG xuất hiện trong map — nơi gọi hiểu là 0.
 	 */
 	Map<String, Integer> countActiveOrdersByTableSession();
+
+	/** Tổng tiền đơn CHƯA tất toán theo từng phiên bàn — cùng truy vấn với phép đếm ở trên. */
+	Map<String, java.math.BigDecimal> unpaidAmountByTableSession();
 }

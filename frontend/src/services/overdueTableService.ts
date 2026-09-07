@@ -8,6 +8,7 @@ export type BanQuaGio = {
   quaGioTu: string;
   phutQuaGio: number;
   soDonDangMo: number;
+  tienNo: number;
 };
 
 /**
@@ -33,9 +34,12 @@ export function locBanQuaGio(
       quaGioTu: s.overdueSince!,
       phutQuaGio: Math.max(0, Math.floor((bayGio - Date.parse(s.overdueSince!)) / 60000)),
       soDonDangMo: s.activeOrderCount,
+      tienNo: s.unpaidAmount ?? 0,
     }))
     .sort((a, b) => Date.parse(a.quaGioTu) - Date.parse(b.quaGioTu));
 }
+
+export const docTien = (v: number) => `${v.toLocaleString("vi-VN")}đ`;
 
 /** "2 giờ 15 phút" — người ở quầy đọc bằng mắt, không nhẩm từ 135. */
 export function docPhut(phut: number): string {

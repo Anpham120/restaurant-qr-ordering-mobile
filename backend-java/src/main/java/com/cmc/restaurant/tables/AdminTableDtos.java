@@ -36,7 +36,8 @@ public final class AdminTableDtos {
 	public record AdminTableSessionSummary(
 			String sessionId, String tableCode, String tableDisplayName, String status,
 			OffsetDateTime openedAt, OffsetDateTime expiresAt, OffsetDateTime closedAt,
-			boolean isExpired, int activeOrderCount, OffsetDateTime overdueSince) {
+			boolean isExpired, int activeOrderCount, OffsetDateTime overdueSince,
+			java.math.BigDecimal unpaidAmount) {
 	}
 
 	public record AdminTableSessionListResponse(List<AdminTableSessionSummary> items, int total) {
