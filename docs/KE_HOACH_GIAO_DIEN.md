@@ -11,25 +11,31 @@ cảnh vận hành, nguyên tắc trải nghiệm ba vai và bảy luật giao d
 
 ## 1. Hiện trạng — đo, không ước lượng
 
-### 1.1 Một phần ba giao diện là mã chết
+### 1.1 Mã chết — ĐÃ DỌN
 
-Đi từ ba entrypoint (`customer-web`, `ordering-web`, `admin-web`), lần theo mọi `import` tĩnh:
+Đi từ ba entrypoint (`customer-web`, `ordering-web`, `admin-web`), lần theo mọi `import` tĩnh.
+Kết quả đo được trước khi dọn:
 
-| | |
-|---|---|
-| Trang có trên đĩa | **36** |
-| Tới được từ một app | 26 |
-| **Không tới được từ đâu cả** | **12** |
+| | Tệp | Dòng |
+|---|---|---|
+| Nguồn (không kể test) | 138 | 28.921 |
+| Tới được từ một app | 119 | |
+| **Chết** | **18** | **1.283** (~4,4%) |
 
-Đã loại trừ nạp động: kho này không dùng `React.lazy` hay `import()` động ở đâu, và 11/12 trang
-dưới đây không được nhắc tới trong bất kỳ tệp nào khác.
+> **Nói cho đúng đơn vị.** Bản đầu của tài liệu này viết "một phần ba giao diện là mã chết". Con
+> số một-phần-ba là đếm theo **số trang** (12/36); theo **khối lượng mã** thì chỉ 4,4%. Nói "một
+> phần ba" mà không kèm đơn vị làm người đọc tưởng đây là một đợt việc lớn — nó không phải.
 
-```
-AdminCategoriesPage       AdminMenuManagementPage   AdminMenuPage
-AdminOrdersPage           AdminTableSessionsPage    AdminTablesPage
-CounterWorkspacePage      KitchenHomePage           PageShell
-RoleAccessPage            StaffHomePage             StaffOrdersPage
-```
+Nặng nhất không phải trang mà là CSS: hai tệp `realtime-order.css` (567 dòng) và
+`admin-table-sessions.css` (172 dòng) chiếm hơn nửa toàn bộ mã chết, và không ai `@import`.
+
+**Vì sao chúng sống sót:** đây là một CỤM, không phải 18 tệp rời. Sáu trang chỉ là vỏ 6 dòng
+re-export sang một trang chết khác, nên mỗi tệp nhìn riêng đều "có người dùng" và tìm kiếm thông
+thường không thấy gì. Chỉ phân tích khả đạt từ entrypoint mới lộ ra.
+
+**Đã dọn** cùng đợt này, kèm một phép kiểm chặn mã chết quay lại:
+`frontend/src/utils/deadModules.test.ts`. Nó có danh sách ngoại lệ cho tệp cố ý không được
+import (hiện chỉ `vite-env.d.ts`, khai báo ambient cho `tsc`), và mỗi ngoại lệ phải nêu lý do.
 
 ### 1.2 Hai thế hệ màn hình chồng lên nhau
 
@@ -103,14 +109,14 @@ bốn endpoint này chỉ cho `Staff` và `Admin`, mà `Staff` là vai không c�
 
 Xếp theo **rủi ro giảm được trên mỗi giờ bỏ ra**, không theo thứ tự dễ làm.
 
-### Đợt 0 — Dọn 12 trang chết
+### Đợt 0 — Dọn mã chết ✅ XONG
 
-Làm trước vì nó rẻ nhất và làm mọi đợt sau nhẹ đi: ít tệp để đọc nhầm, ít tệp để sửa nhầm, tìm
-kiếm trong mã bớt nhiễu. Không đổi một pixel nào của thứ đang chạy.
+Gỡ 18 tệp / 1.283 dòng, cộng một test mồ côi. Không đổi một pixel nào của thứ đang chạy: 255 test
+frontend vẫn xanh.
 
-**Kiểm chứng:** phép kiểm khả đạt — dựng lại đúng phép đo ở §1.1 thành một test, đỏ khi có trang
-không tới được từ entrypoint nào. Như vậy mã chết không quay lại được, và bản thân phép đo cũng
-được canh.
+**Kiểm chứng:** `deadModules.test.ts` dựng lại đúng phép đo ở §1.1 thành một cổng chặn, và đã thử
+làm nó đỏ bằng một tệp mồ côi cố ý. Mã chết không quay lại được, và bản thân phép đo cũng được canh
+bằng một ca đối chứng.
 
 ### Đợt 1 — Bốn màn hình ở §2
 
