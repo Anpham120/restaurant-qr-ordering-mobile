@@ -394,6 +394,75 @@ public class TableInvoicePaymentService {
 		return invoiceReader.buildInvoice(sessionId, s.session());
 	}
 
+	/**
+	 * Hoàn tiền một hoá đơn bàn ĐÃ THU.
+	 *
+	 * <p><b>Vì sao endpoint này phải tồn tại.</b> Đường hoàn tiền duy nhất của hệ thống là
+	 * {@code POST /api/orders/&#123;code&#125;/payment/refund}, và nó tra cứu bằng
+	 * {@code findByOrderId}. Nhưng thanh toán của hoá đơn bàn tạo bằng
+	 * {@code PaymentEntity.forTableInvoice}, mang {@code tableInvoiceId} và để {@code orderId} NULL
+	 * — nên đường đó trả {@code PAYMENT_NOT_FOUND} cho MỌI hoá đơn ăn tại bàn. Nghĩa là trước bản
+	 * này, chế độ thanh toán chính của quán không có cách nào trả tiền lại cho khách.
+	 *
+	 * <p>Ba việc phải làm cùng nhau, và thiếu bất kỳ cái nào cũng để lại sai lệch im lặng:
+	 * đổi trạng thái tiền, trả điểm đã cộng, và trả tiền mặt ra khỏi ca quầy.
+	 */
+	@Transactional
+	public TableInvoiceDtos.InvoiceResponse refund(
+			String sessionId, TableInvoiceDtos.PaymentActionRequest request, ActorContext actor) {
+		validateNote(request);
+		TableInvoiceEntity invoice = invoiceRepository.findByTableSessionId(sessionId)
+				.orElseThrow(TableInvoicePaymentService::paymentNotFound);
+		PaymentEntity payment = paymentRepository.findByTableInvoiceId(invoice.getId())
+				.orElseThrow(TableInvoicePaymentService::paymentNotFound);
+
+		// Chỉ hoàn được thứ đã thu. Hoá đơn đang chờ thì huỷ, không phải hoàn — và một hoá đơn đã
+		// hoàn rồi mà hoàn tiếp là trả tiền hai lần.
+		if (!"Confirmed".equals(invoice.getStatus()) && !"Paid".equals(invoice.getStatus())) {
+			throw ApiException.conflict("PAYMENT_TRANSITION_INVALID",
+					"Chỉ hoá đơn đã thu tiền mới hoàn được.");
+		}
+
+		TableSessionEntity session = sessionRepository.findById(sessionId)
+				.orElseThrow(() -> ApiException.notFound(
+						"TABLE_SESSION_NOT_FOUND", "Table session was not found."));
+		OffsetDateTime now = OffsetDateTime.now();
+		String note = noteOr(request, "Quầy hoàn tiền hoá đơn bàn.");
+
+		invoice.settle("Refunded", now);
+		payment.setStatus(PaymentStatus.Refunded);
+		payment.setUpdatedAt(now);
+		try {
+			invoiceRepository.saveAndFlush(invoice);
+			paymentRepository.saveAndFlush(payment);
+		} catch (ObjectOptimisticLockingFailureException e) {
+			throw ApiException.conflict("CONFLICT_STALE",
+					"Payment was modified by another request. Reload and try again.");
+		}
+		transactionRepository.save(settlementTransaction(payment, "Refunded", note, now));
+
+		// Từ đây trở xuống là việc PHỤ TRỢ — tiền đã ghi xong, và không việc nào dưới đây được phép
+		// làm hỏng lệnh hoàn tiền. Cùng nguyên tắc mà chiều thu đã áp cho việc cộng điểm.
+		try {
+			loyaltyService.hoanTien(invoice.getCustomerPhoneNumber(), invoice.getInvoiceCode(), now);
+		} catch (RuntimeException e) {
+			org.slf4j.LoggerFactory.getLogger(TableInvoicePaymentService.class)
+					.warn("Đảo điểm thất bại cho {}; lệnh hoàn tiền vẫn đứng.", invoice.getInvoiceCode(), e);
+		}
+		if (PaymentMethod.COD.name().equals(invoice.getMethod())) {
+			try {
+				counterService.hoanTienMatChoHoaDon(
+						invoice.getTotalAmount(), sessionId, invoice.getInvoiceCode(), actor.userId());
+			} catch (RuntimeException e) {
+				org.slf4j.LoggerFactory.getLogger(TableInvoicePaymentService.class)
+						.warn("Trừ quỹ ca thất bại cho {}; lệnh hoàn tiền vẫn đứng.",
+								invoice.getInvoiceCode(), e);
+			}
+		}
+
+		return invoiceReader.buildInvoice(sessionId, session);
+	}
+
 	// --- danh sách cho quầy ----------------------------------------------------------------------
 
 	@Transactional(readOnly = true)
