@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import com.cmc.restaurant.auth.JwtProperties;
 import com.cmc.restaurant.shared.ApiException;
 import com.cmc.restaurant.tables.domain.TableSessionResumeState;
-import com.cmc.restaurant.tables.domain.TableSessionStatus;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
