@@ -172,14 +172,30 @@ public class TableSessionService {
 		return toResponse(session, table, now, resumeState);
 	}
 
-	public TableDtos.TableSessionResponse closeSession(String sessionId) {
+	/**
+	 * Đóng phiên bàn.
+	 *
+	 * <p>Trước đây hàm này đặt {@code Closed} rồi thôi — không hỏi bàn còn nợ tiền không. Một lần
+	 * bấm nhầm ở sơ đồ bàn là một bàn đóng với tiền chưa thu, và vì đã {@code Closed} nên khách
+	 * quét QR sẽ mở phiên MỚI: món đã ăn nằm lại phiên cũ và không màn hình nào hiện ra nữa.
+	 *
+	 * <p>Nay chặn mặc định. Vẫn cho ép đóng, vì tình huống thật có tồn tại — khách bỏ đi, quán
+	 * quyết định miễn, hoặc tiền đã nhận bằng đường khác — nhưng ép đóng phải kèm lý do và lý do
+	 * đó được ghi lại. Ranh giới ở đây là giữa "một quyết định có tên" và "một lần bấm im lặng".
+	 *
+	 * @param force  bỏ qua chốt chặn nợ tiền
+	 * @param reason bắt buộc khi {@code force}; bỏ qua khi phiên không nợ gì
+	 */
+	public TableDtos.TableSessionResponse closeSession(String sessionId, boolean force, String reason) {
 		TableSessionEntity session = sessionRepository.findById(sessionId)
 				.orElseThrow(() -> ApiException.notFound("TABLE_SESSION_NOT_FOUND", "Table session was not found."));
 
 		OffsetDateTime now = OffsetDateTime.now();
 		if (session.getStatus() != TableSessionStatus.Closed) {
+			String lyDo = kiemNoTruocKhiDong(session.getId(), force, reason);
 			session.setStatus(TableSessionStatus.Closed);
 			session.setClosedAt(now);
+			session.setCloseReason(lyDo);
 			session.setUpdatedAt(now);
 			sessionRepository.save(session);
 		}
@@ -188,6 +204,29 @@ public class TableSessionService {
 
 		RestaurantTableEntity table = tableRepository.findById(session.getRestaurantTableId()).orElse(null);
 		return toSessionResponse(session, table, now);
+	}
+
+	/**
+	 * Trả về lý do cần ghi lại, hoặc {@code null} khi phiên không nợ gì.
+	 *
+	 * <p>Dùng lại {@link com.cmc.restaurant.tables.domain.TableSessionResumeState#conNoTien()} chứ
+	 * không tự hỏi cơ sở dữ liệu lần nữa: câu "bàn này còn nợ tiền không" đã có một đáp án ở tầng
+	 * domain, và viết bản thứ hai ở đây là mở đường cho hai bên trôi khỏi nhau.
+	 */
+	private String kiemNoTruocKhiDong(String sessionId, boolean force, String reason) {
+		if (!resumeStateQueryService.resolve(sessionId).conNoTien()) {
+			return null;
+		}
+		if (!force) {
+			throw ApiException.conflict("TABLE_SESSION_HAS_UNPAID_ITEMS",
+					"Bàn còn món chưa thanh toán. Thu tiền trước, hoặc ép đóng kèm lý do.");
+		}
+		String lyDo = reason == null ? "" : reason.trim();
+		if (lyDo.isEmpty()) {
+			throw ApiException.badRequest("TABLE_SESSION_CLOSE_REASON_REQUIRED",
+					"Ép đóng bàn còn nợ tiền phải kèm lý do.");
+		}
+		return lyDo;
 	}
 
 	private OpenTableSessionResponse toResponse(

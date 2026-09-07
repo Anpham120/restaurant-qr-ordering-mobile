@@ -49,6 +49,10 @@ public class TableSessionEntity {
 	@Column(name = "closed_at")
 	private OffsetDateTime closedAt;
 
+	/** Lý do ép đóng phiên khi còn tiền chưa thu. {@code null} = phiên đóng bình thường. */
+	@Column(name = "close_reason")
+	private String closeReason;
+
 	@Column(name = "created_at", nullable = false)
 	private OffsetDateTime createdAt;
 
@@ -163,6 +167,14 @@ public class TableSessionEntity {
 
 	public void setClosedAt(OffsetDateTime closedAt) {
 		this.closedAt = closedAt;
+	}
+
+	public String getCloseReason() {
+		return closeReason;
+	}
+
+	public void setCloseReason(String closeReason) {
+		this.closeReason = closeReason;
 	}
 
 	public void setUpdatedAt(OffsetDateTime updatedAt) {
