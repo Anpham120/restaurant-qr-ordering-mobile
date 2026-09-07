@@ -6,6 +6,7 @@ import {
   updateAdminMenuItem,
   deleteAdminMenuItem,
   setAdminMenuItemAvailability,
+  fetchPendingQuantities,
   type AdminMenuItemPayload,
 } from "../../services/adminMenuService";
 import { ApiError } from "@cmc/api-client";
@@ -53,6 +54,7 @@ const EMPTY_FORM: AdminMenuItemPayload = {
 
 export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
   const confirm = useOpsConfirm();
+  const [pendingQuantities, setPendingQuantities] = useState<Record<string, number>>({});
   const [items, setItems] = useState<AdminMenuItem[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,12 +73,16 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
 
   const load = useCallback(async () => {
     try {
-      const [menuItems, cats] = await Promise.all([
+      // Hàng đợi bếp đi cùng chuyến: nó chỉ cần cho một câu cảnh báo, nên không đáng một vòng
+      // tải riêng — và `fetchPendingQuantities` tự nuốt lỗi nên nó không kéo cả màn xuống theo.
+      const [menuItems, cats, dangCho] = await Promise.all([
         fetchAdminMenuItems(),
         api.categories.list(),
+        fetchPendingQuantities(),
       ]);
       setItems(menuItems);
       setCategories(cats);
+      setPendingQuantities(dangCho);
     } catch {
       setError("Không tải được thực đơn.");
     } finally {
@@ -138,6 +144,20 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
       setNotice("Danh mục đã ngừng hoạt động. Hãy chọn danh mục đang hoạt động.");
       return;
     }
+    // ĐỔI GIÁ phải hỏi lại. Theo §20 đây là thay đổi lan rộng nhất quản lý làm được — nó áp cho
+    // mọi đơn từ giây tiếp theo, kể cả bàn đang ngồi chọn món — mà trước bản này nó lặng lẽ hơn cả
+    // việc tắt một món. Chỉ hỏi khi giá THẬT SỰ đổi: hỏi ở mọi lần lưu sẽ thành một cú bấm phản xạ.
+    const giaCu = editingId ? items.find((i) => i.id === editingId)?.price : undefined;
+    if (editingId && giaCu !== undefined && Number(form.price) !== giaCu) {
+      if (!(await confirm({
+        title: `Đổi giá ${form.name.trim()}?`,
+        message: `${formatVnd(giaCu)} → ${formatVnd(Number(form.price))}. Giá mới áp cho mọi đơn `
+          + "từ giây tiếp theo, kể cả bàn đang ngồi chọn món. Đơn đã gửi giữ giá cũ.",
+        confirmLabel: "Đổi giá",
+        danger: true,
+      }))) return;
+    }
+
     setIsSaving(true);
     setNotice("");
     const payload: AdminMenuItemPayload = {
@@ -242,6 +262,26 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
   }
 
   async function handleToggle(id: string, available: boolean) {
+    // Tắt MỘT món trước đây không hỏi gì cả — trong khi tắt hàng loạt thì có. Nghịch lý: thao tác
+    // hay dùng hơn lại là thao tác im lặng hơn.
+    //
+    // Và câu hỏi phải nêu SỐ PHẦN ĐANG TRONG HÀNG ĐỢI BẾP, không chỉ nói "khách sẽ không thấy
+    // nữa". Bỏ dở ba bát đang nấu là một việc khác hẳn tắt một món chưa ai gọi, mà chỉ con số đó
+    // mới phân biệt được hai tình huống.
+    if (available) {
+      const dangCho = pendingQuantities[id] ?? 0;
+      const ten = items.find((i) => i.id === id)?.name ?? "món này";
+      if (!(await confirm({
+        title: `Ngừng bán ${ten}?`,
+        message: dangCho > 0
+          ? `Món biến khỏi thực đơn khách đang xem ngay. Bếp đang có ${dangCho} phần trong hàng đợi `
+            + "— những phần đó vẫn phải làm nốt."
+          : "Món biến khỏi thực đơn khách đang xem ngay. Bếp không có phần nào đang chờ.",
+        confirmLabel: "Ngừng bán",
+        danger: true,
+      }))) return;
+    }
+
     try {
       await setAdminMenuItemAvailability(id, !available);
       setItems((prev) => prev.map((i) => (i.id === id ? { ...i, isAvailable: !available } : i)));

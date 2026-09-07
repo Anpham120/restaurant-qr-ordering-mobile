@@ -69,4 +69,7 @@ public interface OrderLookup {
 
 	/** Tổng tiền đơn CHƯA tất toán theo từng phiên bàn — cùng truy vấn với phép đếm ở trên. */
 	Map<String, java.math.BigDecimal> unpaidAmountByTableSession();
+
+	/** Số phần đang chờ bếp theo từng món — để quản lý biết mình bỏ dở gì khi tắt một món. */
+	Map<String, Integer> soPhanDangChoTheoMon();
 }

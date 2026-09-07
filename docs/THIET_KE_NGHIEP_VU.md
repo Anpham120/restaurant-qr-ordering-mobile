@@ -712,8 +712,8 @@ cũng hỏi lại.
 
 | Vấn đề | Hệ quả |
 |---|---|
-| Cảnh báo nói **hệ quả** nhưng chưa nói **số lượng** | Thiếu vế "và **3 phần đang trong hàng đợi bếp**" — đó mới là thứ quyết định có nên tắt lúc này |
-| **Sửa giá** không cảnh báo gì | Thay đổi lan rộng nhất mà quản lý làm được, hiện lặng lẽ hơn cả tắt một món |
+| ~~Cảnh báo nói hệ quả nhưng chưa nói số lượng~~ | **ĐÃ SỬA.** Hộp thoại tắt món nay nêu số phần đang trong hàng đợi bếp, qua endpoint `GET /api/admin/menu-items/pending-quantities`. Soát lại còn thấy một chỗ tệ hơn: tắt MỘT món trước đây không hỏi gì cả, trong khi tắt hàng loạt thì có |
+| ~~**Sửa giá** không cảnh báo gì~~ | **ĐÃ SỬA.** Hỏi lại kèm `giá cũ → giá mới` và nói rõ giá mới áp cho cả bàn đang ngồi chọn món. Chỉ hỏi khi giá THẬT SỰ đổi — hỏi ở mọi lần lưu sẽ thành một cú bấm phản xạ |
 | Số liệu không có mốc so | Không biết 12,4 triệu là tốt hay tệ |
 
 ## 21. Luật giao diện dùng chung
