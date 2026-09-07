@@ -1,8 +1,10 @@
 # Thực đơn quán Mây
 
-**32 món** trong **7 danh mục**. Trang này **được SINH RA** bởi
+**38 món** trong **8 danh mục**. Trang này **được SINH RA** bởi
 `scripts/menu/build_thuc_don.mjs` từ chính các migration đã seed thực đơn
-(V30__shop_catalog_and_delivery.sql, V33__shop_demo_menu.sql) — nên nó không thể lệch giá hay lệch tên với cơ sở dữ liệu.
+(V30__shop_catalog_and_delivery.sql, V33__shop_demo_menu.sql, V34__shop_milktea_and_nuts.sql) — nên nó không thể lệch giá hay lệch tên với cơ sở dữ liệu.
+
+Chỉ tên món, không có gì khác: [THUC_DON_TEN_MON.md](THUC_DON_TEN_MON.md).
 
 Đổi thực đơn: viết một migration MỚI rồi chạy `node scripts/menu/build_thuc_don.mjs`.
 Không sửa migration đã chạy — Flyway lưu checksum từng tệp.
@@ -38,6 +40,16 @@ Không sửa migration đã chạy — Flyway lưu checksum từng tệp.
 | Trà ổi hồng | 42.000đ | 5′ | Kích cỡ · Đường · Đá · Thêm chút ngon | Trà xanh cùng ổi hồng ép tươi, ngọt thanh và thơm nhẹ. |
 | Trà sen vàng | 39.000đ | 5′ | Kích cỡ · Đường · Đá · Thêm chút ngon | Trà ướp sen, hạt sen mềm và chút mật ong. |
 
+## Trà sữa
+
+| Món | Giá | Làm | Tuỳ chọn | Mô tả |
+|---|---|---|---|---|
+| Trà sữa truyền thống | 35.000đ | 5′ | Kích cỡ · Đường · Đá · Thêm chút ngon | Trà đen ủ đậm và sữa béo, công thức quen thuộc không cần sửa gì. |
+| Trà sữa trân châu đường đen | 45.000đ | 6′ | Kích cỡ · Đường · Đá · Thêm chút ngon | Trân châu nấu đường đen còn ấm, sữa tươi và trà đậm. |
+| Trà sữa ô long nướng | 42.000đ | 6′ | Kích cỡ · Đường · Đá · Thêm chút ngon | Ô long nướng thơm khói nhẹ, hậu vị chát dịu, ít ngọt. |
+| Trà sữa khoai môn | 45.000đ | 6′ | Kích cỡ · Đường · Đá · Thêm chút ngon | Khoai môn nghiền mịn, sữa thơm và những viên khoai mềm. |
+| Trà sữa matcha | 45.000đ | 6′ | Kích cỡ · Đường · Đá · Thêm chút ngon | Matcha đắng nhẹ hoà sữa, xanh mát và không gắt. |
+
 ## Chè nhà làm
 
 | Món | Giá | Làm | Tuỳ chọn | Mô tả |
@@ -67,19 +79,20 @@ Không sửa migration đã chạy — Flyway lưu checksum từng tệp.
 | Cheesecake chanh dây | 45.000đ | 3′ | — | Cheesecake mềm mát, lớp chanh dây chua dịu bên trên. |
 | Bánh mì bơ tỏi | 25.000đ | 6′ | — | Bánh mì nướng giòn, bơ tỏi thơm và chút rau thơm. |
 
-## Ăn nhẹ
+## Hạt rang
 
 | Món | Giá | Làm | Tuỳ chọn | Mô tả |
 |---|---|---|---|---|
-| Khoai tây chiên | 35.000đ | 10′ | — | Khoai vàng giòn, dùng kèm sốt cà chua và mayonnaise. |
-| Gà viên giòn | 45.000đ | 12′ | — | Gà viên giòn nóng hổi, sốt chấm đậm vị. |
-| Bánh tráng trộn | 30.000đ | 6′ | — | Bánh tráng, khô bò, trứng cút và rau răm, trộn khi có khách gọi. |
-| Xúc xích nướng | 35.000đ | 9′ | — | Xúc xích nướng nóng, tương ớt và tương cà. |
+| Hạt hướng dương | 20.000đ | 2′ | Phần | Hướng dương rang vừa lửa, cắn tí tách được cả buổi. |
+| Hạt dưa | 20.000đ | 2′ | Phần | Hạt dưa đỏ rang thơm, mặn nhẹ. |
+| Đậu phộng rang tỏi ớt | 25.000đ | 2′ | Phần | Đậu phộng giòn, tỏi phi thơm và chút ớt cay. |
+| Hạt điều rang muối | 49.000đ | 2′ | Phần | Hạt điều nguyên vỏ lụa, rang muối vừa miệng. |
+| Hạt dẻ cười | 55.000đ | 2′ | Phần | Hạt dẻ cười tách sẵn miệng, rang muối nhẹ. |
 
 ## Ảnh món
 
 Ảnh hiện tại là **tranh minh hoạ theo danh mục**, nên nhiều món dùng chung một tệp.
-Còn **30/32 món** chưa có ảnh riêng.
+Còn **37/38 món** chưa có ảnh riêng.
 
 Quy cách: **768 × 768** PNG, 40–70 KB. Chép vào **cả hai** thư mục, cùng tên tệp —
 `frontend/public/shop-assets/` (web đọc) và
@@ -102,6 +115,11 @@ Thiếu một bên thì ảnh mất ở đúng một nền tảng.
 | Trà xoài nhiệt đới | `/shop-assets/tea.png` | `tea-mango.png` |
 | Trà ổi hồng | `/shop-assets/tea.png` | `tea-guava.png` |
 | Trà sen vàng | `/shop-assets/tea.png` | `tea-lotus.png` |
+| Trà sữa truyền thống | `/shop-assets/tea.png` | `milktea-classic.png` |
+| Trà sữa trân châu đường đen | `/shop-assets/tea.png` | `milktea-pearl.png` |
+| Trà sữa ô long nướng | `/shop-assets/tea.png` | `milktea-oolong.png` |
+| Trà sữa khoai môn | `/shop-assets/tea.png` | `milktea-taro.png` |
+| Trà sữa matcha | `/shop-assets/matcha.png` | `milktea-matcha.png` |
 | Chè bưởi | `/shop-assets/che.png` | `che-pomelo.png` |
 | Chè Thái | `/shop-assets/che.png` | `che-thai.png` |
 | Chè sen long nhãn | `/shop-assets/che.png` | `che-lotus.png` |
@@ -116,8 +134,9 @@ Thiếu một bên thì ảnh mất ở đúng một nền tảng.
 | Bánh su kem | `/shop-assets/bakery.png` | `bakery-choux.png` |
 | Cheesecake chanh dây | `/shop-assets/tiramisu.png` | `bakery-cheesecake.png` |
 | Bánh mì bơ tỏi | `/shop-assets/bakery.png` | `bakery-garlicbread.png` |
-| Khoai tây chiên | `/shop-assets/snack.png` | `fries.png` |
-| Gà viên giòn | `/shop-assets/snack.png` | — *(đã có)* |
-| Bánh tráng trộn | `/shop-assets/snack.png` | `snack-bantrangtron.png` |
-| Xúc xích nướng | `/shop-assets/chicken.png` | `snack-sausage.png` |
+| Hạt hướng dương | `/shop-assets/snack.png` | `nuts-sunflower.png` |
+| Hạt dưa | `/shop-assets/snack.png` | `nuts-watermelon.png` |
+| Đậu phộng rang tỏi ớt | `/shop-assets/snack.png` | `nuts-peanut.png` |
+| Hạt điều rang muối | `/shop-assets/snack.png` | `nuts-cashew.png` |
+| Hạt dẻ cười | `/shop-assets/snack.png` | `nuts-pistachio.png` |
 

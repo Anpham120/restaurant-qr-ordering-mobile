@@ -45,9 +45,14 @@ public enum TramChuanBi {
 	/** Lấy sẵn: bia, trái cây gọt sẵn, chè và bánh làm theo mẻ. KHÔNG xếp hàng. */
 	SAN;
 
-	private static final Set<String> DANH_MUC_QUAY = Set.of("cat_drink", "cat_juice", "shop_matcha", "shop_coffee", "shop_tea");
+	private static final Set<String> DANH_MUC_QUAY = Set.of("cat_drink", "cat_juice", "shop_matcha",
+			"shop_coffee", "shop_tea", "shop_milktea");
 
-	private static final Set<String> DANH_MUC_SAN = Set.of("cat_alcohol", "cat_fruit", "cat_dessert", "shop_che", "shop_icecream", "shop_bakery");
+	// shop_snack (Hạt rang) ở đây chứ không phải BEP: nhóm này từng là khoai chiên và gà viên —
+	// qua chảo dầu, đúng nghĩa bếp — nhưng V34 đã thay hết bằng hạt rang đóng sẵn. Rót một phần
+	// hạt không phải là xếp hàng.
+	private static final Set<String> DANH_MUC_SAN = Set.of("cat_alcohol", "cat_fruit", "cat_dessert",
+			"shop_che", "shop_icecream", "shop_bakery", "shop_snack");
 
 	/**
 	 * Trạm của một món.

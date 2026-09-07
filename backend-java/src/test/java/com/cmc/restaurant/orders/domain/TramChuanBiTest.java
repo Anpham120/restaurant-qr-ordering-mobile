@@ -2,7 +2,14 @@ package com.cmc.restaurant.orders.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -77,5 +84,38 @@ class TramChuanBiTest {
 		// "Bia Hà Nội" mang nhãn `region:north` vào bếp.
 		assertThat(TramChuanBi.cua(List.of("region:north", "price:budget"), "cat_alcohol"))
 				.isEqualTo(TramChuanBi.SAN);
+	}
+
+	/**
+	 * Mọi danh mục {@code shop_} trong seed phải được khai trạm, không rơi vào nhánh mặc định.
+	 *
+	 * <p>Nhánh mặc định trả {@link TramChuanBi#BEP} — an toàn theo hướng báo lâu hơn, nhưng với
+	 * một ly trà sữa thì "an toàn" nghĩa là khách bị báo phải đợi sau cả hàng đợi bếp. Đúng loại
+	 * sai mà enum này được viết ra để chữa, nên với thực đơn quán nó không còn là mặc định chấp
+	 * nhận được mà là một chỗ quên.
+	 *
+	 * <p>Phép kiểm đọc thẳng migration chứ không chép lại danh sách: một danh sách chép tay ở đây
+	 * sẽ quên đúng lúc có người thêm danh mục — tức đúng lúc cần nó nhất.
+	 */
+	@Test
+	@DisplayName("mọi danh mục shop_ trong seed đều được khai trạm")
+	void moiDanhMucShopDeuDuocKhaiTram() throws IOException {
+		Pattern khaiDanhMuc = Pattern.compile("\\('(shop_[a-z_]+)','[^']+',\\d+,true,now");
+		List<String> danhMuc = new ArrayList<>();
+		try (Stream<Path> tep = Files.list(Path.of("src/main/resources/db/migration"))) {
+			for (Path p : tep.filter(f -> f.toString().endsWith(".sql")).sorted().toList()) {
+				Matcher m = khaiDanhMuc.matcher(Files.readString(p));
+				while (m.find()) {
+					danhMuc.add(m.group(1));
+				}
+			}
+		}
+
+		assertThat(danhMuc).isNotEmpty();
+		for (String cat : danhMuc) {
+			assertThat(TramChuanBi.cua(List.of(), cat))
+					.describedAs("%s chưa được khai trong DANH_MUC_QUAY hay DANH_MUC_SAN", cat)
+					.isNotEqualTo(TramChuanBi.BEP);
+		}
 	}
 }
