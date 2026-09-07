@@ -14,10 +14,11 @@ import { useOpsAssistance } from "../operations/OpsAssistanceProvider";
 import { Armchair } from "lucide-react";
 import "../operations/operations.css";
 import "./floor-map.css";
-import { useOpsConfirm } from "../operations/OpsConfirmProvider";
+import { useOpsConfirm, useOpsReason } from "../operations/OpsConfirmProvider";
 
 export function AdminTableSessionMonitor({ embedded = false }: { embedded?: boolean }) {
   const confirm = useOpsConfirm();
+  const hoiLyDo = useOpsReason();
   const [searchParams] = useSearchParams();
   const { recentAssistance } = useOpsAssistance();
   const [tables, setTables] = useState<AdminTable[]>([]);
@@ -98,8 +99,35 @@ export function AdminTableSessionMonitor({ embedded = false }: { embedded?: bool
       setNotice(`Đã đóng phiên bàn ${tableCode}.`);
       setSelectedRow(null);
       await load();
-    } catch {
-      setNotice(`Không đóng được phiên bàn ${tableCode}. Vui lòng thử lại.`);
+    } catch (e) {
+      // Bàn còn tiền chưa thu KHÔNG phải lỗi tạm thời — bảo "vui lòng thử lại" là nói dối, vì thử
+      // lại sẽ hỏng y hệt. Máy chủ từ chối có chủ ý, và lối thoát là ép đóng KÈM LÝ DO.
+      if (e instanceof ApiError && e.code === "TABLE_SESSION_HAS_UNPAID_ITEMS") {
+        setClosingId(null);
+        const lyDo = await hoiLyDo({
+          title: `Bàn ${tableCode} còn tiền chưa thu`,
+          message: "Đóng bàn bây giờ là bỏ khoản chưa thu đó. Lý do sẽ được ghi lại kèm tên bạn.",
+          confirmLabel: "Ép đóng",
+          danger: true,
+          reasonLabel: "Lý do đóng bàn khi chưa thu tiền",
+          reasonPlaceholder: "Khách bỏ về, quản lý duyệt miễn…",
+          requireText: tableCode,
+        });
+        if (lyDo === null) return;
+        setClosingId(sessionId);
+        try {
+          await api.tables.closeSession(sessionId, { force: true, reason: lyDo });
+          setNotice(`Đã ép đóng phiên bàn ${tableCode}.`);
+          setSelectedRow(null);
+          await load();
+        } catch (e2) {
+          setNotice(e2 instanceof ApiError ? e2.message : `Không đóng được phiên bàn ${tableCode}.`);
+        } finally {
+          setClosingId(null);
+        }
+        return;
+      }
+      setNotice(e instanceof ApiError ? e.message : `Không đóng được phiên bàn ${tableCode}.`);
     } finally {
       setClosingId(null);
     }

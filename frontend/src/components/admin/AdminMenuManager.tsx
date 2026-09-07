@@ -6,6 +6,7 @@ import {
   updateAdminMenuItem,
   deleteAdminMenuItem,
   setAdminMenuItemAvailability,
+  fetchPendingQuantities,
   type AdminMenuItemPayload,
 } from "../../services/adminMenuService";
 import { ApiError } from "@cmc/api-client";
@@ -48,10 +49,12 @@ const EMPTY_FORM: AdminMenuItemPayload = {
   imageUrl: "",
   isAvailable: true,
   tags: [],
+  prepMinutes: null,
 };
 
 export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
   const confirm = useOpsConfirm();
+  const [pendingQuantities, setPendingQuantities] = useState<Record<string, number>>({});
   const [items, setItems] = useState<AdminMenuItem[]>([]);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,12 +73,16 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
 
   const load = useCallback(async () => {
     try {
-      const [menuItems, cats] = await Promise.all([
+      // Hàng đợi bếp đi cùng chuyến: nó chỉ cần cho một câu cảnh báo, nên không đáng một vòng
+      // tải riêng — và `fetchPendingQuantities` tự nuốt lỗi nên nó không kéo cả màn xuống theo.
+      const [menuItems, cats, dangCho] = await Promise.all([
         fetchAdminMenuItems(),
         api.categories.list(),
+        fetchPendingQuantities(),
       ]);
       setItems(menuItems);
       setCategories(cats);
+      setPendingQuantities(dangCho);
     } catch {
       setError("Không tải được thực đơn.");
     } finally {
@@ -122,6 +129,7 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
       imageUrl: item.imageUrl ?? "",
       isAvailable: item.isAvailable,
       tags: item.tags ?? [],
+      prepMinutes: item.prepMinutes ?? null,
     });
     setTagsInput((item.tags ?? []).join(", "));
     setShowForm(true);
@@ -136,6 +144,20 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
       setNotice("Danh mục đã ngừng hoạt động. Hãy chọn danh mục đang hoạt động.");
       return;
     }
+    // ĐỔI GIÁ phải hỏi lại. Theo §20 đây là thay đổi lan rộng nhất quản lý làm được — nó áp cho
+    // mọi đơn từ giây tiếp theo, kể cả bàn đang ngồi chọn món — mà trước bản này nó lặng lẽ hơn cả
+    // việc tắt một món. Chỉ hỏi khi giá THẬT SỰ đổi: hỏi ở mọi lần lưu sẽ thành một cú bấm phản xạ.
+    const giaCu = editingId ? items.find((i) => i.id === editingId)?.price : undefined;
+    if (editingId && giaCu !== undefined && Number(form.price) !== giaCu) {
+      if (!(await confirm({
+        title: `Đổi giá ${form.name.trim()}?`,
+        message: `${formatVnd(giaCu)} → ${formatVnd(Number(form.price))}. Giá mới áp cho mọi đơn `
+          + "từ giây tiếp theo, kể cả bàn đang ngồi chọn món. Đơn đã gửi giữ giá cũ.",
+        confirmLabel: "Đổi giá",
+        danger: true,
+      }))) return;
+    }
+
     setIsSaving(true);
     setNotice("");
     const payload: AdminMenuItemPayload = {
@@ -240,6 +262,26 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
   }
 
   async function handleToggle(id: string, available: boolean) {
+    // Tắt MỘT món trước đây không hỏi gì cả — trong khi tắt hàng loạt thì có. Nghịch lý: thao tác
+    // hay dùng hơn lại là thao tác im lặng hơn.
+    //
+    // Và câu hỏi phải nêu SỐ PHẦN ĐANG TRONG HÀNG ĐỢI BẾP, không chỉ nói "khách sẽ không thấy
+    // nữa". Bỏ dở ba bát đang nấu là một việc khác hẳn tắt một món chưa ai gọi, mà chỉ con số đó
+    // mới phân biệt được hai tình huống.
+    if (available) {
+      const dangCho = pendingQuantities[id] ?? 0;
+      const ten = items.find((i) => i.id === id)?.name ?? "món này";
+      if (!(await confirm({
+        title: `Ngừng bán ${ten}?`,
+        message: dangCho > 0
+          ? `Món biến khỏi thực đơn khách đang xem ngay. Bếp đang có ${dangCho} phần trong hàng đợi `
+            + "— những phần đó vẫn phải làm nốt."
+          : "Món biến khỏi thực đơn khách đang xem ngay. Bếp không có phần nào đang chờ.",
+        confirmLabel: "Ngừng bán",
+        danger: true,
+      }))) return;
+    }
+
     try {
       await setAdminMenuItemAvailability(id, !available);
       setItems((prev) => prev.map((i) => (i.id === id ? { ...i, isAvailable: !available } : i)));
@@ -346,6 +388,24 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                 />
                 <div className="ops-form-hint" style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>
                   Ảnh bộ menu chuẩn nằm trong /menu-images/ (91 ảnh theo tên món). Xem trước sau khi lưu trong lưới thẻ bên dưới.
+                </div>
+              </div>
+              <div className="ops-form-group">
+                <label className="ops-form-label" htmlFor="amm-prep-minutes">Thời gian lên món (phút)</label>
+                <input
+                  className="ops-form-input"
+                  id="amm-prep-minutes"
+                  type="number"
+                  min={1}
+                  max={240}
+                  value={form.prepMinutes ?? ""}
+                  onChange={(e) => setForm({ ...form, prepMinutes: e.target.value === "" ? null : Number(e.target.value) })}
+                  placeholder="Chưa khai"
+                />
+                <div className="ops-form-hint" style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>
+                  Tính từ lúc bếp nhận món tới lúc món sẵn sàng — KHÔNG phải tổng thời gian nấu. Phở ninh
+                  nước dùng cả đêm nhưng múc ra bát chỉ vài phút. Để trống thì món này không hiện ước lượng
+                  cho khách, và đó là đúng: một con số bịa còn tệ hơn không có.
                 </div>
               </div>
               <div className="ops-form-group">

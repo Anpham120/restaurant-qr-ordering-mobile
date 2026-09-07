@@ -72,6 +72,43 @@ class PreAuthorizeExpressionTest {
 				.isEmpty();
 	}
 
+	/**
+	 * Tên vai trong {@code @PreAuthorize} phải là vai CÓ THẬT.
+	 *
+	 * <p>Cùng loại lỗi im lặng với phép kiểm trên, chỉ khác chỗ hỏng: một biểu thức đúng cú pháp
+	 * nhưng gõ nhầm tên vai — {@code 'Counterstaff'}, {@code 'ADMIN'} — không nổ ra lỗi nào. Nó
+	 * chỉ lặng lẽ TỪ CHỐI tất cả mọi người, vì không ai mang vai đó. Endpoint trở thành không gọi
+	 * được, và triệu chứng là 403 chứ không phải 500 — khó nghi ngờ hơn nhiều.
+	 */
+	@Test
+	@DisplayName("Mọi tên vai trong @PreAuthorize đều tồn tại trong UserRole.ALL")
+	void everyRoleNameExists() throws IOException {
+		List<String> la = new ArrayList<>();
+
+		try (Stream<Path> files = Files.walk(SRC)) {
+			for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
+				for (String dong : Files.readString(file, StandardCharsets.UTF_8).split("\n")) {
+					if (!dong.contains("@PreAuthorize")) {
+						continue;
+					}
+					Matcher m = LOI_GOI.matcher(dong);
+					while (m.find()) {
+						Matcher ten = Pattern.compile("'([^']+)'").matcher(m.group(1));
+						while (ten.find()) {
+							if (!com.cmc.restaurant.auth.UserRole.ALL.contains(ten.group(1))) {
+								la.add(file.getFileName() + ": '" + ten.group(1) + "'");
+							}
+						}
+					}
+				}
+			}
+		}
+
+		assertThat(la)
+				.describedAs("Vai không tồn tại — endpoint sẽ từ chối MỌI người, im lặng")
+				.isEmpty();
+	}
+
 	@Test
 	@DisplayName("Chính phép kiểm này phân biệt được đúng và sai")
 	void theCheckItselfCanFail() {

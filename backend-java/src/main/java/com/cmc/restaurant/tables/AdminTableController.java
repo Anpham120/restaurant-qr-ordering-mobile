@@ -83,6 +83,7 @@ public class AdminTableController {
 
 		// Một truy vấn cho tất cả phiên — xem OrderLookup.countActiveOrdersByTableSession().
 		Map<String, Integer> activeOrders = orderLookup.countActiveOrdersByTableSession();
+		Map<String, java.math.BigDecimal> tienNo = orderLookup.unpaidAmountByTableSession();
 		OffsetDateTime now = OffsetDateTime.now();
 
 		List<AdminTableDtos.AdminTableSessionSummary> items = sessions.stream()
@@ -98,7 +99,10 @@ public class AdminTableController {
 						session.getExpiresAt(),
 						session.getClosedAt(),
 						session.isExpired(now),
-						activeOrders.getOrDefault(session.getId(), 0)))
+						activeOrders.getOrDefault(session.getId(), 0),
+						session.mocQuaGio(now,
+								tienNo.getOrDefault(session.getId(), java.math.BigDecimal.ZERO).signum() > 0),
+						tienNo.getOrDefault(session.getId(), java.math.BigDecimal.ZERO)))
 				.toList();
 
 		return new AdminTableDtos.AdminTableSessionListResponse(items, items.size());

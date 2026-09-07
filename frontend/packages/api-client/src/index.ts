@@ -11,11 +11,13 @@ import type {
   CreateUserRequest,
   LoginRequest,
   LoginResponse,
+  LoyaltyCounterRedeem,
   LoyaltyLookupResponse,
   LoyaltyMember,
   LoyaltyMemberRequest,
   LoyaltyReward,
   LoyaltyRewardRequest,
+  LoyaltyVoucher,
   MenuResponse,
   Order,
   OrderItemStatus,
@@ -126,8 +128,18 @@ export function createApiClient(options: ApiClientOptions = {}) {
             body: JSON.stringify(payload),
           },
         ),
-      closeSession: (sessionId: string) =>
-        request<TableSession>(`/table-sessions/${encodeURIComponent(sessionId)}/close`, { method: "POST" }),
+      /**
+       * Đóng phiên bàn.
+       *
+       * Máy chủ TỪ CHỐI đóng bàn còn tiền chưa thu (`TABLE_SESSION_HAS_UNPAID_ITEMS`), trừ khi
+       * gửi `force` kèm `reason` — và lý do đó được ghi lại vào `table_sessions.close_reason`.
+       * Không gửi gì là hành vi cũ, và nó vẫn đúng cho bàn đã thu đủ tiền.
+       */
+      closeSession: (sessionId: string, payload?: { force: boolean; reason: string }) =>
+        request<TableSession>(`/table-sessions/${encodeURIComponent(sessionId)}/close`, {
+          method: "POST",
+          ...(payload ? { body: JSON.stringify(payload) } : {}),
+        }),
     },
     tableInvoices: {
       list: (status?: string) => {
@@ -154,13 +166,32 @@ export function createApiClient(options: ApiClientOptions = {}) {
           body: JSON.stringify(payload),
         },
       ),
-      confirmPayment: (sessionId: string, payload: { note?: string | null } = {}) =>
+      // `amountTendered` chỉ dùng cho tiền mặt. Bỏ trống = khách đưa đúng; máy chủ từ chối nếu đưa thiếu.
+      confirmPayment: (
+        sessionId: string,
+        payload: { note?: string | null; amountTendered?: number | null } = {},
+      ) =>
         request<TableInvoice>(`/table-sessions/${encodeURIComponent(sessionId)}/invoice/payment/confirm`, {
           method: "POST",
           body: JSON.stringify(payload),
         }),
       cancelPayment: (sessionId: string, payload: { note?: string | null } = {}) =>
         request<TableInvoice>(`/table-sessions/${encodeURIComponent(sessionId)}/invoice/payment/cancel`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }),
+      /**
+       * Hoàn tiền một hoá đơn ĐÃ THU.
+       *
+       * Khác `cancelPayment`: huỷ là bỏ một yêu cầu thanh toán chưa xong, hoàn là trả lại tiền đã
+       * nhận. Máy chủ chỉ nhận hoá đơn ở trạng thái Confirmed/Paid, và nó đảo cả điểm thưởng lẫn
+       * quỹ tiền mặt của ca quầy.
+       *
+       * Không dùng `/orders/{code}/payment/refund`: đường đó tra thanh toán bằng orderId, mà
+       * thanh toán của hoá đơn bàn không có orderId.
+       */
+      refundPayment: (sessionId: string, payload: { note?: string | null } = {}) =>
+        request<TableInvoice>(`/table-sessions/${encodeURIComponent(sessionId)}/invoice/payment/refund`, {
           method: "POST",
           body: JSON.stringify(payload),
         }),
@@ -217,6 +248,13 @@ export function createApiClient(options: ApiClientOptions = {}) {
       delete: (id: string) => request<void>(`/admin/categories/${encodeURIComponent(id)}`, { method: "DELETE" }),
     },
     promotions: {
+      /**
+       * Mã đang chạy, cho KHÁCH xem — khác `list()` phía dưới vốn là đường quản trị.
+       *
+       * Endpoint này có từ trước nhưng chỉ app di động gọi; web chưa bao giờ gọi tới, nên khách
+       * web chỉ gõ được mã họ đã biết từ tờ rơi hay biển trong quán.
+       */
+      listActive: () => request<{ items: Promotion[] }>("/promotions/active"),
       validate: (payload: ValidatePromotionRequest) => request<ValidatePromotionResponse>("/promotions/validate", { method: "POST", body: JSON.stringify(payload) }),
       list: () => request<Promotion[]>("/admin/promotions"),
       get: (id: string) => request<Promotion>(`/admin/promotions/${encodeURIComponent(id)}`),
@@ -226,6 +264,26 @@ export function createApiClient(options: ApiClientOptions = {}) {
     },
     loyalty: {
       lookup: (phone: string) => request<LoyaltyLookupResponse>(`/loyalty/lookup?phone=${encodeURIComponent(phone)}`),
+      /** Quầy đánh dấu đã phát phiếu cho khách. Phiếu đã dùng rồi sẽ trả 409. */
+      honourVoucher: (redemptionId: string) =>
+        request<LoyaltyVoucher>(`/loyalty/redemptions/${encodeURIComponent(redemptionId)}/honour`, { method: "POST" }),
+      /**
+       * Quầy đổi thưởng HỘ khách chỉ dùng web.
+       *
+       * Khách quét QR không đăng nhập nên không tự đổi được, nhưng điểm vẫn tích theo số điện
+       * thoại. Không có đường này thì cả nhóm khách đó kiếm điểm mà vĩnh viễn không tiêu được.
+       *
+       * `Idempotency-Key` là BẮT BUỘC: bấm hai lần lúc mạng chập chờn ở đây tiêu điểm THẬT của
+       * khách, và người bấm không phải người mất điểm.
+       */
+      counterRedeem: (
+        payload: { phone: string; rewardId: string; orderCode?: string | null },
+        idempotencyKey: string,
+      ) => request<LoyaltyCounterRedeem>("/loyalty/counter/redeem", {
+        method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
+        body: JSON.stringify(payload),
+      }),
       listMembers: () => request<LoyaltyMember[]>("/admin/loyalty/members"),
       createMember: (payload: LoyaltyMemberRequest) => request<LoyaltyMember>("/admin/loyalty/members", { method: "POST", body: JSON.stringify(payload) }),
       updateMember: (id: string, payload: LoyaltyMemberRequest) => request<LoyaltyMember>(`/admin/loyalty/members/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) }),

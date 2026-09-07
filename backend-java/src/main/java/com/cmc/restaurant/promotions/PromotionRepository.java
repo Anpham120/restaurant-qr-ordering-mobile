@@ -17,4 +17,18 @@ public interface PromotionRepository extends JpaRepository<PromotionEntity, Stri
 
 	/** Trùng mã với một khuyến mãi KHÁC — dùng khi sửa, để không tự báo trùng với chính nó. */
 	boolean existsByCodeAndIdNot(String code, String id);
+
+	/**
+	 * Ghi nhận một lượt dùng. Trả về 1 nếu còn lượt, 0 nếu đã hết.
+	 *
+	 * <p>Một câu UPDATE có điều kiện chứ không phải đọc-rồi-ghi: hai người cùng dùng nốt lượt
+	 * cuối trong một phần nghìn giây là tình huống CÓ THẬT với mã bị chia sẻ, và kiểm ở tầng Java
+	 * rồi mới ghi sẽ cho cả hai cùng qua. Ràng buộc ở đây phải do cơ sở dữ liệu giữ.
+	 */
+	@org.springframework.data.jpa.repository.Modifying
+	@org.springframework.data.jpa.repository.Query("""
+			update PromotionEntity p set p.usedCount = p.usedCount + 1
+			where p.id = :id and (p.usageLimit is null or p.usedCount < p.usageLimit)
+			""")
+	int ghiNhanMotLuot(@org.springframework.data.repository.query.Param("id") String id);
 }
