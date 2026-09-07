@@ -72,7 +72,7 @@ export type ChangePasswordRequest = { currentPassword: string; newPassword: stri
 export type RefundPaymentRequest = { note?: string | null };
 
 export type PromotionType = "Percentage" | "FixedAmount";
-export type Promotion = { promotionId: string; code: string; name: string; description: string | null; type: PromotionType; discountValue: number; minOrderAmount: number | null; maxDiscountAmount: number | null; isFlashSale: boolean; startsAt: string | null; endsAt: string | null; isActive: boolean; createdAt: string; updatedAt: string };
+export type Promotion = { promotionId: string; code: string; name: string; description: string | null; type: PromotionType; discountValue: number; minOrderAmount: number | null; maxDiscountAmount: number | null; isFlashSale: boolean; startsAt: string | null; endsAt: string | null; isActive: boolean; createdAt: string; updatedAt: string; usageLimit?: number | null; usedCount?: number };
 export type PromotionRequest = { code: string; name: string; description?: string | null; type: PromotionType; discountValue: number; minOrderAmount?: number | null; maxDiscountAmount?: number | null; isFlashSale: boolean; startsAt?: string | null; endsAt?: string | null; isActive: boolean; usageLimit?: number | null };
 export type ValidatePromotionRequest = { code: string; subtotalAmount: number };
 export type ValidatePromotionResponse = { code: string; name: string; type: PromotionType; subtotalAmount: number; discountAmount: number; totalAmount: number; isFlashSale: boolean };

@@ -88,13 +88,37 @@ thiếu. Giao diện hiện gọi endpoint đó không kèm thân request, nên 
 > đúng ở §19 (*"Thực đếm 4.850.000đ. Thiếu 50.000đ…"*). Ô lý do bắt buộc, không có giá trị gợi ý
 > sẵn: một danh sách chọn nhanh sẽ biến thành bấm cho xong.
 
-### 2.3 Quầy hoàn tiền — *quyền vừa mở, nút chưa có*
+### 2.3 Quầy hoàn tiền — ⛔ KHÔNG LÀM ĐƯỢC Ở TẦNG GIAO DIỆN
 
-`CounterStaff` nay được phép gọi `payment/refund`, `payment/confirm`, `payment/fail`. Trước đây
-bốn endpoint này chỉ cho `Staff` và `Admin`, mà `Staff` là vai không còn cấp mới.
+**Chẩn đoán ban đầu của tài liệu này SAI.** Nó viết *"quyền vừa mở, nút chưa có"*, ngụ ý chỉ cần
+thêm một cái nút. Không phải.
 
-> **Cần:** nút hoàn tiền ở màn quầy, có hỏi lại và ghi lý do. Theo §13 quầy **sở hữu** việc thu
-> tiền, nên đây là chỗ đúng — nhưng hoàn tiền là thao tác không lùi được, phải hỏi lại.
+Đo lại trên mã:
+
+```java
+// PaymentService.applyManualAction — dùng bởi confirm / fail / refund
+PaymentEntity entity = paymentRepository.findByOrderId(order.id())
+        .orElseThrow(() -> ApiException.notFound("PAYMENT_NOT_FOUND", ...));
+
+// PaymentEntity.forTableInvoice — đường thanh toán của ăn tại bàn
+payment.tableInvoiceId = tableInvoiceId;   // orderId để NULL
+```
+
+Thanh toán của hoá đơn bàn được tạo bằng `forTableInvoice`, mang `tableInvoiceId` và **không có
+`orderId`**. Còn `refund` thì tra cứu bằng `findByOrderId`. Hai đường không gặp nhau.
+
+> **Hệ quả:** `POST /api/orders/{code}/payment/refund` trả `PAYMENT_NOT_FOUND` cho mọi hoá đơn ăn
+> tại bàn. Nghĩa là **hệ thống hiện KHÔNG có đường hoàn tiền nào cho ăn tại bàn** — chế độ thanh
+> toán chính của quán. Endpoint hoàn tiền chỉ dùng được cho đơn lẻ không qua hoá đơn bàn.
+
+Gắn một cái nút vào màn quầy lúc này chỉ tạo ra một nút luôn báo lỗi.
+
+> **Cần, và là việc BACKEND:** một đường hoàn tiền ở cấp hoá đơn bàn —
+> `POST /api/table-sessions/{id}/invoice/payment/refund` — đi cùng đường đảo điểm đã có (O). Sau
+> đó mới tới nút.
+>
+> Việc mở quyền `CounterStaff` ở đợt sửa M vẫn đúng và vẫn cần: nó là điều kiện cần, chỉ không
+> phải điều kiện đủ.
 
 ### 2.4 Giới hạn lượt dùng mã khuyến mãi — *chưa có ô nhập*
 
@@ -123,7 +147,7 @@ bằng một ca đối chứng.
 Bốn năng lực đã có ở backend và đã được CI kiểm chứng, nhưng chưa dùng được. Đây là khoảng cách
 lớn nhất giữa "đã làm" và "dùng được".
 
-Thứ tự trong đợt: **2.1 → 2.2 → 2.3 → 2.4**. Ba cái đầu cùng nằm ở màn quầy và cùng một luồng
+Thứ tự trong đợt: **2.1 → 2.2 → 2.4**. Mục 2.3 đã chuyển thành việc backend — xem §2.3.
 công việc; cái thứ tư ở màn quản lý, độc lập.
 
 ### Đợt 2 — Ba chỗ chưa đạt của §18–§20
