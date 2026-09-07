@@ -142,13 +142,16 @@ frontend vẫn xanh.
 làm nó đỏ bằng một tệp mồ côi cố ý. Mã chết không quay lại được, và bản thân phép đo cũng được canh
 bằng một ca đối chứng.
 
-### Đợt 1 — Bốn màn hình ở §2
+### Đợt 1 — Bốn màn hình ở §2 · ba xong, một chuyển sang backend
 
 Bốn năng lực đã có ở backend và đã được CI kiểm chứng, nhưng chưa dùng được. Đây là khoảng cách
 lớn nhất giữa "đã làm" và "dùng được".
 
-Thứ tự trong đợt: **2.1 → 2.2 → 2.4**. Mục 2.3 đã chuyển thành việc backend — xem §2.3.
-công việc; cái thứ tư ở màn quản lý, độc lập.
+Thứ tự đã làm: **2.1 → 2.2 → 2.4**. Hai cái đầu cùng nằm ở màn quầy và cùng một luồng công việc;
+2.4 ở màn quản lý, độc lập.
+
+**2.3 đã chuyển thành việc BACKEND** sau khi đo lại — xem §2.3. Không gắn nút vì nút đó sẽ luôn
+báo lỗi.
 
 ### Đợt 2 — Ba chỗ chưa đạt của §18–§20
 
