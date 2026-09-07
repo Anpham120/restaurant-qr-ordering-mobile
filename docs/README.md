@@ -1,4 +1,4 @@
-# Mây — chỉ mục tài liệu
+# CMC Restaurant — chỉ mục tài liệu
 
 **16 tài liệu**, nhóm theo mục đích. Trang này **được SINH RA** bởi
 `docs/build_docs_index.py` từ chính các tệp có thật — nên nó không thể trỏ vào tệp không
