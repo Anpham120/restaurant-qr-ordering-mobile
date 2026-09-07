@@ -74,7 +74,8 @@ public class LoyaltyService {
 	 * matches .NET: the customer types their phone at checkout, and that is the whole enrolment.
 	 */
 	@Transactional
-	public Optional<LoyaltyMember> accrue(String phoneNumber, BigDecimal totalAmount, OffsetDateTime now) {
+	public Optional<LoyaltyMember> accrue(
+			String phoneNumber, BigDecimal totalAmount, String maChungTu, OffsetDateTime now) {
 		String phone = PhoneNumber.normalize(phoneNumber);
 		if (phone == null || LoyaltyMember.pointsFor(totalAmount) <= 0) {
 			return Optional.empty();
@@ -102,13 +103,60 @@ public class LoyaltyService {
 		// khi nào — hai thứ mà tác vụ xét hạng và tác vụ xoá điểm quá hạn đều cần.
 		soDiem.save(LoyaltyLedgerEntity.tich(
 				"lgr_" + UUID.randomUUID().toString().replace("-", ""),
-				entity.getId(), diemVuaTich, totalAmount, now));
+				entity.getId(), diemVuaTich, totalAmount, maChungTu, now));
 
 		members.save(entity);
 		// Hồ sơ vừa có thể mới sinh ra ở dòng trên. Điền tên ngay nếu số này đã thuộc một tài
 		// khoản — nếu đợi tới lúc nào đó khác thì không có "lúc nào đó" nào cả.
 		datTenNeuThieu(phone);
 		return Optional.of(member);
+	}
+
+	/**
+	 * Đảo lại điểm và chi tiêu của một chứng từ đã hoàn tiền.
+	 *
+	 * <p>Đảo theo ĐÚNG dòng ACCRUE đã ghi, không tính lại từ số tiền: hệ số tích phụ thuộc hạng
+	 * lúc tích, mà hạng đổi theo thời gian. Tính lại sẽ ra con số khác với số đã cộng.
+	 *
+	 * <p>Trả về số điểm đã trừ, hoặc rỗng khi không có gì để đảo — chứng từ không tìm thấy (hoá
+	 * đơn tích trước bản này, khi ACCRUE chưa ghi mã), hoặc đã đảo rồi.
+	 */
+	@Transactional
+	public Optional<Integer> hoanTien(String phoneNumber, String maChungTu, OffsetDateTime now) {
+		String phone = PhoneNumber.normalize(phoneNumber);
+		if (phone == null || maChungTu == null || maChungTu.isBlank()) {
+			return Optional.empty();
+		}
+		Optional<LoyaltyMemberEntity> hoSo = members.findByPhoneNumber(phone);
+		if (hoSo.isEmpty()) {
+			return Optional.empty();
+		}
+		LoyaltyMemberEntity entity = hoSo.get();
+
+		// Hoàn tiền hai lần cho cùng một chứng từ không được trừ điểm hai lần.
+		if (soDiem.existsByMemberIdAndOrderCodeAndReason(entity.getId(), maChungTu, "REFUND")) {
+			return Optional.empty();
+		}
+		List<LoyaltyLedgerEntity> dongTich = soDiem.dongTichCuaChungTu(entity.getId(), maChungTu);
+		if (dongTich.isEmpty()) {
+			return Optional.empty();
+		}
+
+		int diem = dongTich.stream().mapToInt(LoyaltyLedgerEntity::getDelta).sum();
+		BigDecimal soTien = dongTich.stream().map(LoyaltyLedgerEntity::getAmountVnd)
+				.filter(java.util.Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		soDiem.save(LoyaltyLedgerEntity.hoanTien(
+				"lgr_" + UUID.randomUUID().toString().replace("-", ""),
+				entity.getId(), diem, soTien, maChungTu, now));
+
+		// Số dư nói khách ĐANG có bao nhiêu; sổ nói đã xảy ra những gì. Phải sửa cả hai.
+		entity.setPoints(Math.max(0, entity.getPoints() - Math.abs(diem)));
+		entity.setSpend12m(entity.getSpend12m().subtract(soTien).max(BigDecimal.ZERO));
+		entity.setTier(MemberTier.theoChiTieu(entity.getSpend12m()));
+		entity.setLastActivityAt(now);
+		members.save(entity);
+		return Optional.of(Math.abs(diem));
 	}
 
 	/** What a customer can see and redeem right now. */

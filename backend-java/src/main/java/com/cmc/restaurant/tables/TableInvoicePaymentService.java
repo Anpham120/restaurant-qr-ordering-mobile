@@ -285,7 +285,8 @@ public class TableInvoicePaymentService {
 					"Mã ưu đãi trên hoá đơn này vừa được dùng ở nơi khác.");
 		}
 
-		loyaltyService.accrue(s.invoice().getCustomerPhoneNumber(), s.invoice().getTotalAmount(), now);
+		loyaltyService.accrue(s.invoice().getCustomerPhoneNumber(), s.invoice().getTotalAmount(),
+				s.invoice().getInvoiceCode(), now);
 		if (PaymentMethod.COD.name().equals(s.invoice().getMethod())) {
 			counterService.recordTableInvoiceCash(
 					s.invoice().getTotalAmount(), sessionId, s.invoice().getInvoiceCode(), actor.userId());

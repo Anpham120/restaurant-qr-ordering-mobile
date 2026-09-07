@@ -58,10 +58,38 @@ public class LoyaltyLedgerEntity {
 		this.createdAt = now;
 	}
 
-	/** Tích điểm từ một hoá đơn. Hạn dùng 12 tháng kể từ lúc tích. */
+	/**
+	 * Tích điểm từ một hoá đơn. Hạn dùng 12 tháng kể từ lúc tích.
+	 *
+	 * @param maChungTu mã đơn hoặc mã hoá đơn bàn. Ghi lại để lúc HOÀN TIỀN còn tra ngược được
+	 *     đúng dòng này mà đảo — xem {@link #hoanTien}. Trước bản này ACCRUE không ghi gì, nên
+	 *     không có cách nào biết một lần hoàn tiền ứng với lần tích nào.
+	 */
 	public static LoyaltyLedgerEntity tich(
-			String id, String memberId, int diem, BigDecimal soTien, OffsetDateTime now) {
-		return new LoyaltyLedgerEntity(id, memberId, diem, "ACCRUE", soTien, now.plusMonths(12), now);
+			String id, String memberId, int diem, BigDecimal soTien, String maChungTu,
+			OffsetDateTime now) {
+		LoyaltyLedgerEntity r =
+				new LoyaltyLedgerEntity(id, memberId, diem, "ACCRUE", soTien, now.plusMonths(12), now);
+		r.orderCode = maChungTu;
+		return r;
+	}
+
+	/**
+	 * Đảo một lần tích điểm vì hoá đơn đã được hoàn tiền.
+	 *
+	 * <p>Nhận thẳng số điểm và số tiền của dòng ACCRUE gốc chứ không tính lại từ số tiền: hệ số
+	 * tích phụ thuộc HẠNG lúc tích, mà hạng đổi theo thời gian. Tính lại lúc hoàn tiền sẽ ra một
+	 * con số khác với số đã cộng, và sổ lệch vĩnh viễn.
+	 *
+	 * <p>Không có {@code expiresAt}: dòng này không phải một lô điểm có hạn, nó là phép trừ.
+	 */
+	public static LoyaltyLedgerEntity hoanTien(
+			String id, String memberId, int diemDaTich, BigDecimal soTienDaTich, String maChungTu,
+			OffsetDateTime now) {
+		LoyaltyLedgerEntity r = new LoyaltyLedgerEntity(
+				id, memberId, -Math.abs(diemDaTich), "REFUND", soTienDaTich.abs().negate(), null, now);
+		r.orderCode = maChungTu;
+		return r;
 	}
 
 	/** Đổi điểm lấy ưu đãi. */
@@ -89,6 +117,10 @@ public class LoyaltyLedgerEntity {
 
 	public int getDelta() {
 		return delta;
+	}
+
+	public java.math.BigDecimal getAmountVnd() {
+		return amountVnd;
 	}
 
 	public String getReason() {

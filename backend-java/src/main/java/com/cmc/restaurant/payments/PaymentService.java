@@ -200,9 +200,34 @@ public class PaymentService {
 	@Transactional
 	public PaymentDtos.PaymentResponse refundPayment(
 			String orderCode, PaymentDtos.RefundPaymentRequest request, ActorContext actor) {
-		return applyManualAction(
+		PaymentDtos.PaymentResponse ketQua = applyManualAction(
 				orderCode, request == null ? null : request.note(), "Manual payment refund.", actor,
 				(payment, now) -> payment.refund(now));
+		daoDiemDaTich(orderCode);
+		return ketQua;
+	}
+
+	/**
+	 * Trả lại điểm và chi tiêu đã cộng cho hoá đơn vừa hoàn tiền.
+	 *
+	 * <p>Trước bản này việc hoàn tiền chỉ đổi trạng thái thanh toán rồi thôi — dòng ACCRUE nằm
+	 * nguyên trong sổ. Vì tác vụ xét hạng hằng tháng tính lại {@code spend_12m} TỪ SỔ, nó không
+	 * những không sửa mà còn xác nhận lại con số sai mỗi kỳ, và khách lên hạng bằng tiền chưa
+	 * từng trả.
+	 *
+	 * <p>Nuốt lỗi có chủ ý, đối xứng với chiều cộng ở {@link #accrueLoyalty}: tiền đã trả lại cho
+	 * khách rồi thì một dòng sổ không ghi được KHÔNG được phép làm hỏng lệnh hoàn tiền. Ghi nhật
+	 * ký và xử tay.
+	 */
+	private void daoDiemDaTich(String orderCode) {
+		try {
+			orderLookup.findByOrderCode(orderCode)
+					.map(OrderLookup.OrderSummary::customerPhoneNumber)
+					.ifPresent(phone -> loyaltyService.hoanTien(phone, orderCode, OffsetDateTime.now()));
+		} catch (RuntimeException e) {
+			org.slf4j.LoggerFactory.getLogger(PaymentService.class)
+					.warn("Loyalty reversal failed for {}; refund stands.", orderCode, e);
+		}
 	}
 
 	/**
@@ -214,7 +239,7 @@ public class PaymentService {
 		try {
 			orderLookup.findByOrderCode(orderCode)
 					.map(OrderLookup.OrderSummary::customerPhoneNumber)
-					.ifPresent(phone -> loyaltyService.accrue(phone, amount, OffsetDateTime.now()));
+					.ifPresent(phone -> loyaltyService.accrue(phone, amount, orderCode, OffsetDateTime.now()));
 		} catch (RuntimeException e) {
 			org.slf4j.LoggerFactory.getLogger(PaymentService.class)
 					.warn("Loyalty accrual failed for {}; payment stands.", orderCode, e);
