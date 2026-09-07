@@ -110,11 +110,18 @@ public class TableSessionService {
 		}
 	}
 
+	/** Bàn còn tiền chưa thu. Một câu hỏi, một đáp án — xem TableSessionResumeState.conNoTien(). */
+	private boolean conNoTien(String sessionId) {
+		return resumeStateQueryService.resolve(sessionId).conNoTien();
+	}
+
 	private void expireStaleSessions(String tableId, OffsetDateTime now) {
 		List<TableSessionEntity> openSessions =
 				sessionRepository.findByRestaurantTableIdAndStatus(tableId, TableSessionStatus.Open);
 		for (TableSessionEntity session : openSessions) {
-			if (session.expireIfPast(now)) {
+			// Bàn còn nợ tiền thì KHÔNG bị dọn — nó được gia hạn, và phiên cũ vẫn là phiên đang nợ.
+			// Nếu dọn, khách quét QR sẽ mở phiên mới với hoá đơn 0đ và món đã ăn mất dấu.
+			if (session.expireIfPast(now, conNoTien(session.getId()))) {
 				sessionRepository.save(session);
 			}
 		}
@@ -160,11 +167,15 @@ public class TableSessionService {
 
 		OffsetDateTime now = OffsetDateTime.now();
 		if (session.isExpired(now)) {
-			if (session.expireIfPast(now)) {
+			if (session.expireIfPast(now, conNoTien(session.getId()))) {
 				sessionRepository.save(session);
 			}
-			throw new ApiException(HttpStatus.GONE, "TABLE_SESSION_EXPIRED",
-					"Table session has expired. Please scan QR again.");
+			// HỎI LẠI, không suy từ giá trị trả về: bàn còn nợ vừa được gia hạn nên hết hạn nữa.
+			// Đây chính là chỗ khách bị đuổi đi bằng 410 trong khi họ đang muốn trả tiền.
+			if (session.isExpired(now)) {
+				throw new ApiException(HttpStatus.GONE, "TABLE_SESSION_EXPIRED",
+						"Table session has expired. Please scan QR again.");
+			}
 		}
 
 		RestaurantTableEntity table = tableRepository.findById(session.getRestaurantTableId()).orElse(null);

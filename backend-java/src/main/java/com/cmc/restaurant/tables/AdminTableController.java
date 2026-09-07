@@ -98,7 +98,8 @@ public class AdminTableController {
 						session.getExpiresAt(),
 						session.getClosedAt(),
 						session.isExpired(now),
-						activeOrders.getOrDefault(session.getId(), 0)))
+						activeOrders.getOrDefault(session.getId(), 0),
+						session.getOverdueSince()))
 				.toList();
 
 		return new AdminTableDtos.AdminTableSessionListResponse(items, items.size());

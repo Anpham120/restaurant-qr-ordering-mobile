@@ -18,7 +18,10 @@ export type Table = { tableCode: string; displayName: string; isActive: boolean 
 export type TableListResponse = { items: Table[]; total: number };
 export type AdminTable = Table & { qrToken: string | null; customerPath: string };
 export type AdminTableListResponse = { items: AdminTable[]; total: number };
-export type AdminTableSessionSummary = { sessionId: string; tableCode: string; tableDisplayName: string | null; status: string; openedAt: string; expiresAt: string; closedAt: string | null; isExpired: boolean; activeOrderCount: number };
+// `overdueSince`: mốc bàn lần đầu quá giờ mà VẪN CÒN tiền chưa thu. `null` là bình thường.
+// Phiên như vậy không hết hạn nữa mà được gia hạn, nên `expiresAt` của nó bị đẩy tới liên tục và
+// không nói được gì — đây mới là trường để quầy lọc ra bàn cần đi đòi tiền.
+export type AdminTableSessionSummary = { sessionId: string; tableCode: string; tableDisplayName: string | null; status: string; openedAt: string; expiresAt: string; closedAt: string | null; isExpired: boolean; activeOrderCount: number; overdueSince?: string | null };
 export type AdminTableSessionListResponse = { items: AdminTableSessionSummary[]; total: number };
 export type TableSession = { sessionId: string; orderType: OrderType; status: "Open" | "Closed" | "Expired"; tableCode: string | null; tableDisplayName: string | null; openedAt: string; expiresAt: string; closedAt: string | null; isExpired: boolean };
 export type TableSessionResumeState = "New" | "CartPending" | "OrderInProgress" | "ReadyForPayment" | "PaymentPending" | "Paid";

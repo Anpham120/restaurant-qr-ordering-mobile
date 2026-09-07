@@ -28,10 +28,15 @@ public final class AdminTableDtos {
 	public record UpdateTableRequest(String displayName, Boolean isActive) {
 	}
 
+	/**
+	 * @param overdueSince mốc bàn lần đầu quá giờ mà VẪN CÒN tiền chưa thu; {@code null} là bình
+	 *     thường. Phiên như vậy không hết hạn nữa mà được gia hạn, nên {@code expiresAt} của nó bị
+	 *     đẩy tới liên tục và không nói được gì. Đây là trường để quầy lọc ra bàn cần đi đòi.
+	 */
 	public record AdminTableSessionSummary(
 			String sessionId, String tableCode, String tableDisplayName, String status,
 			OffsetDateTime openedAt, OffsetDateTime expiresAt, OffsetDateTime closedAt,
-			boolean isExpired, int activeOrderCount) {
+			boolean isExpired, int activeOrderCount, OffsetDateTime overdueSince) {
 	}
 
 	public record AdminTableSessionListResponse(List<AdminTableSessionSummary> items, int total) {

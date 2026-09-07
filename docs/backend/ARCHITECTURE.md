@@ -10,7 +10,7 @@
 
 ## Module và bề mặt API — SINH TỪ MÃ
 
-**12 module**, **88 endpoint**, **29 migration** cơ sở dữ liệu.
+**12 module**, **88 endpoint**, **30 migration** cơ sở dữ liệu.
 
 > Bảng này chỉ nói **cái gì tồn tại**. Ý nghĩa nghiệp vụ của từng module là phần người
 > viết ở các mục dưới.
