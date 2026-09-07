@@ -186,6 +186,12 @@ public class TableSessionEntity {
 		return overdueSince;
 	}
 
+	/** Mốc quá giờ mà còn nợ tiền — suy lúc đọc, xem
+	 * {@link com.cmc.restaurant.tables.domain.TableSession#mocQuaGio}. */
+	public OffsetDateTime mocQuaGio(OffsetDateTime now, boolean conNoTien) {
+		return asDomain().mocQuaGio(now, conNoTien);
+	}
+
 	public String getCloseReason() {
 		return closeReason;
 	}

@@ -89,6 +89,44 @@ class PhienQuaGioConNoTest {
 		assertThat(phien.expiresAt()).isEqualTo(HAN);
 	}
 
+	/**
+	 * Bàn quá giờ mà KHÔNG AI CHẠM VÀO vẫn phải hiện ra ở danh sách của quầy.
+	 *
+	 * <p>`expireIfPast` chỉ chạy khi có ai chạm vào phiên — mở phiên mới cho bàn đó, khách mở lại
+	 * app, bấm gọi nhân viên. Bàn không ai chạm thì `overdue_since` mãi mãi null, và đó chính là
+	 * bàn cần chú ý nhất: bàn khách đã bỏ đi.
+	 *
+	 * <p>Đo được trên cơ sở dữ liệu thật khi chạy hệ thống: 3 phiên đang mở và đã quá hạn, 0 phiên
+	 * có mốc. Danh sách hiện rỗng trong khi có ba bàn cần đòi tiền.
+	 */
+	@Test
+	@DisplayName("quá giờ mà chưa ai chạm vào vẫn có mốc — suy lúc đọc")
+	void quaGioMaChuaAiChamVanCoMoc() {
+		TableSession chuaAiCham = phienQuaGio();
+
+		assertThat(chuaAiCham.overdueSince()).isNull();
+		assertThat(chuaAiCham.mocQuaGio(QUA_HAN, true)).isEqualTo(HAN);
+	}
+
+	@Test
+	@DisplayName("không nợ tiền thì không phải việc của quầy")
+	void khongNoThiKhongPhaiViecCuaQuay() {
+		// Bàn quá giờ mà đã trả đủ chỉ là bàn cần dọn, không phải bàn cần đòi tiền. Đưa nó vào
+		// danh sách công việc là làm loãng đúng thứ danh sách đó sinh ra để nêu bật.
+		assertThat(phienQuaGio().mocQuaGio(QUA_HAN, false)).isNull();
+	}
+
+	@Test
+	@DisplayName("mốc đã ghi được ưu tiên hơn giá trị suy ra")
+	void mocDaGhiDuocUuTien() {
+		// Sau vài lần gia hạn, `expiresAt` bị đẩy tới tương lai và không còn nói được bàn quá giờ
+		// từ bao giờ. Cột đã ghi giữ hạn GỐC, nên nó phải thắng.
+		TableSession phien = phienQuaGio();
+		phien.expireIfPast(QUA_HAN, true);
+
+		assertThat(phien.mocQuaGio(QUA_HAN.plusHours(3), true)).isEqualTo(HAN);
+	}
+
 	@Test
 	@DisplayName("phiên đã đóng thì không gia hạn ngược trở lại")
 	void phienDaDongThiKhongSongLai() {

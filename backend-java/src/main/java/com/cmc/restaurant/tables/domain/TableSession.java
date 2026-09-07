@@ -122,6 +122,31 @@ public class TableSession {
 		return overdueSince;
 	}
 
+	/**
+	 * Mốc bàn quá giờ mà vẫn còn tiền chưa thu, hoặc {@code null} khi không phải.
+	 *
+	 * <p><b>Vì sao SUY LÚC ĐỌC chứ không chỉ đọc cột đã ghi.</b> {@code overdueSince} được đặt
+	 * trong {@link #expireIfPast}, mà hàm đó chỉ chạy khi có ai CHẠM vào phiên — mở phiên mới cho
+	 * bàn đó, khách mở lại app, bấm gọi nhân viên. Bàn không ai chạm thì không bao giờ được đánh
+	 * dấu, và đó chính là bàn cần chú ý nhất: bàn khách đã bỏ đi.
+	 *
+	 * <p>Đo được trên cơ sở dữ liệu thật: 3 phiên đang mở và đã quá hạn, 0 phiên có
+	 * {@code overdue_since}. Danh sách "bàn quá giờ" khi đó hiện RỖNG trong khi có ba bàn cần đòi
+	 * tiền — một cái đèn báo chỉ sáng khi có người đi ngang qua nó.
+	 *
+	 * <p>Cột đã ghi vẫn được ưu tiên khi có, vì nó giữ hạn GỐC — thứ mà {@code expiresAt} không
+	 * còn nói được sau khi bị gia hạn nhiều lần.
+	 */
+	public OffsetDateTime mocQuaGio(OffsetDateTime now, boolean conNoTien) {
+		if (overdueSince != null) {
+			return overdueSince;
+		}
+		if (status == TableSessionStatus.Open && !expiresAt.isAfter(now) && conNoTien) {
+			return expiresAt;
+		}
+		return null;
+	}
+
 	/** Staff closing the table. Closing an already-closed session is a no-op rather than an error:
 	 * two staff pressing the same button must not produce a failure for the second one. */
 	public boolean close(OffsetDateTime now) {
