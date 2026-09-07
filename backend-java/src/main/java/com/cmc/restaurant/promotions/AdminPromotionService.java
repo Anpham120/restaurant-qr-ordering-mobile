@@ -121,6 +121,9 @@ public class AdminPromotionService {
 				request.endsAt(),
 				Boolean.TRUE.equals(request.isActive()),
 				now);
+		// Đặt riêng, không nhét vào applyDefinition: chữ ký đó đã 11 tham số và nó là bản sao của
+		// bên .NET. Thêm tham số thứ 12 vào một chữ ký đang được đối chiếu là mở đường cho lệch.
+		promotion.setUsageLimit(request.usageLimit());
 	}
 
 	/** Chuỗi rỗng và chuỗi toàn khoảng trắng đều thành null — mirror {@code NormalizeOptional}. */
@@ -138,6 +141,6 @@ public class AdminPromotionService {
 				promotion.getType().name(), promotion.getDiscountValue(), promotion.getMinOrderAmount(),
 				promotion.getMaxDiscountAmount(), promotion.isFlashSale(), promotion.getStartsAt(),
 				promotion.getEndsAt(), promotion.isActive(), promotion.getCreatedAt(),
-				promotion.getUpdatedAt());
+				promotion.getUpdatedAt(), promotion.getUsageLimit(), promotion.getUsedCount());
 	}
 }

@@ -305,10 +305,16 @@ Khách nhập mã ở bước chọn cách trả tiền. Mã được lưu vào 
 > Lưu ý cài đặt: tăng `used_count` phải nằm **trong cùng giao dịch** với việc ghi hoá đơn. Tách ra
 > là mở đúng cửa mà hai người bấm cùng lúc đi qua được.
 
-> **ĐỀ XUẤT 3 — `flashSale` hiện không có nghĩa nghiệp vụ nào.**
+> **ĐỀ XUẤT 3 — `flashSale` là nhãn hiển thị, không phải luật giá.**
 >
 > Cờ này được lưu, được trả về API, được hiện trên giao diện — nhưng `Promotion.applyTo` **không
-> bao giờ đọc nó**. Nó chỉ là một cái nhãn.
+> bao giờ đọc nó**. Nó không đổi một đồng nào của phép tính giảm giá.
+>
+> *(Sửa lại cách nói của bản trước: "không có nghĩa nghiệp vụ nào" là quá tay. Nó CÓ một nghĩa và
+> nghĩa đó đang chạy đúng — `findAllByOrderByFlashSaleDescCodeAsc` đẩy flash sale lên đầu danh
+> sách, dùng chung cho cả màn admin lẫn màn khách. Đó là một khái niệm trưng bày hợp lệ. Vấn đề
+> thật hẹp hơn: tên gọi "flash sale" khiến người ta tưởng nó đặt ra một quy tắc về giá hoặc thời
+> gian, mà nó không.)*
 >
 > Một trường trông như luật mà không phải luật là thứ nguy hiểm: người quản lý bật "flash sale"
 > tưởng mình vừa đặt một quy tắc. Hai đường đi, chọn một:

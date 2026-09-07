@@ -2,6 +2,7 @@ package com.cmc.restaurant.loyalty;
 
 import com.cmc.restaurant.auth.UserEntity;
 import com.cmc.restaurant.auth.UserRepository;
+import com.cmc.restaurant.auth.UserRole;
 import com.cmc.restaurant.loyalty.domain.LoyaltyMember;
 import com.cmc.restaurant.loyalty.domain.MemberTier;
 import com.cmc.restaurant.loyalty.domain.PhoneNumber;
@@ -47,6 +48,24 @@ public class LoyaltyService {
 	 * tên tài khoản là xoá công của họ mà không ai yêu cầu.
 	 */
 	@Transactional
+	/**
+	 * Số này có thuộc một tài khoản nhân sự không.
+	 *
+	 * <p>Người đứng quầy gõ số điện thoại hộ khách, và không có gì ngăn họ gõ số của chính mình.
+	 * Mỗi hoá đơn của khách lạ sẽ chảy vào hồ sơ điểm của nhân viên đó, và vì hạng xét theo chi
+	 * tiêu 12 tháng nên nó còn tự lên hạng. Đây không phải chuyện giả định — đó là con đường dễ
+	 * nhất và không để lại dấu vết nào trong hệ thống.
+	 *
+	 * <p>Chặn ở tầng tích điểm chứ không ở màn hình: màn hình nào cũng có thể quên, còn đường ghi
+	 * điểm thì chỉ có một.
+	 */
+	private boolean laSoCuaNhanVien(String phone) {
+		return users.findByPhoneNumber(phone)
+				.map(UserEntity::getRole)
+				.filter(vaiTro -> !UserRole.CUSTOMER.equals(vaiTro))
+				.isPresent();
+	}
+
 	public void datTenNeuThieu(String rawPhone) {
 		String phone = PhoneNumber.normalize(rawPhone);
 		if (phone == null) {
@@ -78,6 +97,9 @@ public class LoyaltyService {
 			String phoneNumber, BigDecimal totalAmount, String maChungTu, OffsetDateTime now) {
 		String phone = PhoneNumber.normalize(phoneNumber);
 		if (phone == null || LoyaltyMember.pointsFor(totalAmount) <= 0) {
+			return Optional.empty();
+		}
+		if (laSoCuaNhanVien(phone)) {
 			return Optional.empty();
 		}
 
