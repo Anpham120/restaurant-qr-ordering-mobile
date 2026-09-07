@@ -128,8 +128,18 @@ export function createApiClient(options: ApiClientOptions = {}) {
             body: JSON.stringify(payload),
           },
         ),
-      closeSession: (sessionId: string) =>
-        request<TableSession>(`/table-sessions/${encodeURIComponent(sessionId)}/close`, { method: "POST" }),
+      /**
+       * Đóng phiên bàn.
+       *
+       * Máy chủ TỪ CHỐI đóng bàn còn tiền chưa thu (`TABLE_SESSION_HAS_UNPAID_ITEMS`), trừ khi
+       * gửi `force` kèm `reason` — và lý do đó được ghi lại vào `table_sessions.close_reason`.
+       * Không gửi gì là hành vi cũ, và nó vẫn đúng cho bàn đã thu đủ tiền.
+       */
+      closeSession: (sessionId: string, payload?: { force: boolean; reason: string }) =>
+        request<TableSession>(`/table-sessions/${encodeURIComponent(sessionId)}/close`, {
+          method: "POST",
+          ...(payload ? { body: JSON.stringify(payload) } : {}),
+        }),
     },
     tableInvoices: {
       list: (status?: string) => {

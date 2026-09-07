@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@cmc/auth";
 import { AdminInvoicesPanel } from "../AdminInvoicesPage";
 import { StaffPaymentsPage } from "../StaffPaymentsPage";
+import { CounterOverduePanel } from "./CounterOverduePanel";
 import { CounterShiftPanel } from "./CounterShiftPanel";
 import { CounterVoucherPanel } from "./CounterVoucherPanel";
 import { OpsHubShell } from "../../components/operations/OpsHubShell";
@@ -21,11 +22,13 @@ const COUNTER_STAFF_TABS = [
   { id: "vouchers", label: "Phiếu tặng món" },
   { id: "assistance", label: "Gọi nhân viên" },
   { id: "payments", label: "Chờ thanh toán" },
+  { id: "overdue", label: "Bàn quá giờ" },
   { id: "invoices", label: "Lịch sử hóa đơn" },
 ];
 
 const COUNTER_SUPERVISOR_TABS = [
   { id: "shift", label: "Giám sát ca" },
+  { id: "overdue", label: "Bàn quá giờ" },
   { id: "invoices", label: "Lịch sử hóa đơn" },
 ];
 
@@ -115,6 +118,7 @@ export function CounterHubPage() {
         />
       ) : null}
       {activeTab === "payments" ? <StaffPaymentsPage embedded /> : null}
+      {activeTab === "overdue" ? <CounterOverduePanel /> : null}
       {activeTab === "invoices" ? <AdminInvoicesPanel embedded /> : null}
     </OpsHubShell>
   );
