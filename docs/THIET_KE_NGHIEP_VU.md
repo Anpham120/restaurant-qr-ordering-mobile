@@ -685,7 +685,7 @@ Còn đúng một chỗ chưa đạt:
 
 | Vấn đề | Hệ quả |
 |---|---|
-| **a.** Mất dữ liệu đang gõ khi đổi tab | `CounterHubPage` dựng tab theo điều kiện nên đổi tab là **huỷ component**. Đang gõ số tiền khách đưa, có bàn gọi, bấm sang tab điều phối rồi quay lại — **số đã gõ biến mất** |
+| ~~**a.** Mất dữ liệu đang gõ khi đổi tab~~ | **ĐÃ SỬA.** `CounterHubPage` nay dựng cả sáu tab và ẩn cái không hoạt động bằng `hidden`. Soát lại thì lỗi rộng hơn mô tả ban đầu: **năm** trong sáu panel giữ chữ đang gõ, không phải một |
 
 Sửa nhỏ hơn vẻ ngoài: dựng cả tab rồi ẩn bằng `hidden`, hoặc nâng trạng thái đang gõ lên
 `CounterHubPage`. Không đụng nghiệp vụ.

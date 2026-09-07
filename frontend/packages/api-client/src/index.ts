@@ -180,6 +180,21 @@ export function createApiClient(options: ApiClientOptions = {}) {
           method: "POST",
           body: JSON.stringify(payload),
         }),
+      /**
+       * Hoàn tiền một hoá đơn ĐÃ THU.
+       *
+       * Khác `cancelPayment`: huỷ là bỏ một yêu cầu thanh toán chưa xong, hoàn là trả lại tiền đã
+       * nhận. Máy chủ chỉ nhận hoá đơn ở trạng thái Confirmed/Paid, và nó đảo cả điểm thưởng lẫn
+       * quỹ tiền mặt của ca quầy.
+       *
+       * Không dùng `/orders/{code}/payment/refund`: đường đó tra thanh toán bằng orderId, mà
+       * thanh toán của hoá đơn bàn không có orderId.
+       */
+      refundPayment: (sessionId: string, payload: { note?: string | null } = {}) =>
+        request<TableInvoice>(`/table-sessions/${encodeURIComponent(sessionId)}/invoice/payment/refund`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }),
     },
     orders: {
       create: (payload: CreateOrderRequest, idempotencyKey: string) =>

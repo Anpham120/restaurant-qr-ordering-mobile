@@ -1,15 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TableInvoice } from "@cmc/shared-types";
+import { ApiError } from "@cmc/api-client";
 import { listTableInvoices } from "../services/orderService";
+import { api } from "../services/apiClient";
+import { useOpsConfirm } from "../components/operations/OpsConfirmProvider";
 import { Printer, ReceiptText, X } from "lucide-react";
 import "../components/operations/operations.css";
 
-type FilterTab = "all" | "pending" | "confirmed" | "cancelled";
+type FilterTab = "all" | "pending" | "confirmed" | "cancelled" | "refunded";
 const FILTER_LABELS: Record<FilterTab, string> = {
   all: "Tất cả",
   pending: "Chờ thanh toán",
   confirmed: "Đã thanh toán",
   cancelled: "Đã hủy yêu cầu",
+  // Không có tab này thì hoá đơn đã hoàn chỉ còn thấy ở "Tất cả" — tức là muốn xem quán đã hoàn
+  // bao nhiêu tiền thì phải lật từng dòng. Tiền trả ra là thứ cần tra cứu được.
+  refunded: "Đã hoàn tiền",
 };
 const formatVnd = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
 
@@ -17,6 +23,7 @@ function matchesFilter(invoice: TableInvoice, filter: FilterTab) {
   if (filter === "pending") return invoice.status === "Pending";
   if (filter === "confirmed") return invoice.status === "Confirmed" || invoice.status === "Paid";
   if (filter === "cancelled") return invoice.status === "Cancelled";
+  if (filter === "refunded") return invoice.status === "Refunded";
   return true;
 }
 
@@ -27,9 +34,36 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
   const [filter, setFilter] = useState<FilterTab>("all");
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<TableInvoice | null>(null);
+  const [dangHoan, setDangHoan] = useState(false);
+  const confirm = useOpsConfirm();
 
   async function reload() {
     setInvoices(await listTableInvoices());
+  }
+
+  async function hoanTien(invoice: TableInvoice) {
+    // Bắt gõ lại mã hoá đơn: hoàn tiền không lùi được, và một hộp thoại chỉ có nút "Đồng ý" thì
+    // thao tác nhầm chỉ cách thao tác đúng một cú bấm lệch tay. Gõ lại buộc người dùng ĐỌC xem
+    // mình đang hoàn hoá đơn nào.
+    if (!(await confirm({
+      title: `Hoàn tiền hóa đơn ${invoice.invoiceCode}?`,
+      message: `Trả lại ${formatVnd(invoice.totalAmount)} cho khách. Thao tác này đảo cả điểm `
+        + "thưởng đã cộng và quỹ tiền mặt của ca quầy, và không lùi lại được.",
+      confirmLabel: "Hoàn tiền",
+      danger: true,
+      requireText: invoice.invoiceCode ?? "",
+    }))) return;
+
+    setDangHoan(true);
+    try {
+      await api.tableInvoices.refundPayment(invoice.tableSessionId, { note: "Quầy hoàn tiền." });
+      setDetail(null);
+      await reload();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Không hoàn được tiền hóa đơn.");
+    } finally {
+      setDangHoan(false);
+    }
   }
 
   useEffect(() => {
@@ -120,6 +154,24 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
                 {detail.customerPhoneNumber ? <div>Tích điểm: {detail.customerPhoneNumber}</div> : null}
               </div>
               <button className="ops-btn ops-btn--primary" onClick={() => window.print()} style={{ width: "100%", marginTop: 12 }} type="button"><Printer aria-hidden="true" size={15} /> In hóa đơn</button>
+              {/*
+                CHỈ hiện với hoá đơn đã thu. Hoá đơn đang chờ thì HUỶ, không phải hoàn — hai việc
+                khác nhau, và bày nút hoàn ở đó là mời người ta bấm nhầm.
+
+                Hoàn tiền đảo cả ba thứ cùng lúc: trạng thái tiền, điểm thưởng đã cộng, và quỹ
+                tiền mặt của ca quầy. Không lùi được, nên hỏi lại và bắt gõ lại mã hoá đơn.
+              */}
+              {detail.status === "Confirmed" || detail.status === "Paid" ? (
+                <button
+                  className="ops-btn ops-btn--danger"
+                  style={{ width: "100%", marginTop: 8 }}
+                  type="button"
+                  disabled={dangHoan}
+                  onClick={() => void hoanTien(detail)}
+                >
+                  {dangHoan ? "Đang hoàn…" : "Hoàn tiền hóa đơn"}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
