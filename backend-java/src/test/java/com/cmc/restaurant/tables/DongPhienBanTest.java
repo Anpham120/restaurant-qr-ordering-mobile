@@ -34,8 +34,11 @@ class DongPhienBanTest {
 	void setup() {
 		RestaurantTableRepository tables = mock(RestaurantTableRepository.class);
 		when(tables.findById(any())).thenReturn(Optional.empty());
+		// JwtProperties là record (final): dựng thật thay vì mock, vừa chắc chắn vừa ngắn hơn.
+		// closeSession không đụng tới nó, nên giá trị chỉ cần hợp lệ về kiểu.
 		service = new TableSessionService(tables, sessions, resumeState,
-				mock(TableSessionCapability.class), mock(JwtProperties.class));
+				mock(TableSessionCapability.class),
+				new JwtProperties("test", "test", "test-signing-key", 60));
 
 		OffsetDateTime now = OffsetDateTime.now();
 		phien = new TableSessionEntity("ts_1", "tbl_1", "B01", "qr", now, now.plusHours(4));
