@@ -64,6 +64,22 @@ public class TableInvoicePaymentController {
 		return paymentService.cancel(sessionId, body);
 	}
 
+	/**
+	 * Hoàn tiền một hoá đơn bàn đã thu.
+	 *
+	 * <p>Tách khỏi {@code /api/orders/&#123;code&#125;/payment/refund}: đường đó tra thanh toán
+	 * bằng {@code orderId}, mà thanh toán của hoá đơn bàn không có {@code orderId}. Hai mô hình
+	 * tiền khác nhau, nên hai đường khác nhau.
+	 */
+	@PostMapping("/api/table-sessions/{sessionId}/invoice/payment/refund")
+	@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
+	public TableInvoiceDtos.InvoiceResponse refund(
+			@PathVariable String sessionId,
+			@RequestBody(required = false) TableInvoiceDtos.PaymentActionRequest body,
+			Authentication authentication) {
+		return paymentService.refund(sessionId, body, ActorContext.fromAuthentication(authentication));
+	}
+
 	@GetMapping("/api/table-invoices")
 	@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
 	public List<TableInvoiceDtos.InvoiceResponse> list(@RequestParam(required = false) String status) {

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@cmc/auth";
 import { AdminInvoicesPanel } from "../AdminInvoicesPage";
 import { StaffPaymentsPage } from "../StaffPaymentsPage";
+import { CounterOverduePanel } from "./CounterOverduePanel";
 import { CounterShiftPanel } from "./CounterShiftPanel";
 import { CounterVoucherPanel } from "./CounterVoucherPanel";
 import { OpsHubShell } from "../../components/operations/OpsHubShell";
@@ -21,11 +22,13 @@ const COUNTER_STAFF_TABS = [
   { id: "vouchers", label: "Phiếu tặng món" },
   { id: "assistance", label: "Gọi nhân viên" },
   { id: "payments", label: "Chờ thanh toán" },
+  { id: "overdue", label: "Bàn quá giờ" },
   { id: "invoices", label: "Lịch sử hóa đơn" },
 ];
 
 const COUNTER_SUPERVISOR_TABS = [
   { id: "shift", label: "Giám sát ca" },
+  { id: "overdue", label: "Bàn quá giờ" },
   { id: "invoices", label: "Lịch sử hóa đơn" },
 ];
 
@@ -35,6 +38,7 @@ export function CounterHubPage() {
   const counterTabs = isSupervisor ? COUNTER_SUPERVISOR_TABS : COUNTER_STAFF_TABS;
   const [searchParams, setSearchParams] = useSearchParams();
   const { activeTab } = useOpsHubTab(counterTabs);
+  const coTab = (id: string) => counterTabs.some((tab) => tab.id === id);
   const connectionStatus = useOpsConnectionStatus();
   const { recentAssistance, daDieuPhoiYeuCau } = useOpsAssistance();
 
@@ -105,17 +109,46 @@ export function CounterHubPage() {
         </section>
       ) : null}
 
-      {activeTab === "shift" ? <CounterShiftPanel embedded supervisorMode={isSupervisor} /> : null}
-      {activeTab === "vouchers" ? <CounterVoucherPanel /> : null}
-      {activeTab === "assistance" ? (
-        <OpsAssistancePanel
-          emptyLabel="Chưa có bàn nào gọi nhân viên trong phiên này."
-          title="Yêu cầu gọi nhân viên"
-          items={recentAssistance}
-        />
+      {/*
+        DỰNG CẢ SÁU TAB, ẩn cái không hoạt động — KHÔNG dựng theo điều kiện.
+
+        Dựng theo điều kiện thì đổi tab là HUỶ component, và mọi thứ đang gõ dở biến mất. Tình
+        huống thật: đang gõ số tiền khách đưa, có bàn gọi nhân viên, bấm sang tab điều phối rồi
+        quay lại — số đã gõ mất sạch, và người ở quầy phải hỏi lại khách đưa bao nhiêu.
+
+        Không phải một chỗ: NĂM trong sáu panel giữ chữ người dùng đang gõ (ca, phiếu tặng, chờ
+        thanh toán, bàn quá giờ, hoá đơn). Sửa riêng tab ca sẽ để lại đúng lỗi đó ở bốn chỗ còn
+        lại, và người sau thêm tab thứ bảy lại rơi vào nó lần nữa.
+
+        Giá phải trả: mỗi panel tải dữ liệu một lần lúc mở màn, và panel bàn quá giờ vẫn chạy nhịp
+        60 giây khi đang ẩn. Một request mỗi phút cho một màn hình một người dùng — rẻ hơn nhiều so
+        với việc bắt thu ngân gõ lại số tiền.
+
+        Bọc bằng `div` trần chứ không đặt `hidden` lên chính panel: panel có class riêng, mà một
+        luật CSS đặt `display` sẽ ĐÈ được thuộc tính `hidden` và làm nó vô hiệu trong im lặng.
+      */}
+      {/*
+        `coTab` chứ không phải dựng tất: quản lý chỉ có ba tab, và mount cả sáu sẽ khiến trình
+        duyệt của họ tải dữ liệu của những panel họ không được xem.
+      */}
+      {coTab("shift") ? (
+        <div hidden={activeTab !== "shift"}>
+          <CounterShiftPanel embedded supervisorMode={isSupervisor} />
+        </div>
       ) : null}
-      {activeTab === "payments" ? <StaffPaymentsPage embedded /> : null}
-      {activeTab === "invoices" ? <AdminInvoicesPanel embedded /> : null}
+      {coTab("vouchers") ? <div hidden={activeTab !== "vouchers"}><CounterVoucherPanel /></div> : null}
+      {coTab("assistance") ? (
+        <div hidden={activeTab !== "assistance"}>
+          <OpsAssistancePanel
+            emptyLabel="Chưa có bàn nào gọi nhân viên trong phiên này."
+            title="Yêu cầu gọi nhân viên"
+            items={recentAssistance}
+          />
+        </div>
+      ) : null}
+      {coTab("payments") ? <div hidden={activeTab !== "payments"}><StaffPaymentsPage embedded /></div> : null}
+      {coTab("overdue") ? <div hidden={activeTab !== "overdue"}><CounterOverduePanel /></div> : null}
+      {coTab("invoices") ? <div hidden={activeTab !== "invoices"}><AdminInvoicesPanel embedded /></div> : null}
     </OpsHubShell>
   );
 }

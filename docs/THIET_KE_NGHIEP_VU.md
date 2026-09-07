@@ -305,10 +305,16 @@ Khách nhập mã ở bước chọn cách trả tiền. Mã được lưu vào 
 > Lưu ý cài đặt: tăng `used_count` phải nằm **trong cùng giao dịch** với việc ghi hoá đơn. Tách ra
 > là mở đúng cửa mà hai người bấm cùng lúc đi qua được.
 
-> **ĐỀ XUẤT 3 — `flashSale` hiện không có nghĩa nghiệp vụ nào.**
+> **ĐỀ XUẤT 3 — `flashSale` là nhãn hiển thị, không phải luật giá.**
 >
 > Cờ này được lưu, được trả về API, được hiện trên giao diện — nhưng `Promotion.applyTo` **không
-> bao giờ đọc nó**. Nó chỉ là một cái nhãn.
+> bao giờ đọc nó**. Nó không đổi một đồng nào của phép tính giảm giá.
+>
+> *(Sửa lại cách nói của bản trước: "không có nghĩa nghiệp vụ nào" là quá tay. Nó CÓ một nghĩa và
+> nghĩa đó đang chạy đúng — `findAllByOrderByFlashSaleDescCodeAsc` đẩy flash sale lên đầu danh
+> sách, dùng chung cho cả màn admin lẫn màn khách. Đó là một khái niệm trưng bày hợp lệ. Vấn đề
+> thật hẹp hơn: tên gọi "flash sale" khiến người ta tưởng nó đặt ra một quy tắc về giá hoặc thời
+> gian, mà nó không.)*
 >
 > Một trường trông như luật mà không phải luật là thứ nguy hiểm: người quản lý bật "flash sale"
 > tưởng mình vừa đặt một quy tắc. Hai đường đi, chọn một:
@@ -679,7 +685,7 @@ Còn đúng một chỗ chưa đạt:
 
 | Vấn đề | Hệ quả |
 |---|---|
-| **a.** Mất dữ liệu đang gõ khi đổi tab | `CounterHubPage` dựng tab theo điều kiện nên đổi tab là **huỷ component**. Đang gõ số tiền khách đưa, có bàn gọi, bấm sang tab điều phối rồi quay lại — **số đã gõ biến mất** |
+| ~~**a.** Mất dữ liệu đang gõ khi đổi tab~~ | **ĐÃ SỬA.** `CounterHubPage` nay dựng cả sáu tab và ẩn cái không hoạt động bằng `hidden`. Soát lại thì lỗi rộng hơn mô tả ban đầu: **năm** trong sáu panel giữ chữ đang gõ, không phải một |
 
 Sửa nhỏ hơn vẻ ngoài: dựng cả tab rồi ẩn bằng `hidden`, hoặc nâng trạng thái đang gõ lên
 `CounterHubPage`. Không đụng nghiệp vụ.
@@ -706,8 +712,8 @@ cũng hỏi lại.
 
 | Vấn đề | Hệ quả |
 |---|---|
-| Cảnh báo nói **hệ quả** nhưng chưa nói **số lượng** | Thiếu vế "và **3 phần đang trong hàng đợi bếp**" — đó mới là thứ quyết định có nên tắt lúc này |
-| **Sửa giá** không cảnh báo gì | Thay đổi lan rộng nhất mà quản lý làm được, hiện lặng lẽ hơn cả tắt một món |
+| ~~Cảnh báo nói hệ quả nhưng chưa nói số lượng~~ | **ĐÃ SỬA.** Hộp thoại tắt món nay nêu số phần đang trong hàng đợi bếp, qua endpoint `GET /api/admin/menu-items/pending-quantities`. Soát lại còn thấy một chỗ tệ hơn: tắt MỘT món trước đây không hỏi gì cả, trong khi tắt hàng loạt thì có |
+| ~~**Sửa giá** không cảnh báo gì~~ | **ĐÃ SỬA.** Hỏi lại kèm `giá cũ → giá mới` và nói rõ giá mới áp cho cả bàn đang ngồi chọn món. Chỉ hỏi khi giá THẬT SỰ đổi — hỏi ở mọi lần lưu sẽ thành một cú bấm phản xạ |
 | Số liệu không có mốc so | Không biết 12,4 triệu là tốt hay tệ |
 
 ## 21. Luật giao diện dùng chung

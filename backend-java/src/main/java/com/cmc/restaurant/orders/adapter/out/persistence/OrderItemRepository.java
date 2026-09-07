@@ -63,6 +63,27 @@ public interface OrderItemRepository extends JpaRepository<OrderItemEntity, Stri
 			""", nativeQuery = true)
 	List<DongHangDoi> hangDoiTheoMon();
 
+	/** Projection cho {@link #soPhanDangChoTheoMon()}. */
+	interface SoPhanCho {
+		String getMenuItemId();
+
+		int getSoPhan();
+	}
+
+	/**
+	 * Số PHẦN đang chờ bếp, theo từng món.
+	 *
+	 * <p>Đếm phần chứ không đếm dòng: một dòng "3× Phở bò" là ba bát phải nấu. Quản lý tắt món cần
+	 * biết mình đang bỏ dở bao nhiêu bát, không phải bao nhiêu dòng đơn.
+	 */
+	@Query(value = """
+			select oi.menu_item_id as menuItemId, coalesce(sum(oi.quantity), 0) as soPhan
+			from order_items oi
+			where oi.status in ('Pending', 'Preparing')
+			group by oi.menu_item_id
+			""", nativeQuery = true)
+	List<SoPhanCho> soPhanDangChoTheoMon();
+
 	/**
 	 * Thời gian lên món do bếp khai, hoặc rỗng khi chưa khai / món không tồn tại (#10).
 	 *

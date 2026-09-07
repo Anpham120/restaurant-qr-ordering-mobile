@@ -90,4 +90,22 @@ public class OrderLookupAdapter implements OrderLookup {
 		}
 		return counts;
 	}
+
+	@Override
+	public Map<String, Integer> soPhanDangChoTheoMon() {
+		Map<String, Integer> ra = new HashMap<>();
+		for (OrderItemRepository.SoPhanCho d : orderItemRepository.soPhanDangChoTheoMon()) {
+			ra.put(d.getMenuItemId(), d.getSoPhan());
+		}
+		return ra;
+	}
+
+	@Override
+	public Map<String, java.math.BigDecimal> unpaidAmountByTableSession() {
+		Map<String, java.math.BigDecimal> tien = new HashMap<>();
+		for (OrderRepository.TableSessionOrderCount row : orderRepository.countActiveByTableSession()) {
+			tien.put(row.getTableSessionId(), row.getUnpaidAmount());
+		}
+		return tien;
+	}
 }

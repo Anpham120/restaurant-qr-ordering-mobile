@@ -103,6 +103,42 @@ public class CounterService {
 				"Table invoice " + invoiceCode, userId, now, tableSessionId, invoiceCode));
 	}
 
+	/**
+	 * Trả tiền mặt ra khỏi két vì một hoá đơn bị hoàn.
+	 *
+	 * <p>Bắt buộc phải có, không phải tuỳ chọn: {@link #recordTableInvoiceCash} đã CỘNG số tiền đó
+	 * vào ca lúc thu. Hoàn tiền mà không trừ lại thì lúc chốt ca hệ thống vẫn chờ số tiền không
+	 * còn trong két, và thu ngân thấy một khoản thiếu mình không giải thích được — đúng loại lệch
+	 * quỹ mà việc đối chiếu cuối ca sinh ra để phát hiện, nhưng lần này hệ thống là bên sai.
+	 *
+	 * <p>Dùng {@code recordAdjustment} chứ không phải một số âm của {@code recordCashPayment}: điều
+	 * chỉnh BẮT BUỘC có mã lý do, nên khoản trừ này luôn tra lại được nó từ đâu ra.
+	 *
+	 * <p>Không ném khi chưa mở ca — cùng lý do với chiều thu: tiền đã trả lại cho khách rồi, chặn
+	 * việc ghi sổ chỉ vì quầy quên mở ca là biến một sai sót hành chính thành lỗi chặn người dùng.
+	 */
+	@Transactional
+	public void hoanTienMatChoHoaDon(
+			BigDecimal amount, String tableSessionId, String invoiceCode, String userId) {
+		Optional<CounterShiftEntity> open = shifts.findFirstByStatusOrderByOpenedAtDesc(CounterShiftStatus.Open);
+		if (open.isEmpty() || amount == null || amount.signum() <= 0) {
+			return;
+		}
+		CounterShiftEntity entity = open.get();
+		OffsetDateTime now = OffsetDateTime.now();
+
+		CounterShift shift = entity.toDomain();
+		shift.recordAdjustment("REFUND", amount.negate(), now);
+		entity.applyFrom(shift);
+		shifts.save(entity);
+
+		// Kiểu "Adjustment", KHÔNG phải "CashPayment": constructor kia đặt cứng CashPayment, và ghi
+		// một lần trả tiền ra là một lần thu tiền vào sẽ làm sổ quỹ nói ngược hẳn sự thật.
+		transactions.save(new CounterShiftTransactionEntity(
+				"cst_" + UUID.randomUUID().toString().replace("-", ""), entity.getId(), "Adjustment",
+				amount.negate(), "REFUND", "Hoàn tiền hoá đơn " + invoiceCode, userId, now));
+	}
+
 	private CounterShiftEntity requireShift(String shiftId) {
 		return shifts.findById(shiftId.trim())
 				.orElseThrow(() -> ApiException.notFound("COUNTER_SHIFT_NOT_FOUND", "Counter shift was not found."));

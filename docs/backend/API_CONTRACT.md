@@ -11,11 +11,11 @@
 
 ## Kiểm kê endpoint — SINH TỪ MÃ
 
-**88 endpoint** trong **11 module**, đọc trực tiếp từ
+**90 endpoint** trong **11 module**, đọc trực tiếp từ
 `backend-java/src/main/java/com/cmc/restaurant/**/*.java` bởi `docs/build_api_inventory.py`.
 
 > Bảng này **không thể thiếu endpoint**: CI chạy `--check` và đỏ nếu mã có endpoint mà
-> bảng chưa có. Trước khi có nó, tài liệu viết tay liệt kê 10/88 endpoint.
+> bảng chưa có. Trước khi có nó, tài liệu viết tay liệt kê 10/90 endpoint.
 >
 > Nhưng nó chỉ biết **đường dẫn và động từ**. Dạng phản hồi, mã lỗi, quy tắc phân quyền là
 > phần người viết — xem các mục bên dưới.
@@ -72,7 +72,7 @@
 | `POST` | `/api/loyalty/me/redeem` | `loyalty/LoyaltyController.java` |
 | `POST` | `/api/loyalty/redemptions/{redemptionId}/honour` | `loyalty/LoyaltyController.java` |
 
-### menu (14)
+### menu (15)
 
 | Động từ | Đường dẫn | Khai ở |
 |---|---|---|
@@ -83,6 +83,7 @@
 | `PUT` | `/api/admin/categories/{categoryId}` | `menu/AdminCategoryController.java` |
 | `GET` | `/api/admin/menu-items` | `menu/AdminMenuItemController.java` |
 | `POST` | `/api/admin/menu-items` | `menu/AdminMenuItemController.java` |
+| `GET` | `/api/admin/menu-items/pending-quantities` | `menu/AdminMenuItemController.java` |
 | `DELETE` | `/api/admin/menu-items/{menuItemId}` | `menu/AdminMenuItemController.java` |
 | `GET` | `/api/admin/menu-items/{menuItemId}` | `menu/AdminMenuItemController.java` |
 | `PUT` | `/api/admin/menu-items/{menuItemId}` | `menu/AdminMenuItemController.java` |
@@ -141,7 +142,7 @@
 |---|---|---|
 | `GET` | `/api/health` | `shared/HealthController.java` |
 
-### tables (17)
+### tables (18)
 
 | Động từ | Đường dẫn | Khai ở |
 |---|---|---|
@@ -159,6 +160,7 @@
 | `POST` | `/api/table-sessions/{sessionId}/invoice/payment-request` | `tables/TableInvoicePaymentController.java` |
 | `POST` | `/api/table-sessions/{sessionId}/invoice/payment/cancel` | `tables/TableInvoicePaymentController.java` |
 | `POST` | `/api/table-sessions/{sessionId}/invoice/payment/confirm` | `tables/TableInvoicePaymentController.java` |
+| `POST` | `/api/table-sessions/{sessionId}/invoice/payment/refund` | `tables/TableInvoicePaymentController.java` |
 | `GET` | `/api/table-sessions/{sessionId}/orders` | `tables/TableController.java` |
 | `GET` | `/api/tables/qr/{qrToken}` | `tables/TableController.java` |
 | `GET` | `/api/tables/{tableCode}` | `tables/TableController.java` |

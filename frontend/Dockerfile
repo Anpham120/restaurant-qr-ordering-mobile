@@ -28,6 +28,7 @@ COPY frontend/apps/staff-web/package.json ./apps/staff-web/package.json
 COPY frontend/packages/brand-ui/package.json ./packages/brand-ui/package.json
 COPY frontend/packages/api-client/package.json ./packages/api-client/package.json
 COPY frontend/packages/auth/package.json ./packages/auth/package.json
+COPY frontend/packages/i18n/package.json ./packages/i18n/package.json
 COPY frontend/packages/realtime-client/package.json ./packages/realtime-client/package.json
 COPY frontend/packages/shared-types/package.json ./packages/shared-types/package.json
 COPY frontend/packages/shared-ui/package.json ./packages/shared-ui/package.json

@@ -84,6 +84,21 @@ export async function fetchAdminMenuItems(): Promise<AdminMenuItem[]> {
   return api.request<AdminMenuItem[]>("/admin/menu-items?includeInactiveCategories=true");
 }
 
+/**
+ * Số phần đang chờ bếp, theo mã món.
+ *
+ * Endpoint riêng của quản trị: con số này là thông tin vận hành, không nằm trong thực đơn công
+ * khai. Lỗi được nuốt và trả về map rỗng — không biết hàng đợi thì cảnh báo nói ít đi một vế,
+ * còn chặn cả màn thực đơn vì một con số phụ thì tệ hơn nhiều.
+ */
+export async function fetchPendingQuantities(): Promise<Record<string, number>> {
+  try {
+    return await api.request<Record<string, number>>("/admin/menu-items/pending-quantities");
+  } catch {
+    return {};
+  }
+}
+
 // Kitchen-level list (includes unavailable items; usable by Kitchen/Staff/Admin)
 export async function fetchKitchenMenuItems(): Promise<AdminMenuItem[]> {
   return api.request<AdminMenuItem[]>("/kitchen/menu-items");
