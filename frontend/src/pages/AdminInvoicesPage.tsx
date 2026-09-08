@@ -103,7 +103,7 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
         {(Object.keys(FILTER_LABELS) as FilterTab[]).map((tab) => (
           <button className={`ops-btn ${filter === tab ? "ops-btn--primary" : "ops-btn--ghost"}`} key={tab} onClick={() => setFilter(tab)} type="button">{FILTER_LABELS[tab]}</button>
         ))}
-        <input className="ops-form-input" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm mã hóa đơn, bàn..." style={{ width: 220 }} value={search} />
+        <input className="ops-form-input ops-filter--search" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm mã hóa đơn, bàn..." value={search} />
       </div>
       <div className="ops-card-list">
         {filtered.map((invoice) => (
@@ -143,18 +143,18 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
           <div className="ops-modal" onClick={(event) => event.stopPropagation()}>
             <div className="ops-modal-header"><h2>Hóa đơn {detail.invoiceCode}</h2><button aria-label="Đóng" className="ops-modal-close" onClick={() => setDetail(null)} type="button"><X aria-hidden="true" size={18} /></button></div>
             <div className="ops-modal-body">
-              <div className="ops-card-meta" style={{ marginBottom: 12 }}><span className="ops-card-table">Bàn {detail.tableCode}</span><span className={`ops-badge ops-badge--${detail.status.toLowerCase()}`}>{labelPaymentChip(detail.method, detail.status)}</span></div>
+              <div className="ops-card-meta ops-card-meta--spaced"><span className="ops-card-table">Bàn {detail.tableCode}</span><span className={`ops-badge ops-badge--${detail.status.toLowerCase()}`}>{labelPaymentChip(detail.method, detail.status)}</span></div>
               <p>{detail.orderRounds.length} lần gọi món trong phiên</p>
               <div className="ops-item-list">
                 {detail.items.map((item) => <div className="ops-item-row" key={item.menuItemId}><div className="ops-item-info"><div className="ops-item-name">{item.quantity}× {item.name}</div><span className="ops-item-qty">{formatVnd(item.unitPrice)} × {item.quantity}</span></div><strong>{formatVnd(item.lineTotal)}</strong></div>)}
               </div>
-              <div style={{ marginTop: 12, padding: 12, background: "var(--color-bg-subtle)", borderRadius: 8 }}>
+              <div className="ops-inset">
                 <div>Tạm tính: <strong>{formatVnd(detail.subtotalAmount)}</strong></div>
                 {detail.discountAmount > 0 ? <div>Ưu đãi {detail.promotionCode}: <strong>-{formatVnd(detail.discountAmount)}</strong></div> : null}
-                <div style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>Tổng: {formatVnd(detail.totalAmount)}</div>
+                <div className="ops-inset-total">Tổng: {formatVnd(detail.totalAmount)}</div>
                 {detail.customerPhoneNumber ? <div>Tích điểm: {detail.customerPhoneNumber}</div> : null}
               </div>
-              <button className="ops-btn ops-btn--primary" onClick={() => window.print()} style={{ width: "100%", marginTop: 12 }} type="button"><Printer aria-hidden="true" size={15} /> In hóa đơn</button>
+              <button className="ops-btn ops-btn--primary" onClick={() => window.print()} type="button"><Printer aria-hidden="true" size={15} /> In hóa đơn</button>
               {/*
                 CHỈ hiện với hoá đơn đã thu. Hoá đơn đang chờ thì HUỶ, không phải hoàn — hai việc
                 khác nhau, và bày nút hoàn ở đó là mời người ta bấm nhầm.
@@ -165,7 +165,7 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
               {detail.status === "Confirmed" || detail.status === "Paid" ? (
                 <button
                   className="ops-btn ops-btn--danger"
-                  style={{ width: "100%", marginTop: 8 }}
+
                   type="button"
                   disabled={dangHoan}
                   onClick={() => void hoanTien(detail)}

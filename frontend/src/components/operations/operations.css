@@ -194,7 +194,7 @@
   padding: 8px;
   color: var(--color-primary, #005bac);
   background: rgba(255, 255, 255, 0.72);
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   font-weight: 700;
   text-align: center;
 }
@@ -220,7 +220,7 @@
 .ops-column-header .ops-count {
   background: rgba(0,0,0,0.08);
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   font-weight: 600;
   padding: 2px 10px;
   border-radius: 20px;
@@ -335,7 +335,7 @@
 }
 
 .ops-card-table {
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;
@@ -347,7 +347,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   color: var(--color-muted);
 }
 
@@ -365,7 +365,7 @@
 
 .ops-card-meta svg,
 .ops-card-meta i {
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   opacity: 0.7;
 }
 
@@ -377,7 +377,7 @@
 }
 
 .ops-card-item-chip {
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   padding: 2px 8px;
   border-radius: 4px;
   background: #f1f5f9;
@@ -416,7 +416,7 @@
 .ops-card-actions button {
   flex: 1;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   font-weight: 600;
   border: none;
   border-radius: 6px;
@@ -486,7 +486,7 @@
   gap: 4px;
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -605,7 +605,7 @@
 }
 
 .ops-item-qty {
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   color: var(--color-muted);
 }
 
@@ -630,7 +630,7 @@
 }
 
 .ops-stat-label {
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   color: var(--color-muted);
   font-weight: 500;
   margin-bottom: 4px;
@@ -652,7 +652,7 @@
 }
 
 .ops-stat-detail {
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   color: var(--color-muted);
   margin-top: 2px;
 }
@@ -762,7 +762,7 @@
   display: block;
   margin-bottom: 2px;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -774,7 +774,7 @@
   border-radius: 999px;
   background: var(--color-bg-subtle, #f5f7fa);
   color: var(--color-muted);
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -852,7 +852,7 @@
 
 .ops-flow-strip span {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
 }
 
 .ops-role-hero {
@@ -944,7 +944,7 @@
   text-align: left;
   padding: 10px 14px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   color: var(--color-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1002,7 +1002,7 @@
 }
 
 .ops-form-error {
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   color: var(--color-danger);
   margin-top: 4px;
 }
@@ -1116,7 +1116,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 20px;
@@ -1155,7 +1155,7 @@
 
 /* ---- Timer / elapsed ---- */
 .ops-timer {
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -1322,7 +1322,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--ops-text-xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1458,7 +1458,7 @@
   border-radius: 999px;
   background: #ef4444;
   color: #fff;
-  font-size: 10px;
+  font-size: var(--ops-text-xs);
   font-weight: 700;
   text-align: center;
 }
@@ -1907,7 +1907,7 @@
 
 .ops-muted {
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: var(--ops-text-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2098,4 +2098,132 @@
 
 .ops-command-widget--alert .ops-stat-value {
   color: var(--ops-urgent);
+}
+
+/* ==========================================================================
+   ĐỢT 6 — lớp thay cho `style={{}}`
+
+   Đặt tên theo VAI TRÒ, không theo giá trị. `.ops-gap-8` là một lớp tiện ích:
+   đọc tên xong vẫn không biết nó dùng ở đâu, và đổi giá trị thì phải đổi cả tên.
+   `.ops-row` nói cái nó là.
+
+   MỘT NGOẠI LỆ ĐƯỢC GIỮ: `style` truyền một BIẾN CSS động (ví dụ bề rộng thanh
+   tiến độ) vẫn hợp lệ — giá trị đến lúc chạy mới biết, và nó vào CSS qua biến chứ
+   không đặt thẳng thuộc tính. Phép kiểm ở `inlineStyles.test.ts` cho phép đúng
+   dạng đó và chặn phần còn lại.
+   ========================================================================== */
+
+/* Hàng ngang các phần tử nhỏ: nút, chip, nhãn. */
+.ops-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+
+.ops-row--tight { gap: var(--space-1, 4px); }
+.ops-row--wide { gap: var(--space-3, 12px); }
+.ops-row--wrap { flex-wrap: wrap; }
+
+/* Bỏ lề mặc định của thẻ tiêu đề/đoạn văn khi nó nằm trong một khối đã có lề riêng. */
+.ops-flush { margin: 0; }
+
+/* Tiêu đề nhỏ bên trong hộp thoại. */
+.ops-subhead {
+  margin: 0 0 var(--space-2, 8px);
+  font-size: var(--ops-text-base);
+  font-weight: 700;
+}
+
+/* Khối tóm tắt lõm vào trong hộp thoại — nơi đặt tổng tiền, ghi chú. */
+.ops-inset {
+  margin-top: var(--space-4, 16px);
+  padding: var(--space-3, 12px);
+  background: var(--ops-panel-raised);
+  border: 1px solid var(--ops-line);
+  border-radius: var(--radius-sm, 8px);
+  font-size: var(--ops-text-sm);
+}
+
+/* Dòng phụ: thời gian, ghi chú, đơn vị. Nhỏ hơn chữ chính nhưng KHÔNG dưới sàn. */
+.ops-note {
+  font-size: var(--ops-text-xs);
+  color: var(--ops-ink-muted);
+}
+
+.ops-note--stacked { margin-top: var(--space-1, 4px); }
+
+/* Ô lọc trong thanh công cụ. Ba bề ngang, đặt tên theo thứ nó chứa chứ không theo px. */
+.ops-filter--code { width: 8.75rem; }   /* mã bàn, mã đơn */
+.ops-filter--status { width: 11.25rem; } /* tên trạng thái dài nhất */
+.ops-filter--search { width: 13.75rem; }
+
+/* Nút chiếm trọn bề ngang trong hộp thoại. */
+.ops-btn--block {
+  width: 100%;
+  margin-top: var(--space-2, 8px);
+}
+
+/* `.ops-stat-detail` để 11px — DƯỚI sàn 13px của thang chữ đặt ở đợt 1. Sót lại
+   từ trước khi có thang; sửa ở đây cho khớp. */
+
+
+
+
+/* Khối chỉ cần khoảng cách phía trên, KHÔNG cần hộp. Tách khỏi `.ops-inset` vì hai
+   thứ khác nhau: `.ops-inset` là một hộp lõm có nền và viền, cái này chỉ là chỗ thở. */
+.ops-block { margin-top: var(--space-4, 16px); }
+
+/* Dải thông tin của thẻ, khi nó đứng trên một khối khác. */
+.ops-card-meta--spaced { margin-bottom: var(--space-3, 12px); }
+
+/* Nhãn có ô tích: ô và chữ nằm ngang, chữ bỏ lề mặc định của `.ops-form-label`. */
+.ops-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
+
+.ops-check .ops-form-label { margin: 0; }
+
+/* Ô nhập nhỏ nằm trong một hàng của bảng. */
+.ops-inline-input {
+  width: 8.75rem;
+  min-height: var(--ops-touch);
+  padding: 4px 8px;
+  font-size: var(--ops-text-xs);
+}
+
+/* Ô "không có gì" trải hết bề ngang của lưới. */
+.ops-empty--span { grid-column: 1 / -1; }
+
+/* `.ops-form-hint` được DÙNG mà chưa từng được định nghĩa — hai chỗ dùng nó dựa hoàn
+   toàn vào `style={{}}` đi kèm, nên gỡ style ra là chúng trần trụi. Khai ở đây. */
+.ops-form-hint {
+  margin-top: var(--space-1, 4px);
+  font-size: var(--ops-text-xs);
+  color: var(--ops-ink-muted);
+}
+
+/* Hàng chip có trần bề ngang: danh sách vai trò dài không được đẩy vỡ cột bảng. */
+.ops-row--capped { max-width: 20rem; }
+
+/* Dải thông tin đứng NGAY DƯỚI tiêu đề thẻ — chỉ cần thở một chút. */
+.ops-card-meta--attached { margin-top: var(--space-1, 4px); }
+
+/* Tiêu đề mục thứ hai trở đi trong cùng một trang: tách khỏi mục trên nó. */
+.ops-page-header--section { margin-top: var(--space-6, 32px); }
+
+/* Ô "không có gì" cỡ lớn, khi nó chiếm cả vùng nội dung. */
+.ops-empty--roomy { padding: var(--space-6, 32px); }
+
+/* Ba con số tổng của báo cáo: nhỏ hơn `--ops-text-xl` vì có ba cái cạnh nhau và
+   chúng phải cùng vừa một hàng. */
+.ops-stat-value--trio { font-size: var(--ops-text-lg); }
+
+/* Tổng tiền cuối hộp thoại hoá đơn. */
+.ops-inset-total {
+  margin-top: var(--space-2, 8px);
+  font-size: var(--ops-text-lg);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }

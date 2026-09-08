@@ -270,7 +270,7 @@ function OrderDetailModal({
         <div className="ops-modal-header">
           <div>
             <h2 id="kitchen-order-title">{order.orderCode}</h2>
-            <div className="ops-card-meta" style={{ marginTop: 4 }}>
+            <div className="ops-card-meta ops-card-meta--attached">
               <span className={statusBadgeClass(order.status)}>{labelKitchenOrderStatus(order.status)}</span>
               {order.tableCode ? <span>Bàn {order.tableCode}</span> : null}
               <span>{formatVnd(order.totalAmount)}</span>
