@@ -54,7 +54,7 @@ jobs:
       # `build` nằm trong đây chứ không chỉ `test`: nó chạy `tsc --noEmit` cho từng app rồi mới
       # `vite build`, nên một lỗi kiểu chỉ có ở app con cũng chặn được trước khi đụng máy chủ.
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
