@@ -99,10 +99,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      # KHÔNG TẢI PHỤ LỤC SARIF LÊN.
+      #
+      # Action mặc định tải một tệp SARIF lên làm phụ lục của lượt chạy. Bước đó nằm SAU khi quét
+      # xong, và nó hỏng thì cả job đỏ — dù kết quả quét là sạch.
+      #
+      # Đã xảy ra ngày 08/09 trên PR #207: log ghi rõ "no leaks found", rồi job chết ở
+      # "Failed to FinalizeArtifact: (403) Forbidden". Chạy lại thì xanh, tức là chập chờn ở tầng
+      # hạ tầng của GitHub chứ không phải ở mã. Nhưng 'secret-scan' là phép kiểm BẮT BUỘC, nên một
+      # lần chập chờn là một PR bị chặn cho tới khi có người nhận ra và bấm chạy lại.
+      #
+      # Đánh đổi, nói thẳng: mất tệp SARIF tải về được. Nó không mất thông tin — khi có rò rỉ, job
+      # vẫn đỏ và gitleaks in phát hiện ra log với '--redact', đó mới là chỗ người ta đọc. Tệp SARIF
+      # chỉ hữu ích khi có công cụ nuốt nó, mà kho này không có.
       - name: Scan for hardcoded secrets (gitleaks)
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
 
   trivy-fs:
     name: trivy-filesystem
