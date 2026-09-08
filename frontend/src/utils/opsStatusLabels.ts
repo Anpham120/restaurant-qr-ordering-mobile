@@ -1,5 +1,5 @@
 import type { OrderStatus } from "../types";
-import type { PaymentMethod, PaymentStatus } from "../types/order";
+import type { OrderEventSource, PaymentMethod, PaymentStatus } from "../types/order";
 
 const ORDER_STATUS_VI: Record<string, string> = {
   Draft: "Bản nháp",
@@ -84,6 +84,54 @@ export function labelGuestOrderStatus(status: string): string {
 
 export function labelOrderStatus(status: OrderStatus | string): string {
   return ORDER_STATUS_VI[status] ?? status;
+}
+
+/**
+ * Trạng thái MÓN cho người vận hành.
+ *
+ * TÁCH KHỎI `labelOrderStatus` vì hai bộ trạng thái KHÁC NHAU, dù trùng phần lớn tên:
+ *
+ *     đơn : Draft · Placed · Confirmed · Preparing · Ready · Served · Completed · Cancelled
+ *     món : Pending · Preparing · Ready · Served · Cancelled
+ *
+ * `Pending` chỉ có ở món và KHÔNG có ở đơn. Dùng nhầm `labelOrderStatus` cho món thì `Pending`
+ * rơi qua nhánh `?? status` và hiện nguyên chữ tiếng Anh giữa một màn hình tiếng Việt — im lặng,
+ * vì hàm vẫn trả về một chuỗi.
+ *
+ * Đây là từ của NGƯỜI VẬN HÀNH, không phải của khách: khách được nói "Đang làm món của bạn"
+ * (`ITEM_STATUS_VI`), còn quản lý cần một từ ngắn để quét cả bảng.
+ */
+const ORDER_ITEM_STATUS_VI: Record<string, string> = {
+  Pending: "Chờ làm",
+  Preparing: "Đang làm",
+  Ready: "Xong",
+  Served: "Đã đưa",
+  Cancelled: "Đã hủy",
+};
+
+export function labelOrderItemStatus(status: string): string {
+  return ORDER_ITEM_STATUS_VI[status] ?? status;
+}
+
+/**
+ * Nhãn cho một dòng LỊCH SỬ của đơn.
+ *
+ * Một sự kiện mang `status` thuộc MỘT TRONG HAI bộ, và `source` là thứ nói nó thuộc bộ nào:
+ *
+ *     source: "Status"  -> trạng thái ĐƠN     (Placed, Preparing, Served…)
+ *     source: "Payment" -> trạng thái THANH TOÁN (Pending, Paid, Refunded…)
+ *
+ * Hai bộ có tên TRÙNG NHAU mà nghĩa khác nhau — `Confirmed` của đơn là "đã xác nhận đơn", còn của
+ * thanh toán là "đã xác nhận thu tiền". Đoán sai bộ thì dòng lịch sử nói sai việc đã xảy ra, và nó
+ * sai một cách trông rất hợp lý.
+ *
+ * `source` là tuỳ chọn (dữ liệu cũ không có). Không đoán bừa: thử bộ đơn trước, rồi bộ thanh toán,
+ * và nếu cả hai đều không biết thì trả nguyên chuỗi — chữ tiếng Anh còn tốt hơn một bản dịch sai.
+ */
+export function labelOrderEventStatus(status: string, source?: OrderEventSource): string {
+  if (source === "Payment") return labelPaymentStatus(status);
+  if (source === "Status") return labelOrderStatus(status);
+  return ORDER_STATUS_VI[status] ?? PAYMENT_STATUS_VI[status] ?? status;
 }
 
 export function labelPaymentStatus(status: PaymentStatus | string): string {

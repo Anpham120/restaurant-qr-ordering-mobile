@@ -237,8 +237,8 @@ export function AdminPromotionsPage() {
           <tr>
             <th>Mã</th>
             <th>Tên</th>
-            <th>Giảm</th>
-            <th>Đơn tối thiểu</th>
+            <th data-money>Giảm</th>
+            <th data-money>Đơn tối thiểu</th>
             <th>Loại</th>
             <th>Trạng thái</th>
             <th>Lượt dùng</th>
@@ -250,8 +250,8 @@ export function AdminPromotionsPage() {
             <tr key={promotion.promotionId}>
               <td><strong>{promotion.code}</strong></td>
               <td>{promotion.name}</td>
-              <td>{promotion.type === "Percentage" ? `${promotion.discountValue}%` : formatVnd(promotion.discountValue)}</td>
-              <td>{formatVnd(promotion.minOrderAmount)}</td>
+              <td data-money>{promotion.type === "Percentage" ? `${promotion.discountValue}%` : formatVnd(promotion.discountValue)}</td>
+              <td data-money>{formatVnd(promotion.minOrderAmount)}</td>
               <td>{promotion.isFlashSale ? <span className="ops-badge ops-badge--preparing">Flash sale</span> : "Thường"}</td>
               <td>
                 <span className={`ops-badge ${promotion.isActive ? "ops-badge--ready" : "ops-badge--cancelled"}`}>

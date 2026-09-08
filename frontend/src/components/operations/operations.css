@@ -636,11 +636,19 @@
   margin-bottom: 4px;
 }
 
+/*
+  Số liệu phải QUÉT được theo cột, không phải ĐỌC từng dòng.
+
+  `tabular-nums` cho mọi chữ số cùng bề rộng, nên hàng nghìn thẳng hàng với hàng nghìn. Không có
+  nó thì "1.111.111" ngắn hơn "8.888.888" dù cùng số chữ số, và mắt phải đọc từng con số thay vì
+  so chiều dài.
+*/
 .ops-stat-value {
-  font-size: 28px;
+  font-size: var(--ops-text-xl);
   font-weight: 800;
   color: var(--color-ink);
-  line-height: 1.2;
+  line-height: var(--ops-line-tight);
+  font-variant-numeric: tabular-nums;
 }
 
 .ops-stat-detail {
@@ -2049,4 +2057,45 @@
   .pos-numpad-key--erase {
     color: var(--ops-urgent);
   }
+}
+
+/* ==========================================================================
+   QUẢN TRỊ — đợt 5 của docs/DAC_TA_THIET_KE_VAN_HANH.md
+   ========================================================================== */
+
+/*
+  CỘT TIỀN CANH PHẢI VÀ CANH CHỮ SỐ.
+
+  Đánh dấu bằng `data-money` chứ không bằng chỉ số cột: bảng khác nhau có cột tiền ở vị trí khác
+  nhau, và một quy tắc `td:nth-child(6)` sẽ trỏ sai ngay lần đầu ai đó chèn thêm một cột.
+
+  Canh PHẢI vì đơn vị tiền có độ dài khác nhau: "9.000đ" và "1.250.000đ" canh trái thì chữ số hàng
+  nghìn của hai dòng không nằm cùng một chỗ, và người quét cột phải đọc từng số.
+*/
+.ops-table td[data-money],
+.ops-table th[data-money] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Bậc `wide` được phép dày hơn hai mặt kia: quản lý ngồi bàn, không đứng quầy, và họ đọc bảng
+   dài chứ không thao tác nhanh. */
+@media (min-width: 1280px) {
+  .ops-table td,
+  .ops-table th {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+/* Ô cảnh báo trong trung tâm điều hành: viền màu + nền nhạt, KHÔNG chỉ đổi màu chữ.
+   Nó phải bắt được mắt đang quét cả lưới, không phải mắt đang đọc một ô. */
+.ops-command-widget--alert {
+  border-color: var(--ops-urgent);
+  background: var(--ops-urgent-bg);
+}
+
+.ops-command-widget--alert .ops-stat-value {
+  color: var(--ops-urgent);
 }

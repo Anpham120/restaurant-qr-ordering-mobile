@@ -1,3 +1,4 @@
+import { labelOrderEventStatus, labelOrderItemStatus, labelOrderStatus } from "../../utils/opsStatusLabels";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Order, OrderListResponse, OrderStatus } from "@cmc/shared-types";
 import { confirmOrderPayment, refundOrderPayment } from "../../services/orderService";
@@ -132,7 +133,7 @@ export function AdminOrderManager({
             {!lockedTable ? <th>Bàn</th> : null}
             <th>Trạng thái</th>
             <th>TT toán</th>
-            <th>Tổng tiền</th>
+            <th data-money>Tổng tiền</th>
             <th>Thời gian</th>
             <th>Thao tác</th>
           </tr>
@@ -146,13 +147,13 @@ export function AdminOrderManager({
                 </button>
               </td>
               {!lockedTable ? <td>{order.tableCode ?? "-"}</td> : null}
-              <td><span className={`ops-badge ops-badge--${order.status.toLowerCase()}`}>{order.status}</span></td>
+              <td><span className={`ops-badge ops-badge--${order.status.toLowerCase()}`}>{labelOrderStatus(order.status)}</span></td>
               <td>
                 {order.tableSessionId ? <span className="ops-badge">Theo phiên bàn</span> : (
                   <span className={`ops-badge ops-badge--${order.paymentStatus.toLowerCase()}`}>{order.paymentMethod} · {order.paymentStatus}</span>
                 )}
               </td>
-              <td>{formatVnd(order.totalAmount)}</td>
+              <td data-money>{formatVnd(order.totalAmount)}</td>
               <td style={{ fontSize: 12, color: "var(--color-muted)" }}>{new Date(order.createdAt).toLocaleString("vi-VN")}</td>
               <td>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -182,7 +183,7 @@ export function AdminOrderManager({
             </div>
             <div className="ops-modal-body">
               <div className="ops-card-meta" style={{ marginBottom: 12, gap: 8 }}>
-                <span className={`ops-badge ops-badge--${selectedOrder.status.toLowerCase()}`}>{selectedOrder.status}</span>
+                <span className={`ops-badge ops-badge--${selectedOrder.status.toLowerCase()}`}>{labelOrderStatus(selectedOrder.status)}</span>
                 {selectedOrder.tableSessionId ? <span className="ops-badge">Thanh toán theo phiên bàn</span> : <span className={`ops-badge ops-badge--${selectedOrder.paymentStatus.toLowerCase()}`}>{selectedOrder.paymentMethod} · {selectedOrder.paymentStatus}</span>}
                 {selectedOrder.tableCode ? <span className="ops-card-table">Bàn {selectedOrder.tableCode}</span> : null}
               </div>
@@ -194,7 +195,7 @@ export function AdminOrderManager({
                     <div className="ops-item-info">
                       <div className="ops-item-name">
                         {item.quantity}× {item.name}
-                        <span className={`ops-badge ops-badge--${item.status.toLowerCase()}`}>{item.status}</span>
+                        <span className={`ops-badge ops-badge--${item.status.toLowerCase()}`}>{labelOrderItemStatus(item.status)}</span>
                       </div>
                       <span className="ops-item-qty">{formatVnd(item.lineTotal)}</span>
                     </div>
@@ -212,7 +213,7 @@ export function AdminOrderManager({
                   <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Lịch sử</h4>
                   {selectedOrder.events.map((ev, i) => (
                     <div key={i} style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 4 }}>
-                      <span className={`ops-badge ops-badge--${ev.status.toLowerCase()}`}>{ev.status}</span>
+                      <span className={`ops-badge ops-badge--${ev.status.toLowerCase()}`}>{labelOrderEventStatus(ev.status, ev.source)}</span>
                       {" "}{new Date(ev.createdAt).toLocaleString("vi-VN")}
                       {ev.note ? ` - ${ev.note}` : ""}
                     </div>
