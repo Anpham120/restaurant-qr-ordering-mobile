@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Review dependency changes
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         # KHÔNG có `continue-on-error`. Job này từng có, và trong suốt thời gian đó nó báo
         #
         #     ##[error] Dependency review is not supported on this repository.
