@@ -40,6 +40,18 @@ Không viết lại từ số không. Những thứ sau đang chạy tốt và l
 - **Quyết định dựng cả sáu tab của quầy rồi ẩn** (`CounterHubPage`) — đúng, vì đổi tab không được
   xoá chữ người dùng đang gõ. Giữ nguyên.
 
+### 1.2 Ràng buộc thiết bị — đã xác nhận, không phải giả định
+
+Hai điều này quyết định gần như mọi con số ở §3. Đã hỏi và được xác nhận:
+
+| Mặt | Thiết bị | Hệ quả |
+|---|---|---|
+| **Bếp** | tablet / màn dựng đứng, khoảng **1024px** | Bậc `pos` là bậc **chính**, không phải bậc phụ. Bố cục 4 cột hiện tại rơi đúng vào đây và mỗi thẻ chỉ còn ~250px |
+| **Quầy** | **có màn cảm ứng** | Vùng chạm 44/56px là bắt buộc chứ không phải cho đẹp. Bàn phím số trên màn đáng làm |
+
+Nếu về sau bếp đổi sang TV treo tường, hoặc quầy bỏ cảm ứng dùng chuột, thì §3.2 và §4 phải viết
+lại — nên ghi ra đây để lần sau còn biết chỗ nào lung lay.
+
 ---
 
 ## 2. Nguyên tắc: mặt vận hành **không phải** mặt khách hàng
