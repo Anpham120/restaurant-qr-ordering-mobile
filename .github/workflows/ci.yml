@@ -2,6 +2,16 @@ name: CI
 
 on:
   pull_request:
+  # HÀNG ĐỢI MERGE CHẠY CI TRÊN MỘT NHÁNH TẠM, KHÔNG PHẢI TRÊN PR.
+  #
+  # GitHub dựng `gh-readonly-queue/develop/...` gồm base mới nhất CỘNG các PR đứng trước trong
+  # hàng, rồi đợi đúng những phép kiểm bắt buộc báo về trên nhánh đó. Không có dòng này thì workflow
+  # không chạy ở đấy, phép kiểm không bao giờ báo, và mục xếp hàng bị đá ra sau khi hết giờ chờ.
+  #
+  # Hỏng theo kiểu IM LẶNG: không job nào đỏ, không log nào để đọc — PR chỉ đơn giản là không bao
+  # giờ merge. Nên `mergeQueue.test.ts` đối chiếu danh sách này với các workflow sinh phép kiểm bắt
+  # buộc, thay vì tin là ai thêm workflow sau cũng nhớ.
+  merge_group:
   push:
     # CHỈ hai nhánh đích. Nhánh tính năng cố ý KHÔNG có ở đây.
     #
