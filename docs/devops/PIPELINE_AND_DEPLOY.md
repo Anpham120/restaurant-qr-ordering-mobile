@@ -76,13 +76,20 @@ Hai giao thức không nói chuyện được với nhau nên mọi tính năng 
 không cổng nào đỏ — test backend kiểm STOMP bằng client STOMP, còn test frontend là kiểm đơn vị đọc
 mã. Cả hai đều "tự nhất quán với chính mình".
 
-## 2. Triển khai — bấm tay, có người duyệt
+## 2. Triển khai — staging tự động, production bấm tay
 
-`cd.yml` **chỉ chạy khi bấm tay** (`workflow_dispatch`), chọn `staging` hoặc `production`.
+| Môi trường | Kích hoạt | Chốt người |
+|---|---|---|
+| **staging** | **tự chạy khi merge vào `develop`** | không |
+| **production** | bấm tay, chọn môi trường | environment bắt buộc `Anpham120` duyệt |
 
-Vì sao không tự chạy theo push: máy chủ đích là tài nguyên dùng chung, và một lần đẩy nhầm nhánh là
-một lần thay đổi thứ người khác đang dùng. Bấm tay bắt người triển khai chọn môi trường một cách có
-ý thức, còn `environment:` của GitHub bắt phải có người duyệt trước khi job chạm vào máy chủ.
+Ranh giới nằm ở đúng chỗ nó có nghĩa. Staging là máy để **phát hiện hỏng**, nên đưa mã lên đó tự
+động là *điều kiện* để nó làm được việc ấy — mã càng lên sớm càng phát hiện sớm. Production đổi thứ
+người thật đang dùng, nên vẫn phải có người chọn một cách có ý thức.
+
+Bản trước của tài liệu này ghi *"chỉ chạy khi bấm tay"* cho cả hai. Câu đó đúng cho tới khi
+`auto-merge.yml` bắt đầu tự merge — lúc ấy luồng `develop → Deploy Staging → main` mà chính nó viện
+dẫn trở thành một quy trình **không có gì thực hiện**, vì không ai nhớ bấm.
 
 Hai lần triển khai cùng môi trường không chạy chồng nhau, và lần đang chạy **không bị huỷ giữa
 chừng**: cắt ngang lúc chạy migration để lại cơ sở dữ liệu ở trạng thái nửa vời, thứ mà một lần
@@ -90,11 +97,14 @@ triển khai lại không sửa được.
 
 ```mermaid
 flowchart TB
-  D["Bấm Run workflow<br/>chọn môi trường"] --> K["kiem-truoc<br/>test backend · test + build frontend · compose đọc được"]
-  K --> P{"Người duyệt<br/>environment"}
+  M["merge vào develop"] --> K
+  D["Bấm Run workflow<br/>chọn production"] --> K["kiem-truoc<br/>test backend · test + build frontend · compose đọc được"]
+  K --> P{"Người duyệt<br/>chỉ production"}
   P --> T["trien-khai<br/>deploy-vps.sh qua SSH"]
   T --> H["health-check.sh"]
-  H -->|đỏ| R["rollback-vps.sh"]
+  H -->|xanh| OK["xong"]
+  H -->|đỏ| R["rollback-tu-xa.sh → rollback-vps.sh"]
+  R --> RED["job vẫn báo ĐỎ"]
 ```
 
 `kiem-truoc` chạy lại toàn bộ phép kiểm **trước khi** chạm máy chủ. Trùng với CI là có chủ ý: CI
@@ -159,13 +169,52 @@ nếu không nó không bao giờ tới được máy chủ, mà mọi thứ v�
 vài lời gọi đầu có thể lỗi TLS tạm thời — bỏ cờ đó thì lượt triển khai đỏ vì một chuyện tự khỏi
 trong năm giây.
 
-## 6. Quay lui
+## 6. Quay lui — ĐÃ CHỨNG MINH TRÊN MÁY THẬT
+
+Chạy **tự động** ở bước `if: failure()` của `cd.yml`. Trước 08/09/2026 nó là mã chết: script viết đủ
+và đúng, nhưng không đường chạy nào gọi tới nó.
 
 `rollback-vps.sh` đổi `repo.previous` về thành `repo`, giữ bản hỏng lại ở `repo.failed.<dấu thời
 gian>` để còn xem được vì sao hỏng, rồi dựng lại stack.
 
-Giới hạn phải nói rõ: **quay lui mã không quay lui cơ sở dữ liệu.** Một migration đã chạy thì vẫn ở
-đó. Nên mỗi thay đổi lược đồ phải nghĩ trước đường lùi — thêm cột thì lùi được, xoá cột thì không.
+### Bài thử lửa ngày 08/09/2026
+
+Năm lượt triển khai trước đó đều xanh, nên bước lùi luôn `skipped`. `skipped` chứng minh nó **không
+bắn nhầm**; nó không chứng minh nó **cứu được**. Nên đã chạy một lượt triển khai lên staging từ một
+nhánh cố tình làm `health-check.sh` thoát 1.
+
+Log máy chủ, theo đúng thứ tự xảy ra:
+
+```
+backup created: ...155108Z-truoc-migration.dump         ← sao lưu TRƯỚC migration
+THU LUA: co tinh lam kiem suc khoe do...                ← lỗi có chủ đích nổ ra
+Đang lùi staging về bản triển khai trước                 ← rollback-tu-xa.sh vào việc
+backup created: ...155202Z-rollback-20260908155147.dump  ← rollback tự sao lưu trước khi dựng
+{"status":"ok"}                                          ← kiểm sức khoẻ SAU khi lùi: đạt
+Rollback completed for staging
+```
+
+Và trạng thái các bước của workflow:
+
+```
+failure  Chạy deploy-vps.sh
+skipped  Kiểm tra máy chủ còn sống
+success  Lùi lại nếu triển khai hỏng     ← không còn skipped
+failure  Báo đỏ dù đã lùi thành công     ← đỏ có chủ đích
+```
+
+Mắt xích cuối là chỗ dễ làm sai nhất: **lùi êm nhưng job vẫn đỏ.** Báo xanh sau khi lùi thành công
+thì lần hỏng biến mất khỏi lịch sử, và người ta tưởng bản mới đang chạy trong khi máy chủ đã quay về
+bản cũ.
+
+Đáng chú ý: lỗi bật ra ở `Chạy deploy-vps.sh` chứ không ở bước kiểm sức khoẻ của workflow — vì
+`deploy-vps.sh` tự gọi `health-check.sh` ở cuối chuỗi SSH. Đó là đường **quan trọng hơn**: nó chứng
+minh rollback nổ khi chính script triển khai hỏng, bao gồm cả khi migration thất bại.
+
+### Giới hạn vẫn còn nguyên
+
+**Quay lui mã không quay lui cơ sở dữ liệu.** Một migration đã chạy thì vẫn ở đó. Nên mỗi thay đổi
+lược đồ phải nghĩ trước đường lùi — thêm cột thì lùi được, xoá cột thì không.
 
 ## 7. Sao lưu và khôi phục
 
