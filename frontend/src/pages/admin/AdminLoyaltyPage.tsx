@@ -207,9 +207,9 @@ export function AdminLoyaltyPage() {
               <td>{member.points}</td>
               <td>{formatVnd(member.lifetimeSpend)}</td>
               <td>
-                <div style={{ display: "flex", gap: 4 }}>
+                <div className="ops-row ops-row--tight">
                   <button
-                    className="ops-btn ops-btn--ghost ops-btn--sm"
+                    className="ops-btn ops-btn--ghost"
                     type="button"
                     onClick={() => {
                       setEditingMemberId(member.memberId);
@@ -220,7 +220,7 @@ export function AdminLoyaltyPage() {
                   >
                     Sửa
                   </button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" type="button" onClick={() => deleteMember(member.memberId)}>Xóa</button>
+                  <button className="ops-btn ops-btn--danger" type="button" onClick={() => deleteMember(member.memberId)}>Xóa</button>
                 </div>
               </td>
             </tr>
@@ -231,7 +231,7 @@ export function AdminLoyaltyPage() {
         </tbody>
       </table>
 
-      <div className="ops-page-header" style={{ marginTop: 32 }}>
+      <div className="ops-page-header ops-page-header--section">
         <h2>Phần thưởng</h2>
         <p>Danh sách phần thưởng khách có thể đổi bằng điểm</p>
       </div>
@@ -276,9 +276,9 @@ export function AdminLoyaltyPage() {
                 </span>
               </td>
               <td>
-                <div style={{ display: "flex", gap: 4 }}>
+                <div className="ops-row ops-row--tight">
                   <button
-                    className="ops-btn ops-btn--ghost ops-btn--sm"
+                    className="ops-btn ops-btn--ghost"
                     type="button"
                     onClick={() => {
                       setEditingRewardId(reward.rewardId);
@@ -298,7 +298,7 @@ export function AdminLoyaltyPage() {
                   >
                     Sửa
                   </button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" type="button" onClick={() => deleteReward(reward.rewardId)}>Xóa</button>
+                  <button className="ops-btn ops-btn--danger" type="button" onClick={() => deleteReward(reward.rewardId)}>Xóa</button>
                 </div>
               </td>
             </tr>
@@ -425,9 +425,9 @@ export function AdminLoyaltyPage() {
                 <input className="ops-form-input" type="number" value={rewardForm.pointsRequired} onChange={(e) => setRewardForm({ ...rewardForm, pointsRequired: Number(e.target.value) })} />
               </div>
               <div className="ops-form-group">
-                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="ops-check">
                   <input type="checkbox" checked={rewardForm.isActive} onChange={(e) => setRewardForm({ ...rewardForm, isActive: e.target.checked })} />
-                  <span className="ops-form-label" style={{ margin: 0 }}>Đang hoạt động</span>
+                  <span className="ops-form-label">Đang hoạt động</span>
                 </label>
               </div>
             </div>

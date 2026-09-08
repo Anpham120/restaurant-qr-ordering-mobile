@@ -4,6 +4,7 @@ import { ApiError } from "@cmc/api-client";
 import { listTableInvoices } from "../services/orderService";
 import { api } from "../services/apiClient";
 import { useOpsConfirm } from "../components/operations/OpsConfirmProvider";
+import { labelPaymentChip, labelPaymentStatus } from "../utils/opsStatusLabels";
 import { Printer, ReceiptText, X } from "lucide-react";
 import "../components/operations/operations.css";
 
@@ -100,9 +101,9 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
       </div>
       <div className="ops-toolbar">
         {(Object.keys(FILTER_LABELS) as FilterTab[]).map((tab) => (
-          <button className={`ops-btn ${filter === tab ? "ops-btn--primary" : "ops-btn--ghost"} ops-btn--sm`} key={tab} onClick={() => setFilter(tab)} type="button">{FILTER_LABELS[tab]}</button>
+          <button className={`ops-btn ${filter === tab ? "ops-btn--primary" : "ops-btn--ghost"}`} key={tab} onClick={() => setFilter(tab)} type="button">{FILTER_LABELS[tab]}</button>
         ))}
-        <input className="ops-form-input" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm mã hóa đơn, bàn..." style={{ width: 220 }} value={search} />
+        <input className="ops-form-input ops-filter--search" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm mã hóa đơn, bàn..." value={search} />
       </div>
       <div className="ops-card-list">
         {filtered.map((invoice) => (
@@ -112,15 +113,15 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
               <span className="ops-card-table">Bàn {invoice.tableCode ?? "-"}</span>
             </div>
             <div className="ops-card-meta">
-              <span className={`ops-badge ops-badge--${invoice.status.toLowerCase()}`}>{invoice.status}</span>
+              <span className={`ops-badge ops-badge--${invoice.status.toLowerCase()}`}>{labelPaymentStatus(invoice.status)}</span>
               <strong>{formatVnd(invoice.totalAmount)}</strong>
             </div>
-            <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => setDetail(invoice)} type="button">Chi tiết</button>
+            <button className="ops-btn ops-btn--ghost" onClick={() => setDetail(invoice)} type="button">Chi tiết</button>
           </article>
         ))}
       </div>
       <table className="ops-table ops-table-responsive">
-        <thead><tr><th>Mã hóa đơn</th><th>Bàn</th><th>Lượt gọi</th><th>Phương thức</th><th>Trạng thái</th><th>Tổng tiền</th><th>Thao tác</th></tr></thead>
+        <thead><tr><th>Mã hóa đơn</th><th>Bàn</th><th>Lượt gọi</th><th>Phương thức</th><th>Trạng thái</th><th data-money>Tổng tiền</th><th>Thao tác</th></tr></thead>
         <tbody>
           {filtered.map((invoice) => (
             <tr key={invoice.tableSessionId}>
@@ -128,9 +129,9 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
               <td>{invoice.tableCode ?? "-"}</td>
               <td>{invoice.orderRounds.length}</td>
               <td>{invoice.method === "COD" ? "Tiền mặt" : invoice.method === "VietQR" ? "VietQR" : "-"}</td>
-              <td><span className={`ops-badge ops-badge--${invoice.status.toLowerCase()}`}>{invoice.status}</span></td>
-              <td><strong>{formatVnd(invoice.totalAmount)}</strong></td>
-              <td><button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => setDetail(invoice)} type="button">Chi tiết</button></td>
+              <td><span className={`ops-badge ops-badge--${invoice.status.toLowerCase()}`}>{labelPaymentStatus(invoice.status)}</span></td>
+              <td data-money><strong>{formatVnd(invoice.totalAmount)}</strong></td>
+              <td><button className="ops-btn ops-btn--ghost" onClick={() => setDetail(invoice)} type="button">Chi tiết</button></td>
             </tr>
           ))}
           {filtered.length === 0 ? <tr><td colSpan={7}><div className="ops-empty">Không có hóa đơn</div></td></tr> : null}
@@ -142,18 +143,18 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
           <div className="ops-modal" onClick={(event) => event.stopPropagation()}>
             <div className="ops-modal-header"><h2>Hóa đơn {detail.invoiceCode}</h2><button aria-label="Đóng" className="ops-modal-close" onClick={() => setDetail(null)} type="button"><X aria-hidden="true" size={18} /></button></div>
             <div className="ops-modal-body">
-              <div className="ops-card-meta" style={{ marginBottom: 12 }}><span className="ops-card-table">Bàn {detail.tableCode}</span><span className={`ops-badge ops-badge--${detail.status.toLowerCase()}`}>{detail.method} · {detail.status}</span></div>
+              <div className="ops-card-meta ops-card-meta--spaced"><span className="ops-card-table">Bàn {detail.tableCode}</span><span className={`ops-badge ops-badge--${detail.status.toLowerCase()}`}>{labelPaymentChip(detail.method, detail.status)}</span></div>
               <p>{detail.orderRounds.length} lần gọi món trong phiên</p>
               <div className="ops-item-list">
                 {detail.items.map((item) => <div className="ops-item-row" key={item.menuItemId}><div className="ops-item-info"><div className="ops-item-name">{item.quantity}× {item.name}</div><span className="ops-item-qty">{formatVnd(item.unitPrice)} × {item.quantity}</span></div><strong>{formatVnd(item.lineTotal)}</strong></div>)}
               </div>
-              <div style={{ marginTop: 12, padding: 12, background: "var(--color-bg-subtle)", borderRadius: 8 }}>
+              <div className="ops-inset">
                 <div>Tạm tính: <strong>{formatVnd(detail.subtotalAmount)}</strong></div>
                 {detail.discountAmount > 0 ? <div>Ưu đãi {detail.promotionCode}: <strong>-{formatVnd(detail.discountAmount)}</strong></div> : null}
-                <div style={{ fontSize: 18, fontWeight: 800, marginTop: 8 }}>Tổng: {formatVnd(detail.totalAmount)}</div>
+                <div className="ops-inset-total">Tổng: {formatVnd(detail.totalAmount)}</div>
                 {detail.customerPhoneNumber ? <div>Tích điểm: {detail.customerPhoneNumber}</div> : null}
               </div>
-              <button className="ops-btn ops-btn--primary" onClick={() => window.print()} style={{ width: "100%", marginTop: 12 }} type="button"><Printer aria-hidden="true" size={15} /> In hóa đơn</button>
+              <button className="ops-btn ops-btn--primary" onClick={() => window.print()} type="button"><Printer aria-hidden="true" size={15} /> In hóa đơn</button>
               {/*
                 CHỈ hiện với hoá đơn đã thu. Hoá đơn đang chờ thì HUỶ, không phải hoàn — hai việc
                 khác nhau, và bày nút hoàn ở đó là mời người ta bấm nhầm.
@@ -164,7 +165,7 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
               {detail.status === "Confirmed" || detail.status === "Paid" ? (
                 <button
                   className="ops-btn ops-btn--danger"
-                  style={{ width: "100%", marginTop: 8 }}
+
                   type="button"
                   disabled={dangHoan}
                   onClick={() => void hoanTien(detail)}

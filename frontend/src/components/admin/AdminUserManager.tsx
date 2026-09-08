@@ -254,7 +254,7 @@ export function AdminUserManager() {
         <p>Thêm, sửa, xóa tài khoản, phân quyền và đặt lại mật khẩu</p>
       </div>
 
-      <div className="ops-notice ops-notice--info" style={{ marginBottom: "1rem" }}>
+      <div className="ops-notice ops-notice--info">
         <strong>Phạm vi vai trò:</strong> Chỉ <strong>Quản trị viên</strong>, <strong>Nhân viên quầy</strong> và <strong>Nhân viên bếp</strong>. Tài khoản vai trò cũ (phục vụ/khách) vẫn hiển thị — nên sửa sang quầy hoặc xóa.
       </div>
 
@@ -314,7 +314,7 @@ export function AdminUserManager() {
                   {ASSIGNABLE_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r] ?? r}</option>)}
                 </select>
                 {editingUser && (editingUser.role === "Staff" || editingUser.role === "Customer") ? (
-                  <p className="ops-form-error" style={{ marginTop: 8 }}>
+                  <p className="ops-form-error">
                     Vai trò hiện tại là {ROLE_LABELS[editingUser.role]}. Lưu để chuyển sang vai trò mới ở trên.
                   </p>
                 ) : null}
@@ -350,48 +350,46 @@ export function AdminUserManager() {
                   {ROLE_LABELS[user.role] ?? user.role}
                 </span>
               </td>
-              <td style={{ fontSize: 12, color: "var(--color-muted)" }}>{new Date(user.createdAt).toLocaleDateString("vi-VN")}</td>
+              <td className="ops-note">{new Date(user.createdAt).toLocaleDateString("vi-VN")}</td>
               <td>
-                <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <div className="ops-row ops-row--wrap">
                 {resetId === user.userId ? (
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", maxWidth: 320 }}>
+                  <div className="ops-row ops-row--wrap ops-row--capped">
                     <input
-                      className="ops-form-input"
+                      className="ops-form-input ops-inline-input"
                       type={showResetPassword ? "text" : "password"}
                       placeholder="Mật khẩu mới"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      style={{ width: 120, padding: "4px 8px", fontSize: 12 }}
                     />
                     <input
-                      className="ops-form-input"
+                      className="ops-form-input ops-inline-input"
                       type={showResetPassword ? "text" : "password"}
                       placeholder="Xác nhận"
                       value={confirmResetPassword}
                       onChange={(e) => setConfirmResetPassword(e.target.value)}
-                      style={{ width: 120, padding: "4px 8px", fontSize: 12 }}
                     />
                     <button
                       aria-label={showResetPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                      className="ops-btn ops-btn--ghost ops-btn--sm"
+                      className="ops-btn ops-btn--ghost"
                       onClick={() => setShowResetPassword((v) => !v)}
                       type="button"
                     >
                       {showResetPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
-                    <button className="ops-btn ops-btn--primary ops-btn--sm" onClick={() => handleResetPassword(user.userId)} type="button">Lưu</button>
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => { setResetId(null); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">Hủy</button>
+                    <button className="ops-btn ops-btn--primary" onClick={() => handleResetPassword(user.userId)} type="button">Lưu</button>
+                    <button className="ops-btn ops-btn--ghost" onClick={() => { setResetId(null); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">Hủy</button>
                   </div>
                 ) : (
                   <>
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEditForm(user)} type="button">
+                    <button className="ops-btn ops-btn--ghost" onClick={() => openEditForm(user)} type="button">
                       <Pencil aria-hidden="true" size={14} /> Sửa
                     </button>
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => { setResetId(user.userId); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">
+                    <button className="ops-btn ops-btn--ghost" onClick={() => { setResetId(user.userId); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">
                       Reset mật khẩu
                     </button>
                     <button
-                      className="ops-btn ops-btn--danger ops-btn--sm"
+                      className="ops-btn ops-btn--danger"
                       disabled={deletingId === user.userId || currentUser?.userId === user.userId}
                       onClick={() => void handleDelete(user)}
                       title={currentUser?.userId === user.userId ? "Không thể xóa tài khoản đang đăng nhập" : "Xóa tài khoản"}

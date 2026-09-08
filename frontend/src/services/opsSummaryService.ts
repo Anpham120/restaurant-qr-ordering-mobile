@@ -21,6 +21,17 @@ export type OpsCommandSummary = {
   todayRevenue: number;
   shiftOpen: boolean;
   servingTables: AdminTableSessionSummary[];
+  /**
+   * Bàn ĐÃ QUÁ GIỜ mà CHƯA THU TIỀN, và tổng số tiền đang nằm ngoài đó.
+   *
+   * Suy ra từ `sessions` — dữ liệu tóm tắt này VỐN ĐÃ TẢI. Không thêm một lời gọi mạng cho một
+   * con số mà dữ liệu để tính nó đang nằm sẵn trong tay.
+   *
+   * Lọc theo `overdueSince` chứ không theo `isExpired`: máy chủ gia hạn phiên còn nợ tiền thay vì
+   * đóng nó, nên `isExpired` của bàn còn nợ luôn là `false` và một bộ lọc theo trường đó sẽ báo
+   * "không có bàn nào quá giờ" đúng lúc có bàn quá giờ. Xem `overdueTableService.locBanQuaGio`.
+   */
+  overdueTables: { count: number; unpaidTotal: number };
 };
 
 function countServingTables(sessions: AdminTableSessionSummary[]) {
@@ -84,6 +95,23 @@ export async function fetchOpsCommandSummary(): Promise<OpsCommandSummary> {
     todayRevenue: reportData.netRevenue,
     shiftOpen: shiftData?.status === "Open",
     servingTables: openSessions.slice(0, 8),
+    overdueTables: tomTatQuaGio(sessions.items),
+  };
+}
+
+/**
+ * Đếm bàn quá giờ chưa thu và cộng số tiền đang nằm ngoài đó.
+ *
+ * Tách thành hàm thuần để kiểm được: đây là con số nói cho quản lý biết có bao nhiêu tiền đang ở
+ * ngoài quầy, và một phép đếm sai ở đây là một khoản tiền không ai đi đòi.
+ */
+export function tomTatQuaGio(
+  sessions: AdminTableSessionSummary[],
+): { count: number; unpaidTotal: number } {
+  const quaGio = sessions.filter((s) => s.status === "Open" && !!s.overdueSince);
+  return {
+    count: quaGio.length,
+    unpaidTotal: quaGio.reduce((tong, s) => tong + (s.unpaidAmount ?? 0), 0),
   };
 }
 

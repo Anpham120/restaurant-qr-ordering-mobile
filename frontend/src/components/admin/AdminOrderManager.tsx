@@ -1,3 +1,4 @@
+import { labelOrderEventStatus, labelOrderItemStatus, labelOrderStatus } from "../../utils/opsStatusLabels";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Order, OrderListResponse, OrderStatus } from "@cmc/shared-types";
 import { confirmOrderPayment, refundOrderPayment } from "../../services/orderService";
@@ -115,12 +116,12 @@ export function AdminOrderManager({
       </div>
 
       <div className="ops-toolbar">
-        <select className="ops-form-select" style={{ width: 180 }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+        <select className="ops-form-select ops-filter--status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
           <option value="">Tất cả trạng thái</option>
           {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         {!lockedTable ? (
-          <input className="ops-form-input" placeholder="Mã bàn (vd: T01)" value={filterTable} onChange={(e) => setFilterTable(e.target.value)} style={{ width: 140 }} />
+          <input className="ops-form-input ops-filter--code" placeholder="Mã bàn (vd: T01)" value={filterTable} onChange={(e) => setFilterTable(e.target.value)} />
         ) : null}
         <button className="ops-btn ops-btn--ghost" onClick={load} type="button"><RefreshCw aria-hidden="true" size={15} /> Làm mới</button>
       </div>
@@ -132,7 +133,7 @@ export function AdminOrderManager({
             {!lockedTable ? <th>Bàn</th> : null}
             <th>Trạng thái</th>
             <th>TT toán</th>
-            <th>Tổng tiền</th>
+            <th data-money>Tổng tiền</th>
             <th>Thời gian</th>
             <th>Thao tác</th>
           </tr>
@@ -141,28 +142,28 @@ export function AdminOrderManager({
           {orders.map((order) => (
             <tr key={order.orderId}>
               <td>
-                <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => setSelectedOrder(order)} type="button" style={{ fontWeight: 700 }}>
+                <button className="ops-btn ops-btn--ghost" onClick={() => setSelectedOrder(order)} type="button">
                   {order.orderCode}
                 </button>
               </td>
               {!lockedTable ? <td>{order.tableCode ?? "-"}</td> : null}
-              <td><span className={`ops-badge ops-badge--${order.status.toLowerCase()}`}>{order.status}</span></td>
+              <td><span className={`ops-badge ops-badge--${order.status.toLowerCase()}`}>{labelOrderStatus(order.status)}</span></td>
               <td>
                 {order.tableSessionId ? <span className="ops-badge">Theo phiên bàn</span> : (
                   <span className={`ops-badge ops-badge--${order.paymentStatus.toLowerCase()}`}>{order.paymentMethod} · {order.paymentStatus}</span>
                 )}
               </td>
-              <td>{formatVnd(order.totalAmount)}</td>
-              <td style={{ fontSize: 12, color: "var(--color-muted)" }}>{new Date(order.createdAt).toLocaleString("vi-VN")}</td>
+              <td data-money>{formatVnd(order.totalAmount)}</td>
+              <td className="ops-note">{new Date(order.createdAt).toLocaleString("vi-VN")}</td>
               <td>
-                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                  {order.status === "Placed" ? <button className="ops-btn ops-btn--primary ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Confirmed")} type="button">Xác nhận</button> : null}
-                  {order.status === "Ready" ? <button className="ops-btn ops-btn--success ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Served")} type="button">Phục vụ</button> : null}
+                <div className="ops-row ops-row--tight ops-row--wrap">
+                  {order.status === "Placed" ? <button className="ops-btn ops-btn--primary" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Confirmed")} type="button">Xác nhận</button> : null}
+                  {order.status === "Ready" ? <button className="ops-btn ops-btn--success" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Served")} type="button">Phục vụ</button> : null}
                   {order.status === "Served" && (order.paymentStatus === "Confirmed" || order.paymentStatus === "Paid") ? (
-                    <button className="ops-btn ops-btn--success ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Completed")} type="button">Hoàn tất</button>
+                    <button className="ops-btn ops-btn--success" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Completed")} type="button">Hoàn tất</button>
                   ) : null}
                   {!["Completed", "Cancelled"].includes(order.status) ? (
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Cancelled")} type="button">Hủy</button>
+                    <button className="ops-btn ops-btn--ghost" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Cancelled")} type="button">Hủy</button>
                   ) : null}
                 </div>
               </td>
@@ -181,20 +182,20 @@ export function AdminOrderManager({
               <button aria-label="Đóng" className="ops-modal-close" onClick={() => setSelectedOrder(null)} type="button"><X aria-hidden="true" size={18} /></button>
             </div>
             <div className="ops-modal-body">
-              <div className="ops-card-meta" style={{ marginBottom: 12, gap: 8 }}>
-                <span className={`ops-badge ops-badge--${selectedOrder.status.toLowerCase()}`}>{selectedOrder.status}</span>
+              <div className="ops-card-meta ops-card-meta--spaced">
+                <span className={`ops-badge ops-badge--${selectedOrder.status.toLowerCase()}`}>{labelOrderStatus(selectedOrder.status)}</span>
                 {selectedOrder.tableSessionId ? <span className="ops-badge">Thanh toán theo phiên bàn</span> : <span className={`ops-badge ops-badge--${selectedOrder.paymentStatus.toLowerCase()}`}>{selectedOrder.paymentMethod} · {selectedOrder.paymentStatus}</span>}
                 {selectedOrder.tableCode ? <span className="ops-card-table">Bàn {selectedOrder.tableCode}</span> : null}
               </div>
 
-              <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Món ({selectedOrder.items.length})</h4>
+              <h4 className="ops-subhead">Món ({selectedOrder.items.length})</h4>
               <div className="ops-item-list">
                 {selectedOrder.items.map((item) => (
                   <div className="ops-item-row" key={item.orderItemId}>
                     <div className="ops-item-info">
                       <div className="ops-item-name">
                         {item.quantity}× {item.name}
-                        <span className={`ops-badge ops-badge--${item.status.toLowerCase()}`}>{item.status}</span>
+                        <span className={`ops-badge ops-badge--${item.status.toLowerCase()}`}>{labelOrderItemStatus(item.status)}</span>
                       </div>
                       <span className="ops-item-qty">{formatVnd(item.lineTotal)}</span>
                     </div>
@@ -202,17 +203,17 @@ export function AdminOrderManager({
                 ))}
               </div>
 
-              <div style={{ marginTop: 16, padding: 12, background: "var(--color-bg-subtle)", borderRadius: 8, fontSize: 14 }}>
+              <div className="ops-inset">
                 <strong>Tổng: {formatVnd(selectedOrder.totalAmount)}</strong>
               </div>
 
               {/* Events */}
               {selectedOrder.events.length > 0 ? (
-                <div style={{ marginTop: 16 }}>
-                  <h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Lịch sử</h4>
+                <div className="ops-block">
+                  <h4 className="ops-subhead">Lịch sử</h4>
                   {selectedOrder.events.map((ev, i) => (
-                    <div key={i} style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 4 }}>
-                      <span className={`ops-badge ops-badge--${ev.status.toLowerCase()}`}>{ev.status}</span>
+                    <div key={i} className="ops-note">
+                      <span className={`ops-badge ops-badge--${ev.status.toLowerCase()}`}>{labelOrderEventStatus(ev.status, ev.source)}</span>
                       {" "}{new Date(ev.createdAt).toLocaleString("vi-VN")}
                       {ev.note ? ` - ${ev.note}` : ""}
                     </div>

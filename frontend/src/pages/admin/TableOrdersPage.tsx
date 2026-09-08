@@ -44,11 +44,11 @@ export function TableOrdersPage() {
         <div className="table-orders-header-actions">
           <OpsConnectionBadge status={connectionStatus} />
           {isCounter ? (
-            <Link className="ops-btn ops-btn--primary ops-btn--sm" to={buildCounterPaymentsLink(tableCode)}>
+            <Link className="ops-btn ops-btn--primary" to={buildCounterPaymentsLink(tableCode)}>
               Quầy thu ngân
             </Link>
           ) : null}
-          <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/orders?tab=table">
+          <Link className="ops-btn ops-btn--ghost" to="/orders?tab=table">
             <ClipboardList aria-hidden="true" size={15} />
             Đơn hàng tổng
           </Link>

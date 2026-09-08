@@ -11,6 +11,7 @@ import { matchesTableFilter, normalizeTableCode } from "../components/operations
 import { Banknote, Check, CreditCard, QrCode, RefreshCw, X } from "lucide-react";
 import "../components/operations/operations.css";
 import { useOpsConfirm } from "../components/operations/OpsConfirmProvider";
+import { PosNumpad } from "../components/operations/PosNumpad";
 import { locThanhToanTuDong, themThongBao } from "../components/operations/opsCashierAlerts";
 import { chiGiuChuSo, docTienDua, thieuTien, tinhThoiLai } from "../components/operations/opsCashTendered";
 import type { ThongBaoDaThu } from "../components/operations/opsCashierAlerts";
@@ -270,7 +271,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
           <span>Còn phải thu</span>
           <strong data-money>{formatVnd(conPhaiThu)}</strong>
         </p>
-        <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => void loadInvoices()} type="button">
+        <button className="ops-btn ops-btn--ghost" onClick={() => void loadInvoices()} type="button">
           <RefreshCw aria-hidden="true" size={14} /> Làm mới
         </button>
       </header>
@@ -290,7 +291,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
 
         {codAwaiting.length > 0 ? (
           <button
-            className="ops-btn ops-btn--success ops-btn--sm pos-bulk"
+            className="ops-btn ops-btn--success pos-bulk"
             onClick={() => void bulkConfirmCod()}
             title="Phím tắt: C"
             type="button"
@@ -312,7 +313,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
       ) : null}
 
       {awaiting.length === 0 ? (
-        <div className="ops-empty" style={{ padding: 32 }}>Không có bàn nào chờ thu</div>
+        <div className="ops-empty ops-empty--roomy">Không có bàn nào chờ thu</div>
       ) : (
         <div className="pos-grid">
           {awaiting.map((invoice, index) => {
@@ -370,6 +371,18 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
                       value={dua ?? ""}
                     />
                     <ThoiLai khachDua={dua} tong={invoice.totalAmount} />
+                    {/*
+                      Bàn phím số chỉ hiện ở bậc `pos` — quyết định đó nằm trong CSS, không trong
+                      JS. Xem ghi chú trong `PosNumpad.tsx` về lý do.
+                    */}
+                    <PosNumpad
+                      ariaLabel={`Bàn phím số cho bàn ${invoice.tableCode}`}
+                      value={dua ?? ""}
+                      onChange={(giaTriMoi) => setTienDua((truoc) => ({
+                        ...truoc,
+                        [invoice.tableSessionId]: giaTriMoi,
+                      }))}
+                    />
                   </div>
                 ) : null}
 

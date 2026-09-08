@@ -386,7 +386,7 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                   onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
                   placeholder="/menu-images/01-goi-cuon-tom-thit.webp"
                 />
-                <div className="ops-form-hint" style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>
+                <div className="ops-form-hint">
                   Ảnh bộ menu chuẩn nằm trong /menu-images/ (91 ảnh theo tên món). Xem trước sau khi lưu trong lưới thẻ bên dưới.
                 </div>
               </div>
@@ -402,7 +402,7 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                   onChange={(e) => setForm({ ...form, prepMinutes: e.target.value === "" ? null : Number(e.target.value) })}
                   placeholder="Chưa khai"
                 />
-                <div className="ops-form-hint" style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>
+                <div className="ops-form-hint">
                   Tính từ lúc bếp nhận món tới lúc món sẵn sàng — KHÔNG phải tổng thời gian nấu. Phở ninh
                   nước dùng cả đêm nhưng múc ra bát chỉ vài phút. Để trống thì món này không hiện ước lượng
                   cho khách, và đó là đúng: một con số bịa còn tệ hơn không có.
@@ -413,9 +413,9 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                 <input className="ops-form-input" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="bán chạy, mới, cay" />
               </div>
               <div className="ops-form-group">
-                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="ops-check">
                   <input type="checkbox" checked={form.isAvailable} onChange={(e) => setForm({ ...form, isAvailable: e.target.checked })} />
-                  <span className="ops-form-label" style={{ margin: 0 }}>Đang bán</span>
+                  <span className="ops-form-label">Đang bán</span>
                 </label>
               </div>
             </div>
@@ -433,16 +433,16 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
         <div className="ops-notice ops-notice--info amm-bulkbar">
           <strong>Đã chọn {selectedVisible.length} món</strong>
           <div className="ops-inline-actions">
-            <button className="ops-btn ops-btn--sm" type="button" onClick={() => void handleBulkAvailability(true)}>
+            <button className="ops-btn" type="button" onClick={() => void handleBulkAvailability(true)}>
               Bật bán
             </button>
-            <button className="ops-btn ops-btn--sm" type="button" onClick={() => void handleBulkAvailability(false)}>
+            <button className="ops-btn" type="button" onClick={() => void handleBulkAvailability(false)}>
               Ngừng bán
             </button>
-            <button className="ops-btn ops-btn--danger ops-btn--sm" type="button" onClick={() => void handleBulkDelete()}>
+            <button className="ops-btn ops-btn--danger" type="button" onClick={() => void handleBulkDelete()}>
               Xoá
             </button>
-            <button className="ops-btn ops-btn--ghost ops-btn--sm" type="button" onClick={() => setSelected(new Set())}>
+            <button className="ops-btn ops-btn--ghost" type="button" onClick={() => setSelected(new Set())}>
               Bỏ chọn
             </button>
           </div>
@@ -508,15 +508,15 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                     title={item.isAvailable ? "Tắt bán" : "Mở bán"}
                     aria-label={item.isAvailable ? "Tắt bán" : "Mở bán"}
                   />
-                  <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEdit(item)} type="button">Sửa</button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" onClick={() => handleDelete(item.id)} type="button">Xóa</button>
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openEdit(item)} type="button">Sửa</button>
+                  <button className="ops-btn ops-btn--danger" onClick={() => handleDelete(item.id)} type="button">Xóa</button>
                 </div>
               </footer>
             </article>
           );
         })}
         {filtered.length === 0 ? (
-          <div className="ops-empty" style={{ gridColumn: "1 / -1" }}>Không tìm thấy món nào</div>
+          <div className="ops-empty ops-empty--span">Không tìm thấy món nào</div>
         ) : null}
       </div>
     </div>

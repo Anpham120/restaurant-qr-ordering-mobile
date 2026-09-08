@@ -1,0 +1,194 @@
+/* ==========================================================================
+   Token của mặt VẬN HÀNH — bếp, quầy thu ngân, quản trị.
+
+   KHÔNG sửa `tokens.css`. Mặt khách hàng và mặt vận hành có đòi hỏi ngược nhau:
+   khách hàng đọc một lần, rảnh tay, cách 30cm; người ở quầy thuộc lòng thao tác,
+   một tay bận, nhìn từ 60–80cm, và được đo bằng GIÂY. Tệp này chỉ mặt vận hành nạp.
+
+   Xem `docs/DAC_TA_THIET_KE_VAN_HANH.md` để biết tám con số dẫn tới từng lựa chọn dưới đây.
+   ========================================================================== */
+
+:root {
+  /* ---- Thang chữ — 6 bậc, thay cho 23 giá trị rời ------------------------
+     Đo được trước khi đổi: 23 cỡ khác nhau trong operations.css, trộn px và rem,
+     ba cỡ dùng nhiều nhất là 12px (14 lần), 13px (11 lần), 11px (8 lần).
+
+     Dùng `rem` chứ không `px`: người trực ca chỉnh cỡ chữ hệ thống thì giao diện
+     phải theo. `px` bỏ qua thiết lập đó.
+
+     Sàn là 0.8125rem (13px). Không có bậc nào nhỏ hơn — 11px ở khoảng cách 60–80cm
+     là chữ phải nheo mắt, và người nheo mắt thì đọc chậm. */
+  --ops-text-xs: 0.8125rem;   /* 13px — nhãn phụ, chú thích */
+  --ops-text-sm: 0.9375rem;   /* 15px — chữ trong bảng */
+  --ops-text-base: 1.0625rem; /* 17px — chữ chính, nhãn nút */
+  --ops-text-lg: 1.25rem;     /* 20px — tên món, mã bàn */
+  --ops-text-xl: 1.75rem;     /* 28px — số tiền, số đếm */
+  --ops-text-2xl: 2.5rem;     /* 40px — con số DUY NHẤT của màn hình */
+
+  --ops-line-tight: 1.25;
+  --ops-line-normal: 1.5;
+
+  /* ---- Vùng chạm --------------------------------------------------------
+     Quầy CÓ màn cảm ứng và bếp dùng tablet — đã xác nhận, không phải giả định.
+     Nên 44px là ngưỡng dùng-được, không phải ngưỡng cho đẹp.
+
+     Trước khi đổi: `.ops-btn` cao ~34px và `.ops-btn--sm` ~26px được dùng 28 lần.
+     26px dưới ngón tay là bấm nhầm có hệ thống. */
+  --ops-touch: 44px;
+  --ops-touch-lg: 56px;  /* hành động chính của màn: Thu tiền, Xong món */
+  --ops-touch-gap: 8px;  /* khoảng hở tối thiểu giữa hai vùng chạm */
+
+  /* ---- Nền và chữ -------------------------------------------------------
+     `--color-surface` và `--color-text` được DÙNG 12 lần trong operations.css và
+     floor-map.css nhưng KHÔNG khai ở đâu trong repo. `var()` không có giá trị dự
+     phòng và không tìm thấy biến thì khai báo vô hiệu: `background` rơi về
+     `transparent`, `color` rơi về màu thừa kế.
+
+     Hỏng im lặng — trong đó có nền của chính thanh tab quầy (`.ops-hub-tab`). Nó
+     "trông vẫn được" vì nền cha tình cờ hợp mắt. Khai ở đây để 12 chỗ đó chạy thật. */
+  --color-surface: #ffffff;
+  --color-text: var(--color-ink, #08233e);
+
+  /* ---- Nền riêng của mặt vận hành --------------------------------------
+     KHÔNG dùng gradient, không glass, không blur trong vùng đọc dữ liệu. Chúng hợp
+     với trang bán hàng; dưới một con số phải đọc trong hai giây thì chúng là nhiễu. */
+  --ops-bg: #f4f6f9;
+  --ops-panel: #ffffff;
+  --ops-panel-raised: #ffffff;
+  --ops-line: #d8e2ec;
+  --ops-line-strong: #b9c9d8;
+  --ops-ink: #0d2437;
+  --ops-ink-muted: #55708a;
+
+  /* ---- Màu mang thông tin ----------------------------------------------
+     Trên mặt vận hành, mỗi màu ứng một trạng thái. Không màu nào để trang trí.
+     Luôn đi kèm nhãn chữ hoặc hình dạng — bếp bị chói làm mất phân biệt màu, và
+     có người mù màu. */
+  --ops-ok: #15803d;
+  --ops-ok-bg: #dcfce7;
+  --ops-warn: #b45309;
+  --ops-warn-bg: #fef3c7;
+  --ops-urgent: #b91c1c;
+  --ops-urgent-bg: #fee2e2;
+  --ops-info: #005bac;
+  --ops-info-bg: #dbeefe;
+
+  --ops-focus: #005bac;
+}
+
+/* ---- Chế độ tối --------------------------------------------------------
+   Dòng đầu `operations.css` tự nhận là "dark-mode aware". Đo được: 0 lần
+   `prefers-color-scheme` và 0 lần `data-theme` trong cả hai tệp. Không có gì cả.
+
+   BA trạng thái, vì trình duyệt báo ba chứ không phải hai:
+     1. `:root` trần        — người dùng để mặc định, hệ điều hành sáng
+     2. `@media` + `:not([data-theme="light"])` — hệ tối, người dùng chưa chọn tay
+     3. `[data-theme="dark"]` — người dùng chọn tay, phải thắng cả hai chiều
+
+   Luật không được phá: KHÔNG màu nào chỉ tồn tại bên trong khối `@media` hay
+   `[data-theme]`. Khai thiếu một màu ở `:root` trần là trang hiện chữ của chủ đề
+   này trên nền của chủ đề kia — và chỉ hiện với người để thiết lập mặc định. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-surface: #16202b;
+    --color-text: #e6eef6;
+
+    --ops-bg: #0e161f;
+    --ops-panel: #16202b;
+    --ops-panel-raised: #1e2b38;
+    --ops-line: #2b3d4e;
+    --ops-line-strong: #3d5468;
+    --ops-ink: #e6eef6;
+    --ops-ink-muted: #93a9bd;
+
+    /* Nền trạng thái tối đi rất nhiều, chữ sáng lên — giữ tương phản chứ không
+       đảo màu máy móc. Đảo `#dcfce7` thẳng ra sẽ cho một mảng xanh chói. */
+    --ops-ok: #4ade80;
+    --ops-ok-bg: #10291a;
+    --ops-warn: #fbbf24;
+    --ops-warn-bg: #2e2410;
+    --ops-urgent: #f87171;
+    --ops-urgent-bg: #2f1516;
+    --ops-info: #60a5fa;
+    --ops-info-bg: #10243a;
+
+    --ops-focus: #60a5fa;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-surface: #16202b;
+  --color-text: #e6eef6;
+
+  --ops-bg: #0e161f;
+  --ops-panel: #16202b;
+  --ops-panel-raised: #1e2b38;
+  --ops-line: #2b3d4e;
+  --ops-line-strong: #3d5468;
+  --ops-ink: #e6eef6;
+  --ops-ink-muted: #93a9bd;
+
+  --ops-ok: #4ade80;
+  --ops-ok-bg: #10291a;
+  --ops-warn: #fbbf24;
+  --ops-warn-bg: #2e2410;
+  --ops-urgent: #f87171;
+  --ops-urgent-bg: #2f1516;
+  --ops-info: #60a5fa;
+  --ops-info-bg: #10243a;
+
+  --ops-focus: #60a5fa;
+}
+
+/* ==========================================================================
+   Vùng chạm — áp cho MỌI thứ bấm được
+
+   `.ops-btn--sm` đã bị xoá khỏi tệp này và khỏi 28 chỗ dùng nó. Nếu một khu vực
+   chật tới mức cần nút 26px thì khu vực đó bố cục sai, không phải nút sai.
+   ========================================================================== */
+.ops-btn,
+.ops-form-input,
+.ops-form-select {
+  min-height: var(--ops-touch);
+  font-size: var(--ops-text-base);
+}
+
+.ops-btn--lg {
+  min-height: var(--ops-touch-lg);
+  font-size: var(--ops-text-lg);
+  width: 100%;
+}
+
+/* Nút chỉ có biểu tượng vẫn phải vuông đủ 44px — chiều cao một mình không đủ. */
+.ops-btn--icon,
+.ops-modal-close,
+.ops-password-toggle {
+  min-height: var(--ops-touch);
+  min-width: var(--ops-touch);
+}
+
+/* ==========================================================================
+   Ba bậc thiết bị
+
+   Trước khi đổi: 4 điểm ngắt rời rạc (760, 768, 900, 1100) và KHÔNG bậc nào cho
+   máy POS ở 1024px — nó rơi vào vùng "desktop" và nhận cỡ chữ, cỡ nút của desktop.
+
+   Bếp chạy tablet ~1024px và quầy có cảm ứng, nên bậc `pos` là bậc CHÍNH.
+   Luật: ở bậc `pos`, chữ và vùng chạm KHÔNG được nhỏ hơn bậc điện thoại.
+   ========================================================================== */
+@media (min-width: 768px) and (max-width: 1279px) {
+  :root {
+    --ops-text-xs: 0.875rem;    /* 14px */
+    --ops-text-sm: 1rem;        /* 16px */
+    --ops-text-base: 1.125rem;  /* 18px */
+    --ops-text-lg: 1.375rem;    /* 22px */
+    --ops-touch: 48px;
+    --ops-touch-lg: 60px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-btn {
+    transition: none;
+  }
+}

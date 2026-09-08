@@ -34,8 +34,13 @@ describe("V59 Kitchen board layout", () => {
     expect(css).toMatch(
       /\.ops-board--kitchen\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/s,
     );
+    // 2 CỘT PHẢI PHỦ TRỌN BẬC `pos` (768–1279px), không cắt ở 1100px.
+    //
+    // Bếp chạy tablet ~1024px — đã xác nhận, ghi ở §1.2 của đặc tả. Ngưỡng 1100 cũ để lại khoảng
+    // 1101–1279 vẫn 4 cột, và ở đó mỗi thẻ hẹp ~250px trên đúng thiết bị người ta dùng hàng ngày.
+    // Con số 1100 là một mốc lẻ không ứng với thiết bị nào; 1279 là mép trên của bậc `pos`.
     expect(css).toMatch(
-      /@media \(max-width:\s*1100px\)[\s\S]*?\.ops-board--kitchen\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+      /@media \(min-width:\s*768px\) and \(max-width:\s*1279px\)[\s\S]*?\.ops-board--kitchen\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
     );
     expect(css).toMatch(
       /@media \(max-width:\s*768px\)[\s\S]*?\.ops-board--kitchen\s*\{[^}]*grid-template-columns:\s*1fr/,

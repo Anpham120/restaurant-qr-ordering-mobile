@@ -140,15 +140,15 @@ export function CounterShiftPanel({
     <section className="counter-workspace">
       {!embedded ? (
         <div className="ops-page-header">
-          <h2 style={{ margin: 0 }}>Ca quầy</h2>
-          <p style={{ margin: "4px 0 0" }}>Mở ca trước khi thu tiền, chốt ca cuối phiên</p>
+          <h2 className="ops-flush">Ca quầy</h2>
+          <p className="ops-note ops-note--stacked">Mở ca trước khi thu tiền, chốt ca cuối phiên</p>
         </div>
       ) : null}
 
       {loadError ? (
         <div className="counter-alert counter-alert--error" role="alert">
           <span>{loadError}</span>
-          <button className="ops-btn ops-btn--ghost ops-btn--sm" type="button" onClick={() => void refresh()}>
+          <button className="ops-btn ops-btn--ghost" type="button" onClick={() => void refresh()}>
             <RefreshCw aria-hidden="true" size={14} /> Thử lại
           </button>
         </div>

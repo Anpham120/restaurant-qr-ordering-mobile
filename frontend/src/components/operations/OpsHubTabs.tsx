@@ -8,6 +8,17 @@ export type OpsHubTab = {
   adminOnly?: boolean;
   /** Ẩn với Admin — dành cho nhân viên quầy/bếp thao tác trực tiếp */
   counterOnly?: boolean;
+  /**
+   * Số việc đang chờ trong tab này.
+   *
+   * Vì sao cần: sáu panel của quầy đều dựng sẵn rồi ẩn, nên việc nằm trong tab KHÔNG mở là việc
+   * không ai thấy. Người ở quầy phải bấm lần lượt qua từng tab mới biết chỗ nào có việc — và lúc
+   * đông khách thì họ không bấm.
+   *
+   * `undefined` hoặc 0 thì không hiện gì. Một số 0 hiển thị ra là nhiễu: nó chiếm chỗ và bắt mắt
+   * dừng lại để đọc một tin "không có gì".
+   */
+  badge?: number;
 };
 
 type OpsHubTabsProps = {
@@ -66,6 +77,15 @@ export function OpsHubTabs({ tabs, param = "tab", isAdmin = true, sticky = false
           onClick={() => selectTab(tab.id)}
         >
           {tab.label}
+          {/*
+            Số đi kèm NHÃN CHỮ trong `aria-label`, không chỉ là con số trần: trình đọc màn hình đọc
+            "Chờ thanh toán 3" nghe như một mã, còn "Chờ thanh toán, 3 việc đang chờ" là một câu.
+          */}
+          {tab.badge && tab.badge > 0 ? (
+            <span className="ops-hub-tab-badge" aria-label={`${tab.badge} việc đang chờ`}>
+              {tab.badge > 99 ? "99+" : tab.badge}
+            </span>
+          ) : null}
         </button>
       ))}
     </div>

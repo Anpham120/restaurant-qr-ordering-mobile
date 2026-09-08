@@ -115,9 +115,9 @@ export function AdminCategoryManager({ embedded = false }: { embedded?: boolean 
                 <input className="ops-form-input" type="number" value={form.displayOrder} onChange={(e) => setForm({ ...form, displayOrder: Number(e.target.value) })} />
               </div>
               <div className="ops-form-group">
-                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="ops-check">
                   <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
-                  <span className="ops-form-label" style={{ margin: 0 }}>Đang hoạt động</span>
+                  <span className="ops-form-label">Đang hoạt động</span>
                 </label>
               </div>
             </div>
@@ -151,11 +151,11 @@ export function AdminCategoryManager({ embedded = false }: { embedded?: boolean 
                   {cat.isActive ? "Hoạt động" : "Tắt"}
                 </span>
               </td>
-              <td style={{ fontSize: 12, color: "var(--color-muted)" }}>{new Date(cat.createdAt).toLocaleDateString("vi-VN")}</td>
+              <td className="ops-note">{new Date(cat.createdAt).toLocaleDateString("vi-VN")}</td>
               <td>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEdit(cat)} type="button">Sửa</button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" onClick={() => handleDelete(cat.categoryId)} type="button">Xóa</button>
+                <div className="ops-row ops-row--tight">
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openEdit(cat)} type="button">Sửa</button>
+                  <button className="ops-btn ops-btn--danger" onClick={() => handleDelete(cat.categoryId)} type="button">Xóa</button>
                 </div>
               </td>
             </tr>

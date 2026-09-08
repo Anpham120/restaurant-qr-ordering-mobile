@@ -210,15 +210,15 @@ export function AdminPromotionsPage() {
                 />
               </div>
               <div className="ops-form-group">
-                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="ops-check">
                   <input type="checkbox" checked={form.isFlashSale} onChange={(e) => setForm({ ...form, isFlashSale: e.target.checked })} />
-                  <span className="ops-form-label" style={{ margin: 0 }}>Flash sale</span>
+                  <span className="ops-form-label">Flash sale</span>
                 </label>
               </div>
               <div className="ops-form-group">
-                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <label className="ops-check">
                   <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
-                  <span className="ops-form-label" style={{ margin: 0 }}>Đang hoạt động</span>
+                  <span className="ops-form-label">Đang hoạt động</span>
                 </label>
               </div>
             </div>
@@ -237,8 +237,8 @@ export function AdminPromotionsPage() {
           <tr>
             <th>Mã</th>
             <th>Tên</th>
-            <th>Giảm</th>
-            <th>Đơn tối thiểu</th>
+            <th data-money>Giảm</th>
+            <th data-money>Đơn tối thiểu</th>
             <th>Loại</th>
             <th>Trạng thái</th>
             <th>Lượt dùng</th>
@@ -250,8 +250,8 @@ export function AdminPromotionsPage() {
             <tr key={promotion.promotionId}>
               <td><strong>{promotion.code}</strong></td>
               <td>{promotion.name}</td>
-              <td>{promotion.type === "Percentage" ? `${promotion.discountValue}%` : formatVnd(promotion.discountValue)}</td>
-              <td>{formatVnd(promotion.minOrderAmount)}</td>
+              <td data-money>{promotion.type === "Percentage" ? `${promotion.discountValue}%` : formatVnd(promotion.discountValue)}</td>
+              <td data-money>{formatVnd(promotion.minOrderAmount)}</td>
               <td>{promotion.isFlashSale ? <span className="ops-badge ops-badge--preparing">Flash sale</span> : "Thường"}</td>
               <td>
                 <span className={`ops-badge ${promotion.isActive ? "ops-badge--ready" : "ops-badge--cancelled"}`}>
@@ -259,15 +259,15 @@ export function AdminPromotionsPage() {
                 </span>
               </td>
               {/* Người đặt mã phải thấy nó SẮP hết, không phải phát hiện khi khách phàn nàn. */}
-              <td style={{ fontVariantNumeric: "tabular-nums" }}>
+              <td data-money>
                 {promotion.usageLimit == null
                   ? <span className="ops-muted">không giới hạn</span>
                   : `${promotion.usedCount ?? 0}/${promotion.usageLimit}`}
               </td>
               <td>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEdit(promotion)} type="button">Sửa</button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" onClick={() => handleDelete(promotion.promotionId)} type="button">Xóa</button>
+                <div className="ops-row ops-row--tight">
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openEdit(promotion)} type="button">Sửa</button>
+                  <button className="ops-btn ops-btn--danger" onClick={() => handleDelete(promotion.promotionId)} type="button">Xóa</button>
                 </div>
               </td>
             </tr>

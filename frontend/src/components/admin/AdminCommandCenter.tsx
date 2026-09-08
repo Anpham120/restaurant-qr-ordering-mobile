@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Activity, Armchair, ChefHat, Receipt, ShoppingBag, BarChart3 } from "lucide-react";
+import { Activity, Armchair, BarChart3, ChefHat, Clock3, Receipt, ShoppingBag } from "lucide-react";
 import { fetchOpsCommandSummary, type OpsCommandSummary } from "../../services/opsSummaryService";
 import { useOpsRealtime } from "../../hooks/useOpsRealtime";
 import { OpsConnectionBadge } from "../operations/OpsConnectionBadge";
@@ -64,7 +64,7 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><ShoppingBag size={18} /> Cần xử lý ngay</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/orders?tab=table">Xem tất cả</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/orders?tab=table">Xem tất cả</Link>
           </div>
           {summary.urgentItems.length > 0 ? (
             <ul className="ops-command-list">
@@ -82,7 +82,7 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><Armchair size={18} /> Sơ đồ bàn</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/tables?tab=sessions">Mở sơ đồ</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/tables?tab=sessions">Mở sơ đồ</Link>
           </div>
           <div className="ops-stats ops-stats--compact">
             <div className="ops-stat-card">
@@ -108,7 +108,7 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><Receipt size={18} /> Quầy thu ngân</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/counter?tab=shift">Giám sát ca</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/counter?tab=shift">Giám sát ca</Link>
           </div>
           <div className="ops-stat-card">
             <div className="ops-stat-label">Ca quầy</div>
@@ -123,13 +123,37 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><BarChart3 size={18} /> Doanh thu hôm nay</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/reports">Báo cáo</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/reports">Báo cáo</Link>
           </div>
           <div className="ops-stat-card">
             <div className="ops-stat-value">{formatVnd(summary.todayRevenue)}</div>
             <div className="ops-stat-detail">Thực thu trong ngày</div>
           </div>
         </section>
+
+        {/*
+          BÀN QUÁ GIỜ CHƯA THU — con số nói cho quản lý biết có bao nhiêu TIỀN đang ở ngoài quầy.
+
+          Ẩn hẳn khi bằng 0 chứ không hiện một ô "0 bàn": trung tâm điều hành là chỗ quét để tìm
+          việc, và một ô báo "không có gì" chiếm đúng chỗ của một ô có việc.
+
+          Đây là thứ DUY NHẤT trong danh sách ở §4.3 của đặc tả thật sự còn thiếu — bốn con số kia
+          (doanh thu, bàn đang mở, hoá đơn chờ, đơn đang nấu) đã có sẵn từ trước.
+        */}
+        {summary.overdueTables.count > 0 ? (
+          <section className="ops-command-widget ops-command-widget--alert">
+            <div className="ops-command-widget-head">
+              <h2><Clock3 size={18} /> Bàn quá giờ chưa thu</h2>
+              <Link className="ops-btn ops-btn--ghost" to="/counter?tab=overdue">Xử lý</Link>
+            </div>
+            <div className="ops-stat-card">
+              <div className="ops-stat-value">{summary.overdueTables.count}</div>
+              <div className="ops-stat-detail">
+                {formatVnd(summary.overdueTables.unpaidTotal)} chưa thu
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
