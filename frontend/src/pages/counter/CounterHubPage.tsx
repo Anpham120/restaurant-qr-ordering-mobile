@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@cmc/auth";
 import { AdminInvoicesPanel } from "../AdminInvoicesPage";
@@ -13,6 +13,7 @@ import { phutDaCho } from "../../components/operations/opsAssistanceQueue";
 import { BellRing, Radio } from "lucide-react";
 import { useOpsHubTab } from "../../components/operations/OpsHubTabs";
 import { useOpsConnectionStatus } from "../../components/operations/OpsRealtimeProvider";
+import { useOpsNavBadges } from "../../components/operations/OpsNavBadgesProvider";
 import { hasPendingCounterPayments } from "../../services/opsSummaryService";
 import "../../components/operations/operations.css";
 import "./counter-hub.css";
@@ -35,12 +36,34 @@ const COUNTER_SUPERVISOR_TABS = [
 export function CounterHubPage() {
   const { user } = useAuth();
   const isSupervisor = user?.role === "Admin";
-  const counterTabs = isSupervisor ? COUNTER_SUPERVISOR_TABS : COUNTER_STAFF_TABS;
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeTab } = useOpsHubTab(counterTabs);
-  const coTab = (id: string) => counterTabs.some((tab) => tab.id === id);
   const connectionStatus = useOpsConnectionStatus();
   const { recentAssistance, daDieuPhoiYeuCau } = useOpsAssistance();
+  const { badges } = useOpsNavBadges();
+
+  /*
+    SỐ VIỆC CHỜ NGAY TRÊN NHÃN TAB.
+
+    Sáu panel đều dựng sẵn rồi ẩn — quyết định đó đúng và được giữ, vì đổi tab không được xoá chữ
+    người dùng đang gõ. Nhưng nó có một hệ quả: việc nằm trong tab KHÔNG mở là việc không ai thấy.
+    Người ở quầy phải bấm lần lượt qua từng tab mới biết chỗ nào có việc, và lúc đông khách thì họ
+    không bấm.
+
+    Chỉ lấy con số từ dữ liệu ĐÃ CÓ trên máy khách. Thêm một lời gọi mạng cho mỗi tab là đổi một
+    vấn đề hiển thị lấy một vấn đề tải — và hai tab còn lại (ca, phiếu tặng) không có khái niệm
+    "đang chờ" nào rõ ràng để đếm, nên để trống thay vì bịa ra một con số.
+  */
+  const counterTabs = useMemo(() => {
+    const goc = isSupervisor ? COUNTER_SUPERVISOR_TABS : COUNTER_STAFF_TABS;
+    return goc.map((tab) => {
+      if (tab.id === "assistance") return { ...tab, badge: recentAssistance.length };
+      if (tab.id === "payments") return { ...tab, badge: badges.counter };
+      return tab;
+    });
+  }, [isSupervisor, recentAssistance.length, badges.counter]);
+
+  const { activeTab } = useOpsHubTab(counterTabs);
+  const coTab = (id: string) => counterTabs.some((tab) => tab.id === id);
 
   useEffect(() => {
     if (isSupervisor || searchParams.get("tab")) return;

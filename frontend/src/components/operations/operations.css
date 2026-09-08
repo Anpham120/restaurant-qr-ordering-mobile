@@ -1393,6 +1393,15 @@
   margin-bottom: 0;
 }
 
+/*
+  Thanh điều hướng dưới của vai quầy (`CounterMobileShell`).
+
+  Đặc tả bản đầu ghi component này là mã chết và bảo xoá. Đó là lỗi đo của tôi — quét
+  `frontend/src` mà quên `frontend/apps` — đã sửa ở §1 dòng 8. Nó ĐANG chạy.
+
+  Bỏ `backdrop-filter: blur(8px)`: mờ nền dưới một thanh điều hướng làm chữ phía sau lấp ló qua,
+  và đây là chỗ người ta bấm chứ không phải chỗ để ngắm.
+*/
 .ops-bottom-nav {
   position: fixed;
   left: 0;
@@ -1403,21 +1412,22 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-  background: rgba(255, 255, 255, 0.96);
-  border-top: 1px solid var(--color-border-light);
-  backdrop-filter: blur(8px);
+  background: var(--ops-panel);
+  border-top: 1px solid var(--ops-line);
 }
 
 .ops-bottom-nav-link {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  min-height: var(--ops-touch);
   padding: 8px 4px;
   border-radius: 12px;
   color: var(--color-muted);
   text-decoration: none;
-  font-size: 11px;
+  font-size: var(--ops-text-xs);
   font-weight: 700;
 }
 
@@ -1665,9 +1675,10 @@
 }
 
 .pos-amount {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--ops-text-2xl);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+  line-height: var(--ops-line-tight);
 }
 
 .pos-meta {
@@ -1682,9 +1693,11 @@
 
 .pos-items > summary {
   cursor: pointer;
-  font-size: 0.85rem;
+  /* `<summary>` là vùng bấm được nên nó theo sàn chạm như mọi vùng bấm khác. Trước đợt này là
+     32px — dưới ngưỡng, trên một màn hình CÓ cảm ứng. */
+  min-height: var(--ops-touch);
+  font-size: var(--ops-text-sm);
   color: var(--color-muted);
-  min-height: 32px;
   display: flex;
   align-items: center;
 }
@@ -1719,30 +1732,44 @@
 }
 
 .pos-cash input {
-  width: 7.5rem;
-  min-height: 44px;
+  width: 8.5rem;
+  min-height: var(--ops-touch-lg);
   padding: 6px 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--ops-line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--ops-panel);
   font: inherit;
-  font-size: 1.05rem;
+  font-size: var(--ops-text-xl);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-/* Tiền thối phải đọc được từ xa hơn phần còn lại: đây là con số đếm ra khỏi ngăn kéo. */
-.ops-cash-change {
-  font-size: 1.05rem;
+/*
+  TIỀN THỐI VÀ TIỀN THIẾU PHẢI CÙNG CỠ.
+
+  Trước đợt này `.ops-cash-change` đặt 1.05rem còn `.ops-cash-short` không đặt gì nên thừa kế cỡ
+  nhỏ hơn. Hai dòng đó là hai kết quả của CÙNG một ô nhập, và cái khẩn hơn — khách đưa THIẾU — lại
+  là cái nhỏ hơn. Người thu ngân liếc qua thấy chữ nhỏ thì dễ hiểu nhầm là đã xong.
+
+  Khai chung một quy tắc chứ không hai: tách rời chính là cách chúng trôi khỏi nhau lần trước.
+  Chỉ MÀU tách riêng bên dưới, vì màu là thứ duy nhất hai dòng phải khác nhau.
+*/
+.ops-cash-change,
+.ops-cash-short {
+  font-size: var(--ops-text-xl);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: var(--ops-line-tight);
+}
+
+.ops-cash-change {
+  color: var(--ops-ok);
 }
 
 /* Nói THẲNG là thiếu, không hiện số âm — "-5.000đ" là thứ người đang vội đọc lướt thành 5.000. */
 .ops-cash-short {
-  font-variant-numeric: tabular-nums;
-  color: var(--color-danger);
+  color: var(--ops-urgent);
 }
-
 .ops-cash-hint {
   font-size: 0.85rem;
   color: var(--color-muted);
@@ -1963,4 +1990,63 @@
 
 .kitchen-menu-flag {
   margin-left: var(--space-2, 8px);
+}
+
+
+/* ==========================================================================
+   QUẦY THU NGÂN — đợt 4 của docs/DAC_TA_THIET_KE_VAN_HANH.md
+
+   Chỉ những quy tắc MỚI nằm ở đây. Sáu quy tắc đã có sẵn (`.pos-amount`,
+   `.ops-cash-change`/`.ops-cash-short`, `.pos-items > summary`, `.ops-bottom-nav`,
+   `.ops-bottom-nav-link`) được sửa TẠI CHỖ ở trên, không thêm bản đè.
+   ========================================================================== */
+
+/* ---- Số việc chờ trên nhãn tab -----------------------------------------
+   Sáu panel dựng sẵn rồi ẩn, nên việc trong tab không mở là việc không ai thấy.
+   Con số này là cách duy nhất biết được mà không phải bấm qua từng tab. */
+.ops-hub-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ops-urgent);
+  color: #fff;
+  font-size: var(--ops-text-xs);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Ô nhập tiền khách đưa: cùng cỡ với con số nó sinh ra. */
+/* ---- Bàn phím số trên màn ------------------------------------------------
+   ẨN mặc định, HIỆN ở bậc `pos`. Điện thoại đã có bàn phím ảo của hệ điều hành;
+   màn quản trị rộng thì có bàn phím vật lý. Chỉ máy POS cảm ứng mới thiếu. */
+.pos-numpad {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .pos-numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--ops-touch-gap);
+    margin-top: var(--space-3, 12px);
+    max-width: 320px;
+  }
+
+  .pos-numpad-key {
+    /* 56px — bấm bằng ngón tay, thường không nhìn kỹ. */
+    min-height: var(--ops-touch-lg);
+    font-size: var(--ops-text-xl);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pos-numpad-key--erase {
+    color: var(--ops-urgent);
+  }
 }

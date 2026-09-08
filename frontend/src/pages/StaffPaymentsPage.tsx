@@ -11,6 +11,7 @@ import { matchesTableFilter, normalizeTableCode } from "../components/operations
 import { Banknote, Check, CreditCard, QrCode, RefreshCw, X } from "lucide-react";
 import "../components/operations/operations.css";
 import { useOpsConfirm } from "../components/operations/OpsConfirmProvider";
+import { PosNumpad } from "../components/operations/PosNumpad";
 import { locThanhToanTuDong, themThongBao } from "../components/operations/opsCashierAlerts";
 import { chiGiuChuSo, docTienDua, thieuTien, tinhThoiLai } from "../components/operations/opsCashTendered";
 import type { ThongBaoDaThu } from "../components/operations/opsCashierAlerts";
@@ -370,6 +371,18 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
                       value={dua ?? ""}
                     />
                     <ThoiLai khachDua={dua} tong={invoice.totalAmount} />
+                    {/*
+                      Bàn phím số chỉ hiện ở bậc `pos` — quyết định đó nằm trong CSS, không trong
+                      JS. Xem ghi chú trong `PosNumpad.tsx` về lý do.
+                    */}
+                    <PosNumpad
+                      ariaLabel={`Bàn phím số cho bàn ${invoice.tableCode}`}
+                      value={dua ?? ""}
+                      onChange={(giaTriMoi) => setTienDua((truoc) => ({
+                        ...truoc,
+                        [invoice.tableSessionId]: giaTriMoi,
+                      }))}
+                    />
                   </div>
                 ) : null}
 

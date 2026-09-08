@@ -27,7 +27,7 @@ Ba mặt: **bếp**, **quầy thu ngân**, **quản trị**. Không đụng mặ
 | 5 | Chữ số tiền | `tabular-nums` xuất hiện 8 lần nhưng chỉ ở **3** vùng (`pos-items`, `ops-cash-change`, `ops-cash-short`) | Cột tiền trong `ops-table` và thẻ thống kê **không** canh cột — mắt phải đọc từng số thay vì quét |
 | 6 | Style rời | **38** lần `style={{` trên 7 màn vận hành: bếp 12 · khuyến mãi 6 · báo cáo 6 · hoá đơn 6 · tích điểm 5 · ca quầy 2 · thanh toán 1 | Mỗi cái là một chỗ hệ thiết kế không phủ tới |
 | 7 | Nền tảng | `tokens.css` là hệ **thương hiệu khách hàng**: 5 gradient, glass `blur(12px)`, xanh CMC | Đang dùng lại nguyên si cho mặt vận hành |
-| 8 | Mã chết | `CounterMobileShell.tsx` không được import ở đâu | Đã có người nghĩ tới quầy trên màn nhỏ, rồi bỏ dở |
+| 8 | ~~Mã chết~~ **SAI** | `CounterMobileShell.tsx` — tôi ghi là không ai import. Nó ĐANG chạy, dùng ở `apps/admin-web/src/main.tsx` làm thanh điều hướng dưới cho vai quầy | Lỗi đo của tôi: quét `frontend/src` mà quên `frontend/apps`. Cùng nguyên nhân với hai sai số ở dòng 3 và 6 |
 
 ### 1.1 Cái ĐANG đúng, phải giữ
 
@@ -193,7 +193,7 @@ nên ở bậc `pos` — bậc bếp thật sự chạy — nó không có sàn 
 | Màn thu tiền | Tổng tiền `--ops-text-2xl`. Tiền khách đưa và tiền thối cùng cỡ, cùng canh cột |
 | Bàn phím số | Ở bậc `pos`, ô nhập tiền có bàn phím số **56px/phím** trên màn — không bắt dùng bàn phím vật lý |
 | Hoàn tiền | Giữ nguyên: nút đỏ, hỏi lại, **bắt gõ lại mã hoá đơn**. Đây là thao tác không lùi được |
-| `CounterMobileShell` | **Xoá** — mã chết. Bậc `compact` xử lý bằng CSS, không bằng một shell riêng |
+| `CounterMobileShell` | **GIỮ** — nó là thanh điều hướng dưới đang chạy, không phải mã chết. Nâng vùng chạm lên 44px và bỏ `backdrop-filter` |
 
 ### 4.3 Quản trị — 7 trang phẳng
 
@@ -222,7 +222,7 @@ Mỗi đợt là một PR, có phép kiểm riêng, không đợt nào phá đ�
 | **1** | `ops-tokens.css`: thang chữ, vùng chạm, điểm ngắt, chế độ tối. Chưa đụng màn nào | Phép kiểm: không token màu nào chỉ tồn tại trong khối `@media`/`[data-theme]` |
 | **2** | Xoá `ops-btn--sm` (28 chỗ), áp vùng chạm 44/56px | Phép kiểm: không quy tắc CSS nào cho nút có chiều cao tính ra < 44px |
 | **3** | Bếp: chủ đề tối, thẻ món, ngưỡng phút, 2 cột ở bậc `pos`, dọn 12 `style={{}}` | Phép kiểm: `KitchenRealtimePage` không còn `style={{`; ngưỡng phút có test đơn vị |
-| **4** | Quầy: số việc chờ trên nhãn tab, bàn phím số bậc `pos`, xoá `CounterMobileShell` | Phép kiểm cổng mã chết vẫn xanh sau khi xoá |
+| **4** | Quầy: số việc chờ trên nhãn tab, bàn phím số bậc `pos`, thứ bậc số tiền, sàn chạm cho thanh điều hướng dưới | Phép kiểm: không vùng bấm nào ở quầy dưới 44px; tiền thối và tiền thiếu cùng cỡ |
 | **5** | Admin: bảng số liệu ở trang chủ, gộp điều hướng 3 nhóm, tabular-nums toàn bảng | Phép kiểm: mọi cột tiền trong `ops-table` có `tabular-nums` |
 | **6** | Dọn `style={{}}` còn lại (26 chỗ ngoài bếp) | `style={{` trên 7 màn vận hành bằng 0 |
 
