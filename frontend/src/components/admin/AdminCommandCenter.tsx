@@ -64,7 +64,7 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><ShoppingBag size={18} /> Cần xử lý ngay</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/orders?tab=table">Xem tất cả</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/orders?tab=table">Xem tất cả</Link>
           </div>
           {summary.urgentItems.length > 0 ? (
             <ul className="ops-command-list">
@@ -82,7 +82,7 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><Armchair size={18} /> Sơ đồ bàn</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/tables?tab=sessions">Mở sơ đồ</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/tables?tab=sessions">Mở sơ đồ</Link>
           </div>
           <div className="ops-stats ops-stats--compact">
             <div className="ops-stat-card">
@@ -108,7 +108,7 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><Receipt size={18} /> Quầy thu ngân</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/counter?tab=shift">Giám sát ca</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/counter?tab=shift">Giám sát ca</Link>
           </div>
           <div className="ops-stat-card">
             <div className="ops-stat-label">Ca quầy</div>
@@ -123,7 +123,7 @@ export function AdminCommandCenter() {
         <section className="ops-command-widget">
           <div className="ops-command-widget-head">
             <h2><BarChart3 size={18} /> Doanh thu hôm nay</h2>
-            <Link className="ops-btn ops-btn--ghost ops-btn--sm" to="/reports">Báo cáo</Link>
+            <Link className="ops-btn ops-btn--ghost" to="/reports">Báo cáo</Link>
           </div>
           <div className="ops-stat-card">
             <div className="ops-stat-value">{formatVnd(summary.todayRevenue)}</div>

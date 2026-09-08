@@ -100,7 +100,7 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
       </div>
       <div className="ops-toolbar">
         {(Object.keys(FILTER_LABELS) as FilterTab[]).map((tab) => (
-          <button className={`ops-btn ${filter === tab ? "ops-btn--primary" : "ops-btn--ghost"} ops-btn--sm`} key={tab} onClick={() => setFilter(tab)} type="button">{FILTER_LABELS[tab]}</button>
+          <button className={`ops-btn ${filter === tab ? "ops-btn--primary" : "ops-btn--ghost"}`} key={tab} onClick={() => setFilter(tab)} type="button">{FILTER_LABELS[tab]}</button>
         ))}
         <input className="ops-form-input" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm mã hóa đơn, bàn..." style={{ width: 220 }} value={search} />
       </div>
@@ -115,7 +115,7 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
               <span className={`ops-badge ops-badge--${invoice.status.toLowerCase()}`}>{invoice.status}</span>
               <strong>{formatVnd(invoice.totalAmount)}</strong>
             </div>
-            <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => setDetail(invoice)} type="button">Chi tiết</button>
+            <button className="ops-btn ops-btn--ghost" onClick={() => setDetail(invoice)} type="button">Chi tiết</button>
           </article>
         ))}
       </div>
@@ -130,7 +130,7 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
               <td>{invoice.method === "COD" ? "Tiền mặt" : invoice.method === "VietQR" ? "VietQR" : "-"}</td>
               <td><span className={`ops-badge ops-badge--${invoice.status.toLowerCase()}`}>{invoice.status}</span></td>
               <td><strong>{formatVnd(invoice.totalAmount)}</strong></td>
-              <td><button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => setDetail(invoice)} type="button">Chi tiết</button></td>
+              <td><button className="ops-btn ops-btn--ghost" onClick={() => setDetail(invoice)} type="button">Chi tiết</button></td>
             </tr>
           ))}
           {filtered.length === 0 ? <tr><td colSpan={7}><div className="ops-empty">Không có hóa đơn</div></td></tr> : null}

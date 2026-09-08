@@ -244,7 +244,7 @@ export function CounterVoucherPanel() {
                       <span className="ops-muted"> · {r.pointsRequired} điểm</span>
                     </div>
                     <button
-                      className="ops-btn ops-btn--primary ops-btn--sm"
+                      className="ops-btn ops-btn--primary"
                       disabled={dangDoi !== null}
                       onClick={() => void doiHo(r)}
                       type="button"
@@ -272,7 +272,7 @@ export function CounterVoucherPanel() {
                     </span>
                   </div>
                   <button
-                    className="ops-btn ops-btn--primary ops-btn--sm"
+                    className="ops-btn ops-btn--primary"
                     disabled={dangThu !== null}
                     onClick={() => void thu(v)}
                     type="button"

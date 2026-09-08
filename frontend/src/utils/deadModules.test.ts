@@ -61,8 +61,22 @@ function tapTapToiDuoc(): Set<string> {
     const tep = hangDoi.pop()!;
     if (daTham.has(tep) || !existsSync(tep)) continue;
     daTham.add(tep);
-    if (tep.endsWith(".css")) continue;
     const noiDung = readFileSync(tep, "utf8");
+
+    // CSS NẠP CSS: `@import "./x.css"` là một cạnh thật của đồ thị, và trước đây bước duyệt dừng
+    // hẳn ở tệp `.css` nên không thấy cạnh đó. Hậu quả: một tệp CSS chỉ được `@import` từ CSS khác
+    // bị báo là mã chết dù nó đang chạy.
+    //
+    // Không phải trường hợp giả định — chính ghi chú của phép kiểm này ghi rằng đợt dọn đầu gỡ
+    // "hai tệp CSS không ai @import", tức cạnh CSS→CSS là thứ kho này có thật.
+    if (tep.endsWith(".css")) {
+      for (const m of noiDung.matchAll(/@import\s+(?:url\()?["']([^"']+)["']/g)) {
+        const dich = giaiQuyet(tep, m[1]!);
+        if (dich) hangDoi.push(dich);
+      }
+      continue;
+    }
+
     for (const m of noiDung.matchAll(/(?:from\s+"([^"]+)"|import\s+"([^"]+)")/g)) {
       const dich = giaiQuyet(tep, m[1] ?? m[2]!);
       if (dich) hangDoi.push(dich);

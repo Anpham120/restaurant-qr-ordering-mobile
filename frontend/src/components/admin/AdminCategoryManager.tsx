@@ -154,8 +154,8 @@ export function AdminCategoryManager({ embedded = false }: { embedded?: boolean 
               <td style={{ fontSize: 12, color: "var(--color-muted)" }}>{new Date(cat.createdAt).toLocaleDateString("vi-VN")}</td>
               <td>
                 <div style={{ display: "flex", gap: 4 }}>
-                  <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEdit(cat)} type="button">Sửa</button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" onClick={() => handleDelete(cat.categoryId)} type="button">Xóa</button>
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openEdit(cat)} type="button">Sửa</button>
+                  <button className="ops-btn ops-btn--danger" onClick={() => handleDelete(cat.categoryId)} type="button">Xóa</button>
                 </div>
               </td>
             </tr>

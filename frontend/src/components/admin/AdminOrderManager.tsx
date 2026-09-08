@@ -141,7 +141,7 @@ export function AdminOrderManager({
           {orders.map((order) => (
             <tr key={order.orderId}>
               <td>
-                <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => setSelectedOrder(order)} type="button" style={{ fontWeight: 700 }}>
+                <button className="ops-btn ops-btn--ghost" onClick={() => setSelectedOrder(order)} type="button" style={{ fontWeight: 700 }}>
                   {order.orderCode}
                 </button>
               </td>
@@ -156,13 +156,13 @@ export function AdminOrderManager({
               <td style={{ fontSize: 12, color: "var(--color-muted)" }}>{new Date(order.createdAt).toLocaleString("vi-VN")}</td>
               <td>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                  {order.status === "Placed" ? <button className="ops-btn ops-btn--primary ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Confirmed")} type="button">Xác nhận</button> : null}
-                  {order.status === "Ready" ? <button className="ops-btn ops-btn--success ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Served")} type="button">Phục vụ</button> : null}
+                  {order.status === "Placed" ? <button className="ops-btn ops-btn--primary" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Confirmed")} type="button">Xác nhận</button> : null}
+                  {order.status === "Ready" ? <button className="ops-btn ops-btn--success" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Served")} type="button">Phục vụ</button> : null}
                   {order.status === "Served" && (order.paymentStatus === "Confirmed" || order.paymentStatus === "Paid") ? (
-                    <button className="ops-btn ops-btn--success ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Completed")} type="button">Hoàn tất</button>
+                    <button className="ops-btn ops-btn--success" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Completed")} type="button">Hoàn tất</button>
                   ) : null}
                   {!["Completed", "Cancelled"].includes(order.status) ? (
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Cancelled")} type="button">Hủy</button>
+                    <button className="ops-btn ops-btn--ghost" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Cancelled")} type="button">Hủy</button>
                   ) : null}
                 </div>
               </td>

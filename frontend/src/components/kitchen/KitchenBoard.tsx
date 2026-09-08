@@ -66,7 +66,7 @@ function SmartKitchenActionButton({
 
   return (
     <button
-      className={`ops-btn${column === "confirmed" ? " ops-btn--warning" : " ops-btn--primary"}${compact ? " ops-btn--sm" : ""}`}
+      className={`ops-btn${column === "confirmed" ? " ops-btn--warning" : " ops-btn--primary"}${compact ? "" : ""}`}
       disabled={isPending || action.disabled}
       onClick={() => onMoveNext(order)}
       title={action.detail}
@@ -269,7 +269,7 @@ function OrderDetailModal({
                   <div className="ops-item-actions">
                     {next ? (
                       <button
-                        className="ops-btn ops-btn--sm ops-btn--primary"
+                        className="ops-btn ops-btn--primary"
                         disabled={isPending}
                         onClick={() => onItemAction(order, item.orderItemId, next)}
                         type="button"
@@ -279,7 +279,7 @@ function OrderDetailModal({
                     ) : null}
                     {item.status === "Pending" || item.status === "Preparing" ? (
                       <button
-                        className="ops-btn ops-btn--sm ops-btn--ghost"
+                        className="ops-btn ops-btn--ghost"
                         disabled={isPending}
                         onClick={() => onItemAction(order, item.orderItemId, "Cancelled")}
                         type="button"

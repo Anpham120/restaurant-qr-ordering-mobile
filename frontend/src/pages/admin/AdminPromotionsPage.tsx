@@ -266,8 +266,8 @@ export function AdminPromotionsPage() {
               </td>
               <td>
                 <div style={{ display: "flex", gap: 4 }}>
-                  <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEdit(promotion)} type="button">Sửa</button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" onClick={() => handleDelete(promotion.promotionId)} type="button">Xóa</button>
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openEdit(promotion)} type="button">Sửa</button>
+                  <button className="ops-btn ops-btn--danger" onClick={() => handleDelete(promotion.promotionId)} type="button">Xóa</button>
                 </div>
               </td>
             </tr>

@@ -219,21 +219,21 @@ export function AdminTableCrudPanel() {
                   {editingCode === table.tableCode ? (
                     <>
                       <button
-                        className="ops-btn ops-btn--primary ops-btn--sm"
+                        className="ops-btn ops-btn--primary"
                         disabled={busyCode === table.tableCode}
                         type="button"
                         onClick={() => void handleSaveName(table.tableCode)}
                       >
                         Lưu
                       </button>
-                      <button className="ops-btn ops-btn--ghost ops-btn--sm" type="button" onClick={() => setEditingCode(null)}>
+                      <button className="ops-btn ops-btn--ghost" type="button" onClick={() => setEditingCode(null)}>
                         Hủy
                       </button>
                     </>
                   ) : (
                     <>
                       <button
-                        className="ops-btn ops-btn--ghost ops-btn--sm"
+                        className="ops-btn ops-btn--ghost"
                         type="button"
                         onClick={() => {
                           setEditingCode(table.tableCode);
@@ -243,7 +243,7 @@ export function AdminTableCrudPanel() {
                         Sửa tên
                       </button>
                       <button
-                        className="ops-btn ops-btn--ghost ops-btn--sm"
+                        className="ops-btn ops-btn--ghost"
                         disabled={busyCode === table.tableCode}
                         type="button"
                         onClick={() => void handleToggleActive(table)}
@@ -251,7 +251,7 @@ export function AdminTableCrudPanel() {
                         {table.isActive ? "Tắt bàn" : "Bật bàn"}
                       </button>
                       <button
-                        className="ops-btn ops-btn--ghost ops-btn--sm"
+                        className="ops-btn ops-btn--ghost"
                         disabled={busyCode === table.tableCode}
                         type="button"
                         onClick={() => void handleRotateQr(table)}

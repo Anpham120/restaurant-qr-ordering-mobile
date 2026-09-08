@@ -81,7 +81,7 @@ export function CounterOverduePanel() {
     <section className="ops-command-widget">
       <div className="ops-command-widget-head">
         <h2><AlertTriangle size={18} /> Bàn quá giờ, chưa thanh toán</h2>
-        <button type="button" className="ops-btn ops-btn--sm" onClick={tai}>
+        <button type="button" className="ops-btn" onClick={tai}>
           <RefreshCw aria-hidden="true" size={16} /> Làm mới
         </button>
       </div>
@@ -117,7 +117,7 @@ export function CounterOverduePanel() {
                   />
                   <button
                     type="button"
-                    className="ops-btn ops-btn--danger ops-btn--sm"
+                    className="ops-btn ops-btn--danger"
                     disabled={dangDong === muc.sessionId}
                     onClick={() => void epDong(muc)}
                   >
@@ -125,7 +125,7 @@ export function CounterOverduePanel() {
                   </button>
                   <button
                     type="button"
-                    className="ops-btn ops-btn--sm"
+                    className="ops-btn"
                     onClick={() => setDangMoLyDo(null)}
                   >
                     Huỷ
@@ -134,7 +134,7 @@ export function CounterOverduePanel() {
               ) : (
                 <button
                   type="button"
-                  className="ops-btn ops-btn--sm"
+                  className="ops-btn"
                   onClick={() => moOLyDo(muc.sessionId)}
                 >
                   Đóng bàn…

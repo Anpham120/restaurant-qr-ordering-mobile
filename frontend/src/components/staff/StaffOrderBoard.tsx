@@ -83,18 +83,18 @@ function StaffCard({
 
       <div className="ops-card-actions">
         {order.status === "Placed" ? (
-          <button className="ops-btn ops-btn--primary ops-btn--sm" disabled={isPending} onClick={() => onAction(order.orderCode, "Confirmed")} type="button">
+          <button className="ops-btn ops-btn--primary" disabled={isPending} onClick={() => onAction(order.orderCode, "Confirmed")} type="button">
             <Check aria-hidden="true" size={14} /> Xác nhận đơn
           </button>
         ) : null}
         {order.status === "Ready" ? (
-          <button className="ops-btn ops-btn--success ops-btn--sm" disabled={isPending} onClick={() => onAction(order.orderCode, "Served")} type="button">
+          <button className="ops-btn ops-btn--success" disabled={isPending} onClick={() => onAction(order.orderCode, "Served")} type="button">
             <Utensils aria-hidden="true" size={14} /> Đã phục vụ
           </button>
         ) : null}
         {order.status === "Served" ? (
           <button
-            className="ops-btn ops-btn--success ops-btn--sm"
+            className="ops-btn ops-btn--success"
             disabled={isPending || !(order.paymentStatus === "Confirmed" || order.paymentStatus === "Paid")}
             onClick={() => onAction(order.orderCode, "Completed")}
             type="button"
@@ -104,7 +104,7 @@ function StaffCard({
           </button>
         ) : null}
         {(order.status === "Placed" || order.status === "Confirmed") ? (
-          <button className="ops-btn ops-btn--ghost ops-btn--sm" disabled={isPending} onClick={() => onAction(order.orderCode, "Cancelled")} type="button">
+          <button className="ops-btn ops-btn--ghost" disabled={isPending} onClick={() => onAction(order.orderCode, "Cancelled")} type="button">
             Hủy
           </button>
         ) : null}
@@ -232,14 +232,14 @@ export function StaffOrderBoard({ embedded = false }: { embedded?: boolean }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <OpsConnectionBadge status={connectionStatus} />
-              <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={loadOrders} type="button"><RefreshCw aria-hidden="true" size={14} /> Làm mới</button>
+              <button className="ops-btn ops-btn--ghost" onClick={loadOrders} type="button"><RefreshCw aria-hidden="true" size={14} /> Làm mới</button>
             </div>
           </div>
         </div>
       ) : (
         <div className="ops-toolbar">
           <OpsConnectionBadge status={connectionStatus} />
-          <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={loadOrders} type="button"><RefreshCw aria-hidden="true" size={14} /> Làm mới</button>
+          <button className="ops-btn ops-btn--ghost" onClick={loadOrders} type="button"><RefreshCw aria-hidden="true" size={14} /> Làm mới</button>
         </div>
       )}
 

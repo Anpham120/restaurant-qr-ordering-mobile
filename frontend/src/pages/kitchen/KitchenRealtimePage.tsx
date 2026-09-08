@@ -212,11 +212,11 @@ export function KitchenRealtimePage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <OpsConnectionBadge status={connectionStatus} />
-            <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={loadOrders} type="button">
+            <button className="ops-btn ops-btn--ghost" onClick={loadOrders} type="button">
               <RefreshCw aria-hidden="true" size={14} /> Làm mới
             </button>
             <button
-              className="ops-btn ops-btn--ghost ops-btn--sm"
+              className="ops-btn ops-btn--ghost"
               onClick={() => {
                 const moRa = !showMenuPanel;
                 setShowMenuPanel(moRa);
@@ -276,7 +276,7 @@ export function KitchenRealtimePage() {
           <span>phút</span>
         </label>
         <button
-          className="ops-btn ops-btn--sm"
+          className="ops-btn"
           disabled={dangDoiTre}
           onClick={() => void apDungTre()}
           type="button"
@@ -284,7 +284,7 @@ export function KitchenRealtimePage() {
           Áp dụng
         </button>
         <button
-          className="ops-btn ops-btn--ghost ops-btn--sm"
+          className="ops-btn ops-btn--ghost"
           disabled={dangDoiTre || !treBep || treBep.delayMinutes === 0}
           onClick={() => {
             setPhutNhap("");
