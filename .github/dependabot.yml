@@ -38,3 +38,23 @@ updates:
           - "@vitejs/*"
           - "typescript"
 
+      # HỌ GÓI GHIM CHÉO NHAU THÌ PHẢI ĐI CÙNG CHUYẾN.
+      #
+      # Không phải để giảm số PR — để PR đó dựng được. `@fortawesome/free-brands-svg-icons` ghim
+      # CỨNG `@fortawesome/fontawesome-common-types` đúng một phiên bản. Nâng lẻ nó thì npm cài
+      # thêm một bản lồng bên trong, trong khi `react-fontawesome` vẫn giữ bản cũ ở cấp trên — hai
+      # bản cùng lúc, hai kiểu `IconName` khác nhau, và `tsc` từ chối hợp nhất:
+      #
+      #     CustomerHomePage.tsx(592,30): error TS2322:
+      #     Type 'IconDefinition' is not assignable to type 'IconProp'.
+      #       Type '"cricket-bat"' is not assignable to type 'IconName'.
+      #
+      # Đo được: PR #190 (7.3.0 -> 7.3.1, một bản vá) làm đỏ `frontend-build`. Một bản nâng vá
+      # không thể tự hỏng; nó hỏng vì đi một mình.
+      #
+      # Gom nhóm khiến Dependabot nâng cả họ trong một PR, npm gộp về một bản, và lớp lỗi này
+      # không quay lại — kể cả với gói `@fortawesome/*` nào thêm vào sau này.
+      fortawesome:
+        patterns:
+          - "@fortawesome/*"
+
