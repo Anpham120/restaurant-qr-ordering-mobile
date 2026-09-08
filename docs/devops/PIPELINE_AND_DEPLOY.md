@@ -76,20 +76,46 @@ Hai giao thức không nói chuyện được với nhau nên mọi tính năng 
 không cổng nào đỏ — test backend kiểm STOMP bằng client STOMP, còn test frontend là kiểm đơn vị đọc
 mã. Cả hai đều "tự nhất quán với chính mình".
 
-## 2. Triển khai — staging tự động, production bấm tay
+## 2. Triển khai — môi trường suy ra từ nhánh
 
-| Môi trường | Kích hoạt | Chốt người |
+| Nhánh được đẩy | Môi trường | Chốt người |
 |---|---|---|
-| **staging** | **tự chạy khi merge vào `develop`** | không |
-| **production** | bấm tay, chọn môi trường | environment bắt buộc `Anpham120` duyệt |
+| `develop` | **staging** | không |
+| `main` | **production** | không — quyết định nằm ở lúc merge PR promote |
 
-Ranh giới nằm ở đúng chỗ nó có nghĩa. Staging là máy để **phát hiện hỏng**, nên đưa mã lên đó tự
-động là *điều kiện* để nó làm được việc ấy — mã càng lên sớm càng phát hiện sớm. Production đổi thứ
-người thật đang dùng, nên vẫn phải có người chọn một cách có ý thức.
+`workflow_dispatch` vẫn còn, để chạy lại một môi trường mà không cần đẩy commit mới. Khi bấm tay
+thì lựa chọn của người bấm thắng; khi chạy theo `push` thì nhánh quyết định.
 
-Bản trước của tài liệu này ghi *"chỉ chạy khi bấm tay"* cho cả hai. Câu đó đúng cho tới khi
-`auto-merge.yml` bắt đầu tự merge — lúc ấy luồng `develop → Deploy Staging → main` mà chính nó viện
-dẫn trở thành một quy trình **không có gì thực hiện**, vì không ai nhớ bấm.
+### Vì sao production cũng tự chạy
+
+Chốt duyệt trước đây **không gác chất lượng mã**. Chất lượng do 12 phép kiểm bắt buộc gác, và mã
+vào `main` thì đã chạy trên staging rồi. Thứ nó gác là **thời điểm** — deploy lúc 19h đông khách
+khác deploy lúc 3h sáng, dù mã y hệt.
+
+Nhưng thời điểm đó **đã được chọn một lần rồi**, khi người ta merge PR promote `develop → main`.
+Hỏi lại lần thứ hai ngay sau đó là hỏi cùng một câu hỏi hai lần. Và một chốt mà lần nào cũng được
+bấm qua thì không còn là chốt — nó chỉ dạy tay quen bấm, đúng như yêu cầu duyệt PR trên `main` đã
+bị gỡ vì lý do ấy.
+
+Điều kiện để đổi này là an toàn, và nó chỉ vừa đủ từ 08/09/2026: **đường tự lùi đã chứng minh trên
+máy thật** (xem §6), một lần thử có chủ đích và một lần cứu hỏng thật do Docker Hub trả 500.
+
+### Hai nửa của cấu hình này — thiếu một nửa là nó im lặng không chạy
+
+1. `cd.yml` chạy theo `push` vào `develop` và `main`, môi trường suy từ `github.ref`
+2. Environment `production` **không được có `required_reviewers`**
+
+Nửa thứ hai nằm trên GitHub, không nằm trong kho, nên không phép kiểm nào canh được. Để sót nó thì
+lượt chạy vẫn **dừng chờ người** y như trước — không đỏ, không báo gì, chỉ đứng im. Giữ lại
+`deployment_branch_policy: protected_branches` để production chỉ triển khai được từ nhánh được bảo
+vệ.
+
+```bash
+gh api -X PUT repos/Anpham120/restaurant-qr-ordering-mobile/environments/production \
+  -F wait_timer=0 -F 'reviewers=[]' \
+  -F 'deployment_branch_policy[protected_branches]=true' \
+  -F 'deployment_branch_policy[custom_branch_policies]=false'
+```
 
 Hai lần triển khai cùng môi trường không chạy chồng nhau, và lần đang chạy **không bị huỷ giữa
 chừng**: cắt ngang lúc chạy migration để lại cơ sở dữ liệu ở trạng thái nửa vời, thứ mà một lần
