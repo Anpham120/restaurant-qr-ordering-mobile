@@ -270,7 +270,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
           <span>Còn phải thu</span>
           <strong data-money>{formatVnd(conPhaiThu)}</strong>
         </p>
-        <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => void loadInvoices()} type="button">
+        <button className="ops-btn ops-btn--ghost" onClick={() => void loadInvoices()} type="button">
           <RefreshCw aria-hidden="true" size={14} /> Làm mới
         </button>
       </header>
@@ -290,7 +290,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
 
         {codAwaiting.length > 0 ? (
           <button
-            className="ops-btn ops-btn--success ops-btn--sm pos-bulk"
+            className="ops-btn ops-btn--success pos-bulk"
             onClick={() => void bulkConfirmCod()}
             title="Phím tắt: C"
             type="button"

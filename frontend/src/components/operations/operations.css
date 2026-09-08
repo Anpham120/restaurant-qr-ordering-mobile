@@ -1,3 +1,7 @@
+/* Token của mặt vận hành. PHẢI đứng đầu tệp: `@import` chỉ hợp lệ ở đó, và mọi quy
+   tắc bên dưới đọc biến khai trong nó. */
+@import "./ops-tokens.css";
+
 /* ==========================================================================
    Operations Theme — Kitchen / Staff / Admin
    Professional dark-mode aware board + card layout
@@ -404,11 +408,6 @@
 }
 .ops-btn--ghost:hover:not(:disabled) { background: var(--color-bg-subtle); }
 
-.ops-btn--sm {
-  padding: 5px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-}
 
 /* ---- Status Badges ---- */
 .ops-badge {

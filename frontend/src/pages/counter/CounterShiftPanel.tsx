@@ -148,7 +148,7 @@ export function CounterShiftPanel({
       {loadError ? (
         <div className="counter-alert counter-alert--error" role="alert">
           <span>{loadError}</span>
-          <button className="ops-btn ops-btn--ghost ops-btn--sm" type="button" onClick={() => void refresh()}>
+          <button className="ops-btn ops-btn--ghost" type="button" onClick={() => void refresh()}>
             <RefreshCw aria-hidden="true" size={14} /> Thử lại
           </button>
         </div>

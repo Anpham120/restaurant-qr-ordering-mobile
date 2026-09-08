@@ -97,7 +97,7 @@ export function CounterHubPage() {
                   <span className="ops-muted">{yc.note}</span>
                 ) : null}
                 <button
-                  className="ops-btn ops-btn--primary ops-btn--sm"
+                  className="ops-btn ops-btn--primary"
                   onClick={() => daDieuPhoiYeuCau(yc.id)}
                   type="button"
                 >

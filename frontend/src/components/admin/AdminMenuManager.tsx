@@ -433,16 +433,16 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
         <div className="ops-notice ops-notice--info amm-bulkbar">
           <strong>Đã chọn {selectedVisible.length} món</strong>
           <div className="ops-inline-actions">
-            <button className="ops-btn ops-btn--sm" type="button" onClick={() => void handleBulkAvailability(true)}>
+            <button className="ops-btn" type="button" onClick={() => void handleBulkAvailability(true)}>
               Bật bán
             </button>
-            <button className="ops-btn ops-btn--sm" type="button" onClick={() => void handleBulkAvailability(false)}>
+            <button className="ops-btn" type="button" onClick={() => void handleBulkAvailability(false)}>
               Ngừng bán
             </button>
-            <button className="ops-btn ops-btn--danger ops-btn--sm" type="button" onClick={() => void handleBulkDelete()}>
+            <button className="ops-btn ops-btn--danger" type="button" onClick={() => void handleBulkDelete()}>
               Xoá
             </button>
-            <button className="ops-btn ops-btn--ghost ops-btn--sm" type="button" onClick={() => setSelected(new Set())}>
+            <button className="ops-btn ops-btn--ghost" type="button" onClick={() => setSelected(new Set())}>
               Bỏ chọn
             </button>
           </div>
@@ -508,8 +508,8 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                     title={item.isAvailable ? "Tắt bán" : "Mở bán"}
                     aria-label={item.isAvailable ? "Tắt bán" : "Mở bán"}
                   />
-                  <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEdit(item)} type="button">Sửa</button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" onClick={() => handleDelete(item.id)} type="button">Xóa</button>
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openEdit(item)} type="button">Sửa</button>
+                  <button className="ops-btn ops-btn--danger" onClick={() => handleDelete(item.id)} type="button">Xóa</button>
                 </div>
               </footer>
             </article>

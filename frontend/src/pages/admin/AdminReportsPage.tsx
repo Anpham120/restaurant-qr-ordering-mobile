@@ -180,7 +180,7 @@ export function AdminReportsPage() {
           <button
             key={value}
             type="button"
-            className={`ops-btn ops-btn--sm ${preset === value ? "ops-btn--primary" : "ops-btn--ghost"}`}
+            className={`ops-btn ${preset === value ? "ops-btn--primary" : "ops-btn--ghost"}`}
             onClick={() => applyPreset(value)}
           >
             {label}
@@ -198,8 +198,8 @@ export function AdminReportsPage() {
             </div>
           </>
         ) : null}
-        <button className="ops-btn ops-btn--primary ops-btn--sm" type="button" onClick={() => void load()}>Xem báo cáo</button>
-        <button className="ops-btn ops-btn--ghost ops-btn--sm" disabled={!report} type="button" onClick={exportCsv}>
+        <button className="ops-btn ops-btn--primary" type="button" onClick={() => void load()}>Xem báo cáo</button>
+        <button className="ops-btn ops-btn--ghost" disabled={!report} type="button" onClick={exportCsv}>
           <Download size={14} aria-hidden="true" /> Xuất CSV
         </button>
       </div>

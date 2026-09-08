@@ -373,25 +373,25 @@ export function AdminUserManager() {
                     />
                     <button
                       aria-label={showResetPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                      className="ops-btn ops-btn--ghost ops-btn--sm"
+                      className="ops-btn ops-btn--ghost"
                       onClick={() => setShowResetPassword((v) => !v)}
                       type="button"
                     >
                       {showResetPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
-                    <button className="ops-btn ops-btn--primary ops-btn--sm" onClick={() => handleResetPassword(user.userId)} type="button">Lưu</button>
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => { setResetId(null); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">Hủy</button>
+                    <button className="ops-btn ops-btn--primary" onClick={() => handleResetPassword(user.userId)} type="button">Lưu</button>
+                    <button className="ops-btn ops-btn--ghost" onClick={() => { setResetId(null); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">Hủy</button>
                   </div>
                 ) : (
                   <>
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => openEditForm(user)} type="button">
+                    <button className="ops-btn ops-btn--ghost" onClick={() => openEditForm(user)} type="button">
                       <Pencil aria-hidden="true" size={14} /> Sửa
                     </button>
-                    <button className="ops-btn ops-btn--ghost ops-btn--sm" onClick={() => { setResetId(user.userId); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">
+                    <button className="ops-btn ops-btn--ghost" onClick={() => { setResetId(user.userId); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">
                       Reset mật khẩu
                     </button>
                     <button
-                      className="ops-btn ops-btn--danger ops-btn--sm"
+                      className="ops-btn ops-btn--danger"
                       disabled={deletingId === user.userId || currentUser?.userId === user.userId}
                       onClick={() => void handleDelete(user)}
                       title={currentUser?.userId === user.userId ? "Không thể xóa tài khoản đang đăng nhập" : "Xóa tài khoản"}

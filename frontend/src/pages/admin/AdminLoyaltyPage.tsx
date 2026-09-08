@@ -209,7 +209,7 @@ export function AdminLoyaltyPage() {
               <td>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button
-                    className="ops-btn ops-btn--ghost ops-btn--sm"
+                    className="ops-btn ops-btn--ghost"
                     type="button"
                     onClick={() => {
                       setEditingMemberId(member.memberId);
@@ -220,7 +220,7 @@ export function AdminLoyaltyPage() {
                   >
                     Sửa
                   </button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" type="button" onClick={() => deleteMember(member.memberId)}>Xóa</button>
+                  <button className="ops-btn ops-btn--danger" type="button" onClick={() => deleteMember(member.memberId)}>Xóa</button>
                 </div>
               </td>
             </tr>
@@ -278,7 +278,7 @@ export function AdminLoyaltyPage() {
               <td>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button
-                    className="ops-btn ops-btn--ghost ops-btn--sm"
+                    className="ops-btn ops-btn--ghost"
                     type="button"
                     onClick={() => {
                       setEditingRewardId(reward.rewardId);
@@ -298,7 +298,7 @@ export function AdminLoyaltyPage() {
                   >
                     Sửa
                   </button>
-                  <button className="ops-btn ops-btn--danger ops-btn--sm" type="button" onClick={() => deleteReward(reward.rewardId)}>Xóa</button>
+                  <button className="ops-btn ops-btn--danger" type="button" onClick={() => deleteReward(reward.rewardId)}>Xóa</button>
                 </div>
               </td>
             </tr>
