@@ -25,6 +25,8 @@ on:
   # `mobile-rn-build` được đặt làm required check, một PR không đụng `mobile-rn/` sẽ treo PENDING
   # vĩnh viễn vì GitHub coi check bắt buộc không chạy là chưa xong, không phải là bỏ qua.
   pull_request:
+  # Chạy trong hàng đợi merge. Xem ghi chú đầy đủ ở ci.yml.
+  merge_group:
 
 permissions:
   contents: read

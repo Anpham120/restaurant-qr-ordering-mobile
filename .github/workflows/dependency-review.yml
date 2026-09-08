@@ -18,6 +18,8 @@ on:
     branches:
       - develop
       - main
+  # Chạy trong hàng đợi merge. Xem ghi chú đầy đủ ở ci.yml.
+  merge_group:
 
 permissions:
   contents: read
@@ -37,7 +39,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # HAI BƯỚC CHO CÙNG MỘT PHÉP KIỂM, VÌ HAI NGỮ CẢNH KHÁC NHAU.
+      #
+      # Trên `pull_request`, action tự suy ra base và head từ PR, và bình luận được lên PR khi đỏ.
+      #
+      # Trong hàng đợi merge thì KHÔNG CÓ PR: không có base/head để suy ra, và không có chỗ để
+      # bình luận. Phải truyền tay `merge_group.base_sha`/`head_sha`, và tắt bình luận — để
+      # `on-failure` ở đó thì action đi tìm một số hiệu PR không tồn tại.
+      #
+      # Vì sao không bỏ hẳn phép kiểm này khỏi hàng đợi: danh sách check bắt buộc dùng CHUNG cho
+      # cả PR lẫn hàng đợi. Một check bắt buộc không báo về trên nhánh `gh-readonly-queue/...`
+      # sẽ làm mục xếp hàng bị đá ra sau khi hết giờ chờ — im lặng, không có gì đỏ để đọc.
       - name: Review dependency changes
+        if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@v5
         # KHÔNG có `continue-on-error`. Job này từng có, và trong suốt thời gian đó nó báo
         #
@@ -52,3 +66,12 @@ jobs:
         with:
           fail-on-severity: critical
           comment-summary-in-pr: on-failure
+
+      - name: Review dependency changes (hàng đợi merge)
+        if: github.event_name == 'merge_group'
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: critical
+          comment-summary-in-pr: never
+          base-ref: ${{ github.event.merge_group.base_sha }}
+          head-ref: ${{ github.event.merge_group.head_sha }}

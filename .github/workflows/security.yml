@@ -5,6 +5,8 @@ on:
     branches:
       - develop
       - main
+  # Chạy trong hàng đợi merge. Xem ghi chú đầy đủ ở ci.yml.
+  merge_group:
   push:
     branches:
       - develop
