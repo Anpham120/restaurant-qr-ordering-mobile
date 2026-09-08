@@ -44,6 +44,13 @@ public class PromotionEntity {
 	@Column(name = "is_flash_sale", nullable = false)
 	private boolean flashSale;
 
+	/** Số lượt tối đa. {@code null} = không giới hạn, và đó là hành vi cũ. */
+	@Column(name = "usage_limit")
+	private Integer usageLimit;
+
+	@Column(name = "used_count", nullable = false)
+	private int usedCount;
+
 	@Column(name = "starts_at")
 	private OffsetDateTime startsAt;
 
@@ -112,6 +119,18 @@ public class PromotionEntity {
 
 	public String getDescription() {
 		return description;
+	}
+
+	public Integer getUsageLimit() {
+		return usageLimit;
+	}
+
+	public int getUsedCount() {
+		return usedCount;
+	}
+
+	void setUsageLimit(Integer usageLimit) {
+		this.usageLimit = usageLimit;
 	}
 
 	public boolean isFlashSale() {

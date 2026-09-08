@@ -1,13 +1,21 @@
 import { ScrollView, Text, View } from 'react-native';
 
-import { type AuthSession } from '../core/auth/authSession';
+import { type AuthSession, danhTinh } from '../core/auth/authSession';
 import { type LoyaltyApi } from '../core/loyalty/loyaltyApi';
+import { type GuiMaOtp } from '../core/auth/phoneOtp';
 import { LienKetSoDienThoai } from './LienKetSoDienThoai';
 import { MauQuan, kieuChung } from './theme';
 
 export interface HoSoTaiKhoanProps {
   dangNhap: AuthSession;
   api: LoyaltyApi;
+  /**
+   * Gửi mã OTP. Cùng hàm màn đăng ký dùng — không có bản thứ hai.
+   *
+   * `undefined` khi thư viện native vắng mặt (Expo Go). KHÔNG để tuỳ chọn: mọi nơi gọi phải nói rõ
+   * có hay không, để không ai quên truyền rồi vô tình rơi vào nhánh không liên kết được.
+   */
+  guiMaOtp: GuiMaOtp | undefined;
   /** Số đã liên kết, `null` nếu chưa. */
   soDienThoai: string | null;
   onNoiSoXong: (soMoi: string | null) => void;
@@ -33,13 +41,14 @@ export function HoSoTaiKhoan(p: HoSoTaiKhoanProps) {
         <Text style={{ fontSize: 15, fontWeight: '600', color: MauQuan.ink }}>
           {p.dangNhap.user.fullName}
         </Text>
-        <Text style={kieuChung.chuPhu}>{p.dangNhap.user.email}</Text>
+        <Text style={kieuChung.chuPhu}>{danhTinh(p.dangNhap.user)}</Text>
       </View>
 
       {p.soDienThoai === null ? (
         <LienKetSoDienThoai
           accessToken={p.dangNhap.accessToken}
           api={p.api}
+          guiMaOtp={p.guiMaOtp}
           onLoiNang={(loi) => {
             throw loi;
           }}

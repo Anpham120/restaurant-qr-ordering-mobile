@@ -49,6 +49,14 @@ public class TableSessionEntity {
 	@Column(name = "closed_at")
 	private OffsetDateTime closedAt;
 
+	/** Lý do ép đóng phiên khi còn tiền chưa thu. {@code null} = phiên đóng bình thường. */
+	@Column(name = "close_reason")
+	private String closeReason;
+
+	/** Mốc hết hạn GỐC của phiên còn nợ tiền. {@code null} = phiên chưa từng quá giờ. */
+	@Column(name = "overdue_since")
+	private OffsetDateTime overdueSince;
+
 	@Column(name = "created_at", nullable = false)
 	private OffsetDateTime createdAt;
 
@@ -85,7 +93,7 @@ public class TableSessionEntity {
 	 * rather than forcing every caller to build a domain object for a yes/no question. */
 	private com.cmc.restaurant.tables.domain.TableSession asDomain() {
 		return new com.cmc.restaurant.tables.domain.TableSession(
-				id, restaurantTableId, tableCode, status, expiresAt, closedAt, updatedAt);
+				id, restaurantTableId, tableCode, status, expiresAt, closedAt, updatedAt, overdueSince);
 	}
 
 	public boolean isActiveAt(OffsetDateTime now) {
@@ -109,15 +117,24 @@ public class TableSessionEntity {
 		this.updatedAt = now;
 	}
 
-	/** Returns true (and mutates state to Expired) only if it actually transitioned. */
-	public boolean expireIfPast(OffsetDateTime now) {
+	/**
+	 * Xử lý việc quá giờ. Trả về true khi có gì đó đổi và cần lưu.
+	 *
+	 * <p>Bàn còn nợ tiền thì được GIA HẠN chứ không chuyển {@code Expired} — xem
+	 * {@link com.cmc.restaurant.tables.domain.TableSession#expireIfPast}. Nên sau khi gọi hàm này,
+	 * người gọi phải HỎI LẠI {@link #isExpired} chứ đừng suy từ giá trị trả về: true ở đây nghĩa
+	 * là "có thay đổi", không phải "đã hết hạn".
+	 */
+	public boolean expireIfPast(OffsetDateTime now, boolean conNoTien) {
 		com.cmc.restaurant.tables.domain.TableSession session = asDomain();
-		if (!session.expireIfPast(now)) {
+		if (!session.expireIfPast(now, conNoTien)) {
 			return false;
 		}
 		this.status = session.status();
 		this.closedAt = session.closedAt();
 		this.updatedAt = session.updatedAt();
+		this.expiresAt = session.expiresAt();
+		this.overdueSince = session.overdueSince();
 		return true;
 	}
 
@@ -163,6 +180,24 @@ public class TableSessionEntity {
 
 	public void setClosedAt(OffsetDateTime closedAt) {
 		this.closedAt = closedAt;
+	}
+
+	public OffsetDateTime getOverdueSince() {
+		return overdueSince;
+	}
+
+	/** Mốc quá giờ mà còn nợ tiền — suy lúc đọc, xem
+	 * {@link com.cmc.restaurant.tables.domain.TableSession#mocQuaGio}. */
+	public OffsetDateTime mocQuaGio(OffsetDateTime now, boolean conNoTien) {
+		return asDomain().mocQuaGio(now, conNoTien);
+	}
+
+	public String getCloseReason() {
+		return closeReason;
+	}
+
+	public void setCloseReason(String closeReason) {
+		this.closeReason = closeReason;
 	}
 
 	public void setUpdatedAt(OffsetDateTime updatedAt) {

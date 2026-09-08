@@ -65,8 +65,7 @@ class DeploymentConfigTest {
 			"PAYMENTS_VIETQR_ACCOUNTNAME",
 			"FIREBASE_API_KEY",
 			"FIREBASE_PROJECT_ID",
-			"GOOGLE_CLIENT_ID",
-			"AI_INTERNAL_TOKEN");
+			"GOOGLE_CLIENT_ID");
 
 	@Test
 	@DisplayName("Compose KHÔNG đặt biến nào máy chủ không đọc — bắt lỗi gõ sai tên")
@@ -214,6 +213,90 @@ class DeploymentConfigTest {
 	}
 
 	/** Mọi dòng {@code TEN_PORT=so} trong một tệp env. */
+	@Test
+	@DisplayName("Mọi biến PUBLIC_* trong compose đều được cd.yml cấp")
+	void everyPublicUrlReachesTheBuild() throws IOException {
+		// Các biến PUBLIC_* đi vào BUNDLE lúc build, không đọc lúc chạy. Bỏ sót một cái thì compose
+		// lặng lẽ rơi về mặc định trong chính tệp compose — và mặc định đó viết cho MÁY PHÁT TRIỂN.
+		//
+		// LỖI CÓ THẬT: PUBLIC_ORDERING_BASE_URL không được khai ở đâu, nên bundle quản trị dựng với
+		// `http://127.0.0.1:8080`, và mọi link QR bàn trỏ về máy của người đang xem. Trang mở ra
+		// tưởng đang tải rồi đứng im — không lỗi nào hiện lên, không log nào đỏ. Người dùng phải tự
+		// nhìn thanh địa chỉ mới thấy.
+		//
+		// Ca này canh cả LỚP lỗi đó, không riêng hai biến đã sót.
+		Matcher m = Pattern.compile("\\$\\{(PUBLIC_[A-Z0-9_]*)[:}]")
+				.matcher(Files.readString(COMPOSE));
+		Set<String> composeDung = new LinkedHashSet<>();
+		while (m.find()) {
+			composeDung.add(m.group(1));
+		}
+		assertThat(composeDung).as("không đọc được biến PUBLIC_* nào từ compose").isNotEmpty();
+
+		String wf = Files.readString(CD_WORKFLOW);
+		Set<String> thieu = new LinkedHashSet<>();
+		for (String ten : composeDung) {
+			if (!wf.contains(ten + ":")) {
+				thieu.add(ten);
+			}
+		}
+
+		assertThat(thieu)
+				.as("compose dùng biến mà cd.yml không cấp — bundle sẽ dựng với địa chỉ máy phát "
+						+ "triển, và hỏng KHÔNG có triệu chứng nào ngoài link trỏ sai")
+				.isEmpty();
+	}
+
+	@Test
+	@DisplayName("nginx chuyển tiếp WebSocket ở ĐÚNG đường mà WebSocketConfig khai")
+	void nginxUpgradesTheSamePathTheAppListensOn() throws IOException {
+		// LỖI CÓ THẬT, và là lần THỨ HAI cùng một chữ `s`:
+		//   - deploy-vps.sh suy ra `/hubs/orders`, mã Java khai `/hub/orders`
+		//   - nginx mở header nâng cấp ở `location /hubs/`, client gọi `/hub/orders`
+		//
+		// Cả hai đều là đường của bản .NET (SignalR) chép sang. Hậu quả của lỗi nginx: WebSocket rơi
+		// vào `location /` — khối KHÔNG có header nâng cấp — nên nginx cắt mất `Upgrade`, Tomcat trả
+		// 400 "Can Upgrade only to WebSocket", và client thử lại vô hạn. Giao diện hiện "Đang kết
+		// nối lại…" mãi mãi, không lỗi nào rõ ràng, máy chủ vẫn xanh.
+		Path wsConfig = GOC.resolve(
+				"backend-java/src/main/java/com/cmc/restaurant/realtime/WebSocketConfig.java");
+		Matcher diem = Pattern.compile("addEndpoint\\(\"(/[^\"]+)\"\\)")
+				.matcher(Files.readString(wsConfig));
+		assertThat(diem.find()).as("không thấy addEndpoint trong WebSocketConfig").isTrue();
+
+		String duong = diem.group(1);            // ví dụ /hub/orders
+		String tienTo = duong.replaceAll("/[^/]+$", "/");  // -> /hub/
+
+		// Cắt tệp theo từng khối `location`, rồi hỏi khối nào có header nâng cấp.
+		//
+		// KHÔNG dùng một regex ôm cả khối: thân khối chứa `${BACKEND_PORT}`, nên mọi mẫu kiểu
+		// `[^}]*` dừng ngay ở dấu ngoặc của biến và không tìm thấy gì. Bản đầu của ca này mắc đúng
+		// lỗi đó và báo "nginx không mở nâng cấp ở đâu cả" trong khi cấu hình hoàn toàn đúng — một
+		// phép kiểm đỏ vì chính nó hỏng thì tệ hơn không có.
+		String nginx = Files.readString(GOC.resolve("deploy/scripts/write-nginx-config.sh"));
+		Set<String> duongNangCap = new LinkedHashSet<>();
+		Matcher moKhoi = Pattern.compile("(?m)^\\s*location\\s+(\\S+)\\s*\\{").matcher(nginx);
+		int truoc = -1;
+		String tenTruoc = null;
+		while (moKhoi.find()) {
+			if (tenTruoc != null && nginx.substring(truoc, moKhoi.start()).contains("proxy_set_header Upgrade")) {
+				duongNangCap.add(tenTruoc);
+			}
+			tenTruoc = moKhoi.group(1);
+			truoc = moKhoi.end();
+		}
+		if (tenTruoc != null && nginx.substring(truoc).contains("proxy_set_header Upgrade")) {
+			duongNangCap.add(tenTruoc);
+		}
+
+		assertThat(duongNangCap)
+				.as("nginx mở header nâng cấp ở %s, nhưng ứng dụng nghe ở %s — WebSocket sẽ rơi vào "
+						+ "khối `location /` không có Upgrade và không bao giờ kết nối được",
+						duongNangCap, duong)
+				.isNotEmpty()
+				.allMatch(duong::startsWith);
+	}
+
 	private static Map<String, String> docCong(Path tep) throws IOException {
 		assertThat(tep).as("không thấy tệp env mẫu").exists();
 		Matcher m = Pattern.compile("(?m)^([A-Z_]*PORT)=(\\d+)$").matcher(Files.readString(tep));

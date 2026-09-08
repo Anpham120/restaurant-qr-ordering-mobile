@@ -58,11 +58,31 @@ public class PromotionService {
 	 * promotion is normal, so that must not be an error; only a code that was given and is unusable
 	 * throws.
 	 */
+	/**
+	 * Áp một mã, và TIÊU một lượt của nó.
+	 *
+	 * <p>Việc tiêu lượt là một câu UPDATE có điều kiện ở cơ sở dữ liệu, không phải kiểm rồi ghi ở
+	 * đây — xem {@link PromotionRepository#ghiNhanMotLuot}. Mã bị chia sẻ ra ngoài thì hai người
+	 * bấm cùng lúc là chuyện thường, và một phép kiểm ở tầng Java sẽ cho cả hai cùng qua.
+	 *
+	 * <p><b>Đánh đổi phải nói rõ:</b> lượt bị tiêu ngay khi ÁP, không phải khi tiền vào. Khách yêu
+	 * cầu thanh toán rồi huỷ rồi yêu cầu lại sẽ ăn hai lượt. Chọn hướng này vì nó sai về phía CHẶT
+	 * hơn: với một mã đã lọt ra ngoài, tiêu sớm giới hạn thiệt hại, còn tiêu muộn thì trong lúc chờ
+	 * vẫn ai cũng dùng được. Muốn chính xác từng lượt thì phải tách thành giữ chỗ rồi chốt, và đó
+	 * là một đợt việc riêng.
+	 */
 	public Optional<Promotion.Discount> tryApply(String promotionCode, BigDecimal subtotal, OffsetDateTime now) {
 		if (Promotion.normalizeCode(promotionCode) == null) {
 			return Optional.empty();
 		}
-		return Optional.of(requireByCode(promotionCode).toDomain().applyTo(subtotal, now));
+		PromotionEntity entity = requireByCode(promotionCode);
+		Promotion.Discount giamGia = entity.toDomain().applyTo(subtotal, now);
+
+		if (promotionRepository.ghiNhanMotLuot(entity.getId()) == 0) {
+			throw ApiException.conflict("PROMOTION_USAGE_EXHAUSTED",
+					"Mã khuyến mãi đã hết lượt sử dụng.");
+		}
+		return Optional.of(giamGia);
 	}
 
 	private PromotionEntity requireByCode(String promotionCode) {

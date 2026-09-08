@@ -9,6 +9,13 @@ export type AdminMenuItemPayload = {
   imageUrl?: string | null;
   isAvailable: boolean;
   tags: string[];
+  /**
+   * Phút từ lúc bếp nhận món tới lúc món sẵn sàng.
+   *
+   * `null` khi SỬA nghĩa là GIỮ NGUYÊN, không phải xoá — máy chủ cố ý làm vậy để một client chưa
+   * biết tới trường này không thổi bay con số bếp đã khai chỉ vì sửa cái tên.
+   */
+  prepMinutes: number | null;
 };
 
 function enrichMenuItem(item: AdminMenuItem): AdminMenuItem {
@@ -75,6 +82,21 @@ export async function deleteAdminMenuItem(itemId: string): Promise<void> {
 // Simple list without overview enrichment
 export async function fetchAdminMenuItems(): Promise<AdminMenuItem[]> {
   return api.request<AdminMenuItem[]>("/admin/menu-items?includeInactiveCategories=true");
+}
+
+/**
+ * Số phần đang chờ bếp, theo mã món.
+ *
+ * Endpoint riêng của quản trị: con số này là thông tin vận hành, không nằm trong thực đơn công
+ * khai. Lỗi được nuốt và trả về map rỗng — không biết hàng đợi thì cảnh báo nói ít đi một vế,
+ * còn chặn cả màn thực đơn vì một con số phụ thì tệ hơn nhiều.
+ */
+export async function fetchPendingQuantities(): Promise<Record<string, number>> {
+  try {
+    return await api.request<Record<string, number>>("/admin/menu-items/pending-quantities");
+  } catch {
+    return {};
+  }
 }
 
 // Kitchen-level list (includes unavailable items; usable by Kitchen/Staff/Admin)

@@ -3,6 +3,7 @@ package com.cmc.restaurant.payments;
 import com.cmc.restaurant.shared.ActorContext;
 import com.cmc.restaurant.orders.application.OrderLookup;
 import com.cmc.restaurant.orders.application.OrderService;
+import com.cmc.restaurant.tables.TableInvoicePaymentService;
 import com.cmc.restaurant.payments.domain.Payment;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,9 +37,25 @@ public class BankTransferReconciler {
 	 * thì lần gửi lại thứ hai của CÙNG một giao dịch sẽ ghi nhận tiền lần nữa — SePay gửi lại tới
 	 * 17 lần trong 24 giờ cho tới khi nhận được 200.
 	 */
-	static final String NHA_CUNG_CAP = "SePay";
+	public static final String NHA_CUNG_CAP = "SePay";
 
-	private static final Pattern ORDER_CODE = Pattern.compile("CMC\\s+(ORD-\\d+)", Pattern.CASE_INSENSITIVE);
+	/**
+	 * Mã đơn lẻ, tìm trên nội dung ĐÃ CHUẨN HOÁ — xem {@link #chuanHoa}.
+	 *
+	 * <p>Chặn đuôi bằng {@code (?![0-9])}: bỏ hết dấu xong, chữ số của mã có thể dính liền chữ số
+	 * kế tiếp của ngân hàng, và một mã dài ra vài chữ số là tra sai đơn.
+	 */
+	private static final Pattern ORDER_CODE = Pattern.compile("CMCORD(\\d+)(?![0-9])");
+
+	/**
+	 * Mã hoá đơn bàn: {@code CMC INV-yyyyMMdd-XXXXXXXX}.
+	 *
+	 * <p>Đây mới là dạng mà app và web THẬT SỰ đưa cho khách. Luồng đơn lẻ ({@code ORD-}) chỉ còn
+	 * dùng ở đường thanh toán từng đơn; màn thanh toán của khách đi qua hoá đơn bàn vì một bàn có
+	 * thể gọi nhiều lượt. Thiếu mẫu này thì mọi khoản tiền về đều trả {@code unmatched} — đo trên
+	 * máy chủ thật trước khi sửa.
+	 */
+	private static final Pattern INVOICE_CODE = Pattern.compile("CMCINV(\\d{8})([0-9A-F]{8})");
 
 	private static final ActorContext CASSO_ACTOR = new ActorContext(null, "System");
 
@@ -46,14 +63,17 @@ public class BankTransferReconciler {
 	private final PaymentTransactionRepository transactionRepository;
 	private final OrderLookup orderLookup;
 	private final OrderService orderService;
+	private final TableInvoicePaymentService hoaDonBan;
 
 	public BankTransferReconciler(
 			PaymentRepository paymentRepository, PaymentTransactionRepository transactionRepository,
-			OrderLookup orderLookup, OrderService orderService) {
+			OrderLookup orderLookup, OrderService orderService,
+			TableInvoicePaymentService hoaDonBan) {
 		this.paymentRepository = paymentRepository;
 		this.transactionRepository = transactionRepository;
 		this.orderLookup = orderLookup;
 		this.orderService = orderService;
+		this.hoaDonBan = hoaDonBan;
 	}
 
 	/**
@@ -85,10 +105,17 @@ public class BankTransferReconciler {
 			return result(transaction, "duplicate", null, "This bank reference was already reconciled.");
 		}
 
+		// Thử hoá đơn bàn TRƯỚC: đó là dạng mã mà màn thanh toán của khách sinh ra, nên là đường
+		// đi thường gặp. Hai mẫu không thể cùng khớp một chuỗi.
+		String maHoaDon = timTheoMau(INVOICE_CODE, transaction.description());
+		if (maHoaDon != null) {
+			return doiSoatHoaDonBan(transaction, reference, maHoaDon);
+		}
+
 		String orderCode = extractOrderCode(transaction.description());
 		if (orderCode == null) {
 			return result(transaction, "unmatched", null,
-					"Description does not contain a 'CMC ORD-xxxx' transfer content.");
+					"Nội dung chuyển khoản không chứa mã 'CMC INV-...' hay 'CMC ORD-...'.");
 		}
 
 		Optional<OrderLookup.OrderSummary> order = orderLookup.findByOrderCode(orderCode);
@@ -140,11 +167,76 @@ public class BankTransferReconciler {
 	}
 
 	static String extractOrderCode(String description) {
+		return timTheoMau(ORDER_CODE, description);
+	}
+
+	/** Mã hoá đơn bàn trong nội dung chuyển khoản, hoặc {@code null}. */
+	static String timMaHoaDon(String description) {
+		return timTheoMau(INVOICE_CODE, description);
+	}
+
+	/**
+	 * Bỏ MỌI thứ không phải chữ-số và viết hoa toàn bộ.
+	 *
+	 * <p><b>LỖI CÓ THẬT, đo bằng chính thân webhook SePay gửi về.</b> Mã QR ghi
+	 * {@code CMC INV-20260902-33987CAE}. MB Bank lưu lại thành:
+	 *
+	 * <pre>
+	 *   MBVCB.15865148942.401977.CMC INV 20260902 33987CAE.CT tu 1041485738 PHAM DUY AN
+	 *   toi 003120082006 DO TUAN ANH tai MB- Ma GD ACSP/ zu401977
+	 * </pre>
+	 *
+	 * <p>Dấu gạch bị đổi thành khoảng trắng. Mẫu cũ đòi đúng {@code INV-<8 số>-<8 hex>} nên trượt,
+	 * webhook trả {@code unmatched} kèm HTTP 200, SePay ghi "thành công" — và tiền vào tài khoản
+	 * thật trong khi hoá đơn nằm chờ người duyệt tay. Không có gì báo động.
+	 *
+	 * <p>Chuẩn hoá cả hai phía rồi mới so là cách duy nhất không phụ thuộc vào việc từng ngân hàng
+	 * chọn giữ hay bỏ ký tự nào. Mã hoá đơn có độ dài CỐ ĐỊNH (8 số + 8 hex) nên bỏ dấu vẫn tách
+	 * lại được chính xác — đó là thứ làm phép này an toàn.
+	 */
+	private static String chuanHoa(String description) {
+		return description.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
+	}
+
+	private static String timTheoMau(Pattern mau, String description) {
 		if (description == null) {
 			return null;
 		}
-		Matcher matcher = ORDER_CODE.matcher(description);
-		return matcher.find() ? matcher.group(1).toUpperCase(Locale.ROOT) : null;
+		// `find` chứ không `matches`: ngân hàng luôn bọc thêm chữ của họ quanh nội dung khách gõ.
+		Matcher matcher = mau.matcher(chuanHoa(description));
+		if (!matcher.find()) {
+			return null;
+		}
+		// Dựng LẠI mã đúng dạng chuẩn: nội dung đã bị bỏ hết dấu, nhưng phần còn lại của hệ thống
+		// tra cứu theo `INV-yyyyMMdd-XXXXXXXX`.
+		return mau == INVOICE_CODE
+				? "INV-" + matcher.group(1) + "-" + matcher.group(2)
+				: "ORD-" + matcher.group(1);
+	}
+
+	/**
+	 * Ghi nhận khoản tiền vào một hoá đơn bàn.
+	 *
+	 * <p>Giao toàn bộ phần ghi tiền cho {@code TableInvoicePaymentService} — nơi đã có sẵn đường
+	 * xác nhận của nhân viên, kèm đóng phiên bàn, hoàn tất các đơn, thu mã đổi điểm và cộng điểm.
+	 * Chép lại ở đây nghĩa là hai bản sẽ trôi khỏi nhau, và bản này im lặng bỏ sót một trong số đó.
+	 */
+	private BankTransferDtos.TransactionResult doiSoatHoaDonBan(
+			BankTransferDtos.Transaction transaction, String reference, String maHoaDon) {
+		TableInvoicePaymentService.KetQuaDoiSoat ketQua =
+				hoaDonBan.xacNhanTuChuyenKhoan(maHoaDon, reference, transaction.amount());
+
+		return switch (ketQua) {
+			case DA_XAC_NHAN -> result(transaction, "confirmed", maHoaDon,
+					"Hoá đơn đã được xác nhận tự động.");
+			case KHONG_THAY_HOA_DON -> result(transaction, "unmatched", maHoaDon,
+					"Không có hoá đơn nào mang mã này.");
+			// Thường là quầy bấm xác nhận tay trước. Bình thường, không phải lỗi.
+			case DA_TAT_TOAN -> result(transaction, "already_settled", maHoaDon,
+					"Hoá đơn này đã được tất toán trước đó.");
+			case LECH_SO_TIEN -> result(transaction, "amount_mismatch", maHoaDon,
+					"Số tiền nhận được không khớp hoá đơn.");
+		};
 	}
 
 	private static BankTransferDtos.TransactionResult result(

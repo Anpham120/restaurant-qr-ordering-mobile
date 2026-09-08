@@ -14,6 +14,7 @@ const EMPTY: PromotionRequest = {
   minOrderAmount: null,
   maxDiscountAmount: null,
   isFlashSale: false,
+  usageLimit: null,
   startsAt: null,
   endsAt: null,
   isActive: true,
@@ -68,6 +69,7 @@ export function AdminPromotionsPage() {
       minOrderAmount: promotion.minOrderAmount,
       maxDiscountAmount: promotion.maxDiscountAmount,
       isFlashSale: promotion.isFlashSale,
+      usageLimit: promotion.usageLimit ?? null,
       startsAt: promotion.startsAt,
       endsAt: promotion.endsAt,
       isActive: promotion.isActive,
@@ -100,6 +102,7 @@ export function AdminPromotionsPage() {
         description: form.description?.trim() || null,
         minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
         maxDiscountAmount: form.maxDiscountAmount ? Number(form.maxDiscountAmount) : null,
+        usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
       };
       if (editingId) {
         await api.promotions.update(editingId, payload);
@@ -190,6 +193,22 @@ export function AdminPromotionsPage() {
                 <label className="ops-form-label">Giảm tối đa (đ)</label>
                 <input className="ops-form-input" type="number" value={form.maxDiscountAmount ?? ""} onChange={(e) => setForm({ ...form, maxDiscountAmount: e.target.value === "" ? null : Number(e.target.value) })} />
               </div>
+              {/*
+                Trần thứ hai, và là trần DUY NHẤT chặn được một mã bị chia sẻ ra ngoài: ba tầng
+                trần giảm giá ở §9 chặn thiệt hại của MỖI hoá đơn, chúng không chặn SỐ hoá đơn.
+                Để trống = không giới hạn, tức hành vi cũ, nên mã đang chạy không đổi gì.
+              */}
+              <div className="ops-form-group">
+                <label className="ops-form-label">Giới hạn lượt dùng</label>
+                <input
+                  className="ops-form-input"
+                  type="number"
+                  min={1}
+                  placeholder="Để trống = không giới hạn"
+                  value={form.usageLimit ?? ""}
+                  onChange={(e) => setForm({ ...form, usageLimit: e.target.value === "" ? null : Number(e.target.value) })}
+                />
+              </div>
               <div className="ops-form-group">
                 <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <input type="checkbox" checked={form.isFlashSale} onChange={(e) => setForm({ ...form, isFlashSale: e.target.checked })} />
@@ -222,6 +241,7 @@ export function AdminPromotionsPage() {
             <th>Đơn tối thiểu</th>
             <th>Loại</th>
             <th>Trạng thái</th>
+            <th>Lượt dùng</th>
             <th>Thao tác</th>
           </tr>
         </thead>
@@ -237,6 +257,12 @@ export function AdminPromotionsPage() {
                 <span className={`ops-badge ${promotion.isActive ? "ops-badge--ready" : "ops-badge--cancelled"}`}>
                   {promotion.isActive ? "Hoạt động" : "Tắt"}
                 </span>
+              </td>
+              {/* Người đặt mã phải thấy nó SẮP hết, không phải phát hiện khi khách phàn nàn. */}
+              <td style={{ fontVariantNumeric: "tabular-nums" }}>
+                {promotion.usageLimit == null
+                  ? <span className="ops-muted">không giới hạn</span>
+                  : `${promotion.usedCount ?? 0}/${promotion.usageLimit}`}
               </td>
               <td>
                 <div style={{ display: "flex", gap: 4 }}>

@@ -1,5 +1,6 @@
 package com.cmc.restaurant.loyalty;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -59,7 +60,48 @@ public final class LoyaltyDtos {
 	 * @param orderCode mã đơn để trừ tiền vào — BẮT BUỘC với ưu đãi {@code DISCOUNT}, bỏ trống với
 	 *                  ưu đãi tặng món vì phiếu tặng món không gắn với hoá đơn nào
 	 */
-	public record RedeemRequest(String rewardId, String orderCode) {
+	/**
+	 * @param orderCode mã đơn đang mở, {@code null} khi khách đổi ở nhà để dành
+	 */
+	public record RedeemRequest(
+			String rewardId,
+			/*
+			 * `@JsonAlias("orderId")` là để CỨU những bản app đã cài trên máy khách.
+			 *
+			 * LỖI CÓ THẬT. App gửi tên `orderId` (`mobile-rn/src/core/loyalty/loyaltyApi.ts`) trong
+			 * khi hợp đồng đọc `orderCode`. Jackson bỏ qua trường lạ mà không báo gì, nên request
+			 * vẫn 200, điểm vẫn bị trừ, và chỉ có MỘT nhánh nghiệp vụ lặng lẽ không chạy:
+			 *
+			 *     coDon = false  ->  ganMonVaoDon = false  ->  món KHÔNG vào đơn  ->  BẾP KHÔNG BIẾT
+			 *
+			 * Trong khi ngay trước đó app đã hứa với khách: "Món sẽ được thêm vào đơn ORD-1001 và
+			 * bếp làm ngay." Khách mất điểm, ngồi chờ một món không ai nấu.
+			 *
+			 * App đã sửa để gửi `orderCode`. Nhưng bản cũ vẫn nằm trên điện thoại khách và không
+			 * tự cập nhật, nên bỏ alias này đi là làm hỏng lại đúng những người đang dùng.
+			 */
+			@JsonAlias("orderId") String orderCode) {
+	}
+
+	/**
+	 * Quầy đổi thưởng hộ khách chỉ dùng web.
+	 *
+	 * @param phone     số điện thoại khách đọc ở quầy — đây là DANH TÍNH duy nhất của họ, vì họ
+	 *                  quét QR dùng web mà không đăng nhập
+	 * @param orderCode mã đơn đang mở, chỉ cần với ưu đãi TẶNG MÓN để bếp làm ngay
+	 */
+	public record CounterRedeemRequest(String phone, String rewardId, String orderCode) {
+	}
+
+	/**
+	 * @param code       mã để nhân viên ĐỌC CHO KHÁCH nhập ở màn thanh toán; {@code null} với ưu
+	 *                   đãi tặng món, vì món đã vào đơn rồi
+	 * @param orderCode  đơn đã được thêm món tặng, {@code null} khi không gắn vào đơn nào
+	 * @param soDuMoi    điểm còn lại, để quầy đọc lại cho khách ngay
+	 */
+	public record CounterRedeemResponse(
+			String redemptionId, String rewardName, int pointsSpent, String code, String orderCode,
+			int soDuMoi) {
 	}
 
 	/**
@@ -79,19 +121,16 @@ public final class LoyaltyDtos {
 	}
 
 	/**
-	 * Mã khách đọc cho nhân viên ở quầy.
+	 * Token Firebase chứng minh khách sở hữu SỐ, không phải số trần.
 	 *
-	 * @param expiresAt để app đếm ngược — một mã hết hạn im lặng trông hệt như một mã sai
+	 * <p>Bản trước nhận số trần và vì thế phải TỪ CHỐI mọi số đã có hồ sơ điểm — nhận một số chưa
+	 * chứng minh nghĩa là cho người lạ gõ số của khách quen rồi lấy điểm. Cái từ chối đó lại chặn
+	 * đúng ca phổ biến nhất: khách ăn ở quán qua web, tích điểm theo số, rồi mới tải app.
+	 *
+	 * <p>Có OTP thì hết phải chọn giữa hai cái dở: token chứng minh đúng thứ cần chứng minh, nên
+	 * số đã có hồ sơ nối được luôn và an toàn hơn cả nối tại quầy.
 	 */
-	public record LinkCodeResponse(String code, OffsetDateTime expiresAt) {
-	}
-
-	/** Nhân viên nối số cho khách: mã khách đọc + số cần nối. */
-	public record StaffLinkRequest(String code, String phone) {
-	}
-
-	/** Số điện thoại khách muốn nối vào tài khoản. */
-	public record LinkPhoneRequest(String phone) {
+	public record LinkPhoneRequest(String phoneIdToken) {
 	}
 
 	/**

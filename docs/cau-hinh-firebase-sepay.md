@@ -53,6 +53,63 @@ FIREBASE_API_KEY=AIza…            # Web API Key
 FIREBASE_PROJECT_ID=ten-du-an     # Project ID
 ```
 
+Triển khai qua GitHub Actions thì đặt ở `Settings → Environments → staging`:
+`FIREBASE_API_KEY` là **secret**, `FIREBASE_PROJECT_ID` là **variable**.
+
+### Phần app — bốn bước, làm theo đúng thứ tự
+
+Máy chủ đã đối chiếu được token. Nhưng **app chưa gửi được token nào** cho tới khi làm xong phần
+này: thư viện OTP là native module, chưa cài thì `layGuiMaOtpThat()` trả `undefined` và màn đăng
+nhập KHÔNG hiện dòng "Tạo bằng số điện thoại". Đó là hành vi cố ý — hiện một nút bấm vào chỉ để
+nhận lỗi còn tệ hơn không có nút.
+
+**1. Đăng ký app Android trong Firebase.** `Project settings → Your apps → Add app → Android`.
+Package name phải khớp `android.package` trong `mobile-rn/app.json`. Tải về `google-services.json`.
+
+**2. Đặt tệp đó vào `mobile-rn/google-services.json`.** Rồi thêm ngay vào `.gitignore` — tệp này
+gắn với dự án Firebase của quán, không nên nằm trong kho mã.
+
+**3. Cài thư viện:**
+
+```bash
+cd mobile-rn
+npx expo install @react-native-firebase/app @react-native-firebase/auth
+```
+
+Rồi thêm vào `app.json`, mục `expo.plugins`:
+
+```json
+["@react-native-firebase/app"]
+```
+
+và `expo.android.googleServicesFile`: `"./google-services.json"`.
+
+> **Làm bước 3 TRƯỚC khi có tệp ở bước 2 thì bản dựng hỏng.** Plugin đọc
+> `google-services.json` lúc build, thiếu là dừng. Đó là lý do thứ tự ở đây không đảo được.
+
+**4. Dựng lại dev client** — thư viện là native module nên Expo Go không chạy được:
+
+```bash
+npx expo prebuild --clean
+npx expo run:android
+```
+
+Dự án đã cần dev client sẵn cho `@react-native-google-signin`, nên đây không phải ràng buộc mới.
+
+### Kiểm tra: đăng ký bằng số thử
+
+Dùng **số thử** đã khai ở bước 3 phần trên — không tốn tin nhắn, không giới hạn số lần:
+
+1. Mở app → *Đăng nhập* → *Chưa có tài khoản? Tạo bằng số điện thoại*
+2. Gõ họ tên, **số thử**, mật khẩu ≥ 8 ký tự → *Nhận mã xác minh*
+3. Gõ **mã cố định** đã đặt trong Firebase Console → *Tạo tài khoản*
+4. Vào thẳng app. Đăng xuất rồi đăng nhập lại bằng **chính số đó** và mật khẩu vừa đặt.
+
+Bước 4 mới là bước đáng làm. Nó kiểm việc số lưu xuống cơ sở dữ liệu khớp với số khách gõ —
+Firebase trả `+84901234567`, khách gõ `0901234567`, và `PhoneNumber.normalize` phải quy cả hai về
+`0901234567`. Sai chỗ này thì khách đăng ký xong không đăng nhập lại được, mà bước 3 vẫn thành
+công nên không có gì báo.
+
 ---
 
 ## 2. Google — đăng nhập bằng tài khoản Google
@@ -133,10 +190,20 @@ PAYMENTS_SEPAY_APIKEY=…              # khoá webhook
 # CHỈ khai ở đây. Hai bản sao sẽ trôi khỏi nhau, và khi đó QR chỉ khách
 # một tài khoản còn đối soát trông chờ tài khoản khác: tiền vào mà không
 # đơn nào được đánh dấu đã trả.
-PAYMENTS_VIETQR_BANKID=MB
+PAYMENTS_VIETQR_BANKID=970436        # BIN 6 chữ số, KHÔNG phải tên viết tắt
 PAYMENTS_VIETQR_ACCOUNTNUMBER=0123456789
 PAYMENTS_VIETQR_ACCOUNTNAME=NGUYEN VAN A
 ```
+
+> **`BANKID` phải là mã BIN 6 chữ số.** Chuẩn EMVCo nhận diện ngân hàng bằng BIN, không bằng tên
+> viết tắt. Đặt `VCB` thì cổng ảnh của SePay vẫn nhận và mọi thứ trông như đang chạy, nhưng chuỗi
+> QR mang một mã ngân hàng vô nghĩa và app ngân hàng từ chối. Máy chủ chặn ngay lúc khởi động nếu
+> giá trị không phải 6 chữ số.
+>
+> **Cách tra BIN cho đúng, không đoán:** gọi
+> `https://qr.sepay.vn/img?acc=<số tài khoản>&bank=<tên viết tắt>&amount=1000&des=TEST`, giải mã
+> ảnh PNG trả về, rồi đọc 6 chữ số ngay sau `0006` trong chuỗi. Đoán sai BIN nghĩa là tiền đi sang
+> ngân hàng khác.
 
 ### Nội dung chuyển khoản phải giữ nguyên
 
@@ -173,7 +240,7 @@ Với SePay điều này quan trọng nhất: không có khoá thì không phân
 giả, mà nhận nhầm một cái giả nghĩa là **đánh dấu đơn đã trả tiền khi không có đồng nào vào tài
 khoản**.
 
-Cùng luật đã đặt cho `AI_INTERNAL_TOKEN` và `GOOGLE_CLIENT_ID`.
+Cùng luật đã đặt cho `GOOGLE_CLIENT_ID` và khoá webhook SePay.
 
 ---
 

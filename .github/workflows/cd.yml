@@ -1,11 +1,22 @@
 name: cd
 
-# Triển khai lên máy chủ. CHỈ chạy khi bấm tay.
+# Triển khai lên máy chủ.
 #
-# Vì sao không tự chạy theo push: máy chủ đích là tài nguyên dùng chung, và một lần đẩy nhầm nhánh
-# là một lần thay đổi thứ người khác đang dùng. Bấm tay bắt người triển khai phải chọn môi trường
-# một cách có ý thức, và `environment:` ở dưới còn bắt phải có người duyệt.
+# STAGING TỰ CHẠY KHI MERGE VÀO `develop`. PRODUCTION VẪN BẤM TAY.
+#
+# `auto-merge.yml` biện minh cho việc tự merge bằng câu "mọi thay đổi đều đi `develop` -> Deploy
+# Staging -> `main`". Câu đó mô tả một quy trình KHÔNG CÓ GÌ THỰC HIỆN: `cd.yml` trước đây chỉ có
+# `workflow_dispatch`, nên merge vào `develop` xong là hết — staging chỉ được cập nhật khi có người
+# nhớ ra và bấm. Một cửa kiểm mà việc đi qua nó là tuỳ trí nhớ thì không phải cửa kiểm.
+#
+# Ranh giới giữ nguyên ở đúng chỗ nó có nghĩa: staging là máy để phát hiện hỏng, đưa lên đó tự động
+# là điều KIỆN để nó làm được việc ấy — mã càng lên sớm càng phát hiện sớm. Production đổi thứ
+# người thật đang dùng, nên vẫn phải có người chọn một cách có ý thức, và `environment:` bên dưới
+# còn giữ chốt duyệt.
 on:
+  push:
+    branches:
+      - develop
   workflow_dispatch:
     inputs:
       moi_truong:
@@ -21,7 +32,7 @@ on:
 # (`cancel-in-progress: false`): cắt ngang giữa lúc chạy migration để lại cơ sở dữ liệu ở trạng
 # thái nửa vời, thứ mà một lần triển khai lại KHÔNG sửa được.
 concurrency:
-  group: cd-${{ inputs.moi_truong }}
+  group: cd-${{ inputs.moi_truong || 'staging' }}
   cancel-in-progress: false
 
 permissions:
@@ -32,10 +43,10 @@ jobs:
     name: Kiểm lại trước khi đụng máy chủ
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
@@ -47,6 +58,31 @@ jobs:
         working-directory: backend-java
         run: ./gradlew --no-daemon test integrationTest
 
+      # Frontend ĐƯỢC DỰNG LẠI VÀ TRIỂN KHAI trong chính lượt này, nhưng trước đây không phép kiểm
+      # nào chạm tới nó — bundle web đi thẳng lên máy chủ. Đúng lớp lỗi đã gặp sáu lần: hỏng ở tầng
+      # trình duyệt trong khi backend vẫn xanh.
+      #
+      # `build` nằm trong đây chứ không chỉ `test`: nó chạy `tsc --noEmit` cho từng app rồi mới
+      # `vite build`, nên một lỗi kiểu chỉ có ở app con cũng chặn được trước khi đụng máy chủ.
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cài phụ thuộc frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Phép kiểm frontend
+        working-directory: frontend
+        run: npm test
+
+      - name: Frontend dựng được
+        working-directory: frontend
+        run: npm run build
+
       # Giá trị GIẢ, chỉ để đọc được tệp. Compose khai ba biến `:?bắt buộc` nên không có chúng
       # thì `config` dừng ở biến đầu tiên và không kiểm được phần còn lại của tệp.
       #
@@ -56,22 +92,21 @@ jobs:
         env:
           POSTGRES_PASSWORD: kiem-cu-phap
           JWT_SIGNING_KEY: kiem-cu-phap
-          AI_INTERNAL_TOKEN: kiem-cu-phap
         run: docker compose -f deploy/docker-compose.java.yml config >/dev/null
 
   trien-khai:
-    name: Triển khai ${{ inputs.moi_truong }}
+    name: Triển khai ${{ inputs.moi_truong || 'staging' }}
     needs: kiem-truoc
     runs-on: ubuntu-latest
     # Bắt buộc có người duyệt, và giữ bí mật riêng cho từng môi trường. Đặt "required reviewers"
     # cho environment `production` trong Settings → Environments.
-    environment: ${{ inputs.moi_truong }}
+    environment: ${{ inputs.moi_truong || 'staging' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Chạy deploy-vps.sh
         env:
-          DEPLOY_ENV: ${{ inputs.moi_truong }}
+          DEPLOY_ENV: ${{ inputs.moi_truong || 'staging' }}
 
           # Máy chủ đích. KHÔNG ghi cứng địa chỉ ở đây: mỗi environment trỏ tới máy của mình, và
           # một địa chỉ nằm trong tệp là một địa chỉ ai sửa cũng được mà không ai duyệt.
@@ -92,9 +127,31 @@ jobs:
           FRONTEND_SERVER_NAMES: ${{ vars.FRONTEND_SERVER_NAMES }}
           API_SERVER_NAME: ${{ vars.API_SERVER_NAME }}
           PUBLIC_API_BASE_URL: ${{ vars.PUBLIC_API_BASE_URL }}
+
+          # Hai địa chỉ đi vào BUNDLE lúc build. Bỏ sót thì compose rơi về http://127.0.0.1:8080,
+          # và link QR bàn trong cổng quản trị trỏ về máy của người đang xem — trang mở ra đứng im
+          # mà không báo lỗi gì.
+          PUBLIC_ORDERING_BASE_URL: ${{ vars.PUBLIC_ORDERING_BASE_URL }}
+          PUBLIC_ORDER_HUB_URL: ${{ vars.PUBLIC_ORDER_HUB_URL }}
+          PUBLIC_MARKETING_BASE_URL: ${{ vars.PUBLIC_MARKETING_BASE_URL }}
           CORS_ALLOWED_ORIGINS: ${{ vars.CORS_ALLOWED_ORIGINS }}
 
+          # Thư mục chứng chỉ Let's Encrypt trên máy chủ. Bỏ trống = HTTP thuần.
+          #
+          # Không truyền biến này thì mỗi lượt triển khai ghi đè cấu hình nginx về HTTP, kể cả khi
+          # chứng chỉ vẫn nằm nguyên trên máy. Hỏng khó thấy: trang vẫn lên trên HTTP, nhưng bundle
+          # đã dựng để gọi API qua HTTPS nên trình duyệt chặn mọi lời gọi.
+          TLS_CERT_DIR: ${{ vars.TLS_CERT_DIR }}
+
           JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+
+          # Tài khoản quản trị đầu tiên. Bỏ trống thì không tạo gì — chỉ lần triển khai đầu lên
+          # một cơ sở dữ liệu trống mới cần. Không migration nào chèn người dùng, và mọi đường tạo
+          # tài khoản nhân sự đều nằm sau lớp xác thực vai trò Admin, nên thiếu bước này là bản
+          # triển khai tự khoá mình ra ngoài: năm cổng web lên xanh, không ai đăng nhập được.
+          ADMIN_BOOTSTRAP_EMAIL: ${{ vars.ADMIN_BOOTSTRAP_EMAIL }}
+          ADMIN_BOOTSTRAP_PASSWORD: ${{ secrets.ADMIN_BOOTSTRAP_PASSWORD }}
+          ADMIN_BOOTSTRAP_FULL_NAME: ${{ vars.ADMIN_BOOTSTRAP_FULL_NAME }}
 
           PAYMENTS_VIETQR_BANKID: ${{ vars.PAYMENTS_VIETQR_BANKID }}
           PAYMENTS_VIETQR_ACCOUNTNUMBER: ${{ vars.PAYMENTS_VIETQR_ACCOUNTNUMBER }}
@@ -105,20 +162,6 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 
-          # Phải khai riêng cho từng môi trường: bỏ trống thì cả hai cùng về mặc định 8001 và
-          # môi trường lên sau hỏng vì cổng đã bị chiếm.
-          AI_SERVICE_PORT: ${{ vars.AI_SERVICE_PORT }}
-          AI_SERVICE_URL: ${{ vars.AI_SERVICE_URL }}
-          AI_INTERNAL_TOKEN: ${{ secrets.AI_INTERNAL_TOKEN }}
-          # Địa chỉ cổng LLM. deploy-vps.sh có ghi biến này nhưng cd.yml trước đây bỏ sót, nên nó
-          # rỗng và compose rơi về mặc định host.docker.internal:20128 — địa chỉ chỉ tồn tại trên
-          # máy phát triển, trên VPS thì trỏ vào hư không và trợ lý luôn trả câu thoái hoá.
-          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          # Rỗng = triển khai KHÔNG có dịch vụ AI. Đặt thành "ai" khi CPU máy chủ có AVX2 để
-          # bật lại — không phải sửa mã.
-          COMPOSE_PROFILES: ${{ vars.COMPOSE_PROFILES }}
-          LLM_MODEL: ${{ vars.LLM_MODEL }}
         run: |
           chmod +x deploy/scripts/deploy-vps.sh
           deploy/scripts/deploy-vps.sh
@@ -130,3 +173,35 @@ jobs:
           # Triển khai xong mà không hỏi lại máy chủ thì "xanh" chỉ nghĩa là script chạy hết, không
           # nghĩa là hệ thống đang phục vụ được.
           curl -fsS --retry 5 --retry-delay 5 "${API_BASE_URL%/api}/api/health"
+
+      # TỰ LÙI KHI HỎNG.
+      #
+      # `rollback-vps.sh` nằm trong repo từ lâu, viết đủ và đúng — nhưng KHÔNG AI GỌI NÓ. Deploy
+      # hỏng giữa chừng là máy chủ nằm lại ở trạng thái hỏng cho tới khi có người SSH vào chữa tay.
+      # Một cơ chế cứu chỉ chạy khi có người nhớ ra nó thì không phải cơ chế cứu.
+      #
+      # Việc này chỉ đáng làm sau khi staging tự deploy: bấm tay thì người bấm đang ngồi đó nhìn,
+      # còn tự động thì lần hỏng đầu tiên có thể không ai biết trong nhiều giờ.
+      #
+      # `failure()` chứ không phải `always()`: bao trùm CẢ hai bước trên — script deploy thoát giữa
+      # chừng, VÀ health-check đỏ sau khi script chạy hết. Trường hợp thứ hai mới là trường hợp
+      # nguy: script "thành công" trong khi hệ thống không phục vụ được.
+      - name: Lùi lại nếu triển khai hỏng
+        if: failure()
+        env:
+          DEPLOY_ENV: ${{ inputs.moi_truong || 'staging' }}
+          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          chmod +x deploy/scripts/rollback-tu-xa.sh
+          deploy/scripts/rollback-tu-xa.sh
+
+      # Lùi xong mà job vẫn XANH thì lần hỏng biến mất khỏi lịch sử, và người ta tưởng bản mới đang
+      # chạy trên staging trong khi máy chủ đã quay về bản cũ. Thất bại phải nhìn thấy được.
+      - name: Báo đỏ dù đã lùi thành công
+        if: failure()
+        run: |
+          echo "::error::Triển khai ${{ inputs.moi_truong || 'staging' }} HỎNG. Máy chủ đã được lùi về bản trước."
+          exit 1

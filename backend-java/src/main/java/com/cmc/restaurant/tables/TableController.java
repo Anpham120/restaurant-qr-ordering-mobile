@@ -85,10 +85,26 @@ public class TableController {
 		return sessionService.getSessionForResume(sessionId, token);
 	}
 
+	/**
+	 * Đóng phiên bàn.
+	 *
+	 * <p>{@code CounterStaff} có mặt ở đây là sửa lỗi, không phải nới quyền: theo §13 của tài liệu
+	 * thiết kế, quầy SỞ HỮU việc "thu tiền, chốt hoá đơn", mà đóng bàn là bước cuối của việc đó.
+	 * Danh sách cũ chỉ có {@code Staff} và {@code Admin} — trong khi {@code Staff} là vai cũ không
+	 * còn cấp mới được ({@link com.cmc.restaurant.auth.UserRole#ADMIN_ASSIGNABLE}). Nghĩa là người
+	 * đứng quầy trong đời thật không đóng được bàn trong hệ thống.
+	 *
+	 * <p>{@code Staff} vẫn giữ lại: nó không cấp mới nhưng tài khoản cũ còn đăng nhập được, và gỡ
+	 * quyền của họ trong cùng lần sửa này là khoá một nhóm người ra ngoài mà không ai yêu cầu.
+	 */
 	@PostMapping("/api/table-sessions/{sessionId}/close")
-	@PreAuthorize("hasAnyRole('Staff', 'Admin')")
-	public TableSessionResponse closeTableSession(@PathVariable String sessionId) {
-		return sessionService.closeSession(sessionId);
+	@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
+	public TableSessionResponse closeTableSession(
+			@PathVariable String sessionId,
+			@RequestBody(required = false) TableDtos.CloseSessionRequest request) {
+		boolean force = request != null && request.force();
+		String reason = request == null ? null : request.reason();
+		return sessionService.closeSession(sessionId, force, reason);
 	}
 
 	@GetMapping("/api/table-sessions/{sessionId}/invoice")

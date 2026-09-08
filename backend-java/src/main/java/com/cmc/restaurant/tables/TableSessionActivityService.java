@@ -28,6 +28,7 @@ public class TableSessionActivityService {
 	private static final String DEFAULT_ASSISTANCE_NOTE = "Yêu cầu gọi nhân viên";
 
 	private final TableSessionRepository sessionRepository;
+	private final ResumeStateQueryService resumeStateQueryService;
 	private final TableInvoiceRepository invoiceRepository;
 	private final RestaurantTableRepository tableRepository;
 	private final TableSessionCapability capability;
@@ -36,11 +37,13 @@ public class TableSessionActivityService {
 	private final OrderRealtimeNotifier realtimeNotifier;
 
 	public TableSessionActivityService(
-			TableSessionRepository sessionRepository, TableInvoiceRepository invoiceRepository,
+			TableSessionRepository sessionRepository, ResumeStateQueryService resumeStateQueryService,
+			TableInvoiceRepository invoiceRepository,
 			RestaurantTableRepository tableRepository, TableSessionCapability capability,
 			JwtProperties jwtProperties, OrderService orderService,
 			OrderRealtimeNotifier realtimeNotifier) {
 		this.sessionRepository = sessionRepository;
+		this.resumeStateQueryService = resumeStateQueryService;
 		this.invoiceRepository = invoiceRepository;
 		this.tableRepository = tableRepository;
 		this.capability = capability;
@@ -62,7 +65,7 @@ public class TableSessionActivityService {
 
 		OffsetDateTime now = OffsetDateTime.now();
 		if (!session.isActiveAt(now)) {
-			if (session.expireIfPast(now)) {
+			if (session.expireIfPast(now, resumeStateQueryService.resolve(sessionId).conNoTien())) {
 				sessionRepository.save(session);
 			}
 			if (!hasSettledInvoice(sessionId)) {
@@ -82,7 +85,7 @@ public class TableSessionActivityService {
 
 		OffsetDateTime now = OffsetDateTime.now();
 		if (!session.isActiveAt(now)) {
-			if (session.expireIfPast(now)) {
+			if (session.expireIfPast(now, resumeStateQueryService.resolve(sessionId).conNoTien())) {
 				sessionRepository.save(session);
 			}
 			throw new ApiException(HttpStatus.GONE, "TABLE_SESSION_INACTIVE",
