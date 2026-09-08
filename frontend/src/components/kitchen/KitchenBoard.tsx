@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
   useCallback,
   useEffect,
@@ -158,16 +159,41 @@ function OrderCard({
         ) : null}
       </div>
 
-      <div className="ops-card-meta">
-        <span className={priority !== "normal" ? "ops-timer ops-timer--urgent" : "ops-timer ops-timer--normal"}>
-          <Clock3 aria-hidden="true" size={14} /> {elapsed}
-        </span>
-        <span>{progress.ready}/{progress.total} món xong</span>
-        <span>{formatVnd(order.totalAmount)}</span>
+      {/*
+        THỜI GIAN CHỜ LÀ CON SỐ QUYẾT ĐỊNH CỦA MÀN HÌNH, nên nó to nhất trên thẻ.
+
+        Bản trước để nó thành một `<span>` nhỏ ngang hàng với số món xong và TỔNG TIỀN
+        ĐƠN. Bếp không thu tiền — con số đó chiếm chỗ của thứ bếp thật sự cần, và làm
+        loãng đúng chỗ mắt phải nhìn đầu tiên. Đã bỏ.
+
+        Ba tầng mã hoá cho cùng một trạng thái: cỡ chữ, màu, và NHÃN CHỮ. Chỉ dùng màu
+        là mã hoá một tầng — bếp bị chói làm mất phân biệt màu, và có người mù màu.
+      */}
+      <div className={`kitchen-wait kitchen-wait--${priority}`}>
+        <Clock3 aria-hidden="true" size={18} />
+        <span className="kitchen-wait-value">{elapsed}</span>
+        <span className="kitchen-wait-unit">chờ</span>
+        {priority !== "normal" ? (
+          <span className="kitchen-wait-flag">
+            {priority === "urgent" ? "QUÁ 20 PHÚT" : "QUÁ 12 PHÚT"}
+          </span>
+        ) : null}
       </div>
 
-      <div className="kitchen-progress" aria-hidden="true">
-        <div className="kitchen-progress-bar" style={{ width: `${progress.percent}%` }} />
+      <div className="ops-card-meta">
+        <span>{progress.ready}/{progress.total} món xong</span>
+      </div>
+
+      {/*
+        Bề rộng đi qua biến CSS chứ không qua `style={{}}`: giữ mọi quyết định về hình
+        thức trong CSS, và biến thì `prefers-reduced-motion` tắt hiệu ứng được.
+      */}
+      <div
+        className="kitchen-progress"
+        aria-hidden="true"
+        style={{ "--kitchen-progress": `${progress.percent}%` } as CSSProperties}
+      >
+        <div className="kitchen-progress-bar" />
       </div>
       <p className="kitchen-progress-label">{primaryAction.detail}</p>
 

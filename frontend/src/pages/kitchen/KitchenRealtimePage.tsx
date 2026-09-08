@@ -17,6 +17,7 @@ import { useOpsRealtime } from "../../hooks/useOpsRealtime";
 import { getKitchenOrders } from "../../services/orderService";
 import { fetchKitchenMenuItems, toggleMenuItemAvailability } from "../../services/adminMenuService";
 import { locMonTheoTen } from "./kitchenMenuFilter";
+import { useKitchenDarkTheme } from "./useKitchenDarkTheme";
 import { getKitchenDelay, setKitchenDelay } from "../../services/kitchenDelayService";
 import type { KitchenDelay } from "../../services/kitchenDelayService";
 import { moTaTreBep, sapHetHan } from "../../components/kitchen/kitchenDelayLabel";
@@ -27,6 +28,7 @@ import "../../components/operations/operations.css";
 type MenuItemSummary = { id: string; name: string; isAvailable: boolean };
 
 export function KitchenRealtimePage() {
+  useKitchenDarkTheme();
   const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemSummary[]>([]);
@@ -205,12 +207,12 @@ export function KitchenRealtimePage() {
     <div>
       {/* Header */}
       <div className="ops-page-header">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div className="kitchen-page-head">
           <div>
             <h1>Bảng Bếp</h1>
             <p>Theo dõi và cập nhật trạng thái đơn hàng realtime</p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="kitchen-page-actions">
             <OpsConnectionBadge status={connectionStatus} />
             <button className="ops-btn ops-btn--ghost" onClick={loadOrders} type="button">
               <RefreshCw aria-hidden="true" size={14} /> Làm mới
@@ -238,12 +240,11 @@ export function KitchenRealtimePage() {
       {/* Bếp tự khai độ trễ (#142). Hàng đợi đơn không thấy được đầu bếp nghỉ ốm hay hỏng lò. */}
       <div
         className={treBep && treBep.delayMinutes > 0 ? "ops-notice ops-notice--warning" : "ops-notice"}
-        style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 16 }}
       >
         <Timer aria-hidden="true" size={16} />
         <strong>{moTaTreBep(treBep)}</strong>
         {sapHetHan(treBep) ? <span>— sắp tự tắt, bấm lại để gia hạn</span> : null}
-        <span style={{ flex: 1 }} />
+        <span className="kitchen-delay-spacer" />
         {/*
           Ô NHẬP thay cho ba nút cố định +10 / +20 / +30.
 
@@ -253,11 +254,11 @@ export function KitchenRealtimePage() {
 
           Luật đọc số nằm ở `kitchenDelayInput` để kiểm được. Ở đây chỉ giữ ô và nút.
         */}
-        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <label className="kitchen-delay-field">
           <span>Cộng thêm</span>
           <input
             aria-label="Số phút trễ"
-            className="ops-form-input"
+            className="ops-form-input kitchen-delay-input"
             disabled={dangDoiTre}
             inputMode="numeric"
             max={TRAN_PHUT}
@@ -270,7 +271,6 @@ export function KitchenRealtimePage() {
               if (e.key === "Enter") void apDungTre();
             }}
             placeholder={String(treBep?.delayMinutes || "")}
-            style={{ width: 72, textAlign: "right" }}
             value={phutNhap}
           />
           <span>phút</span>
@@ -297,7 +297,7 @@ export function KitchenRealtimePage() {
         </button>
         {/* Lỗi nằm NGAY CẠNH ô, không đẩy lên dải lỗi chung ở đầu trang: người trực bếp đang nhìn
             vào ô mình vừa gõ, không nhìn lên đầu màn hình. */}
-        {loiTre ? <span style={{ color: "var(--color-danger)", width: "100%" }}>{loiTre}</span> : null}
+        {loiTre ? <span className="kitchen-delay-error">{loiTre}</span> : null}
       </div>
 
       {/* Stats */}
@@ -313,11 +313,10 @@ export function KitchenRealtimePage() {
 
       {/* Toggle menu panel */}
       {showMenuPanel ? (
-        <div style={{ marginBottom: 20, padding: 16, background: "var(--color-bg-subtle)", borderRadius: 12, maxHeight: 300, overflowY: "auto" }}>
-          <h3 style={{ margin: "0 0 12px", fontSize: 15 }}>Quản lý tình trạng món</h3>
+        <div className="kitchen-menu-panel">
+          <h3>Quản lý tình trạng món</h3>
           <input
-            className="ops-form-input"
-            style={{ marginBottom: 12 }}
+            className="ops-form-input kitchen-menu-search"
             autoFocus
             type="search"
             value={timMon}
@@ -334,7 +333,7 @@ export function KitchenRealtimePage() {
             aria-label="Tìm món theo tên"
           />
           {monHienThi.length === 0 ? (
-            <p className="ops-stat-detail" style={{ margin: 0 }}>
+            <p className="ops-stat-detail kitchen-menu-detail">
               Không có món nào khớp “{timMon}”. Nhấn Esc để xoá ô tìm.
             </p>
           ) : null}
@@ -342,7 +341,7 @@ export function KitchenRealtimePage() {
             <div className="ops-toggle-row" key={item.id}>
               <span className="ops-toggle-label">
                 {item.name}
-                {!item.isAvailable ? <span className="ops-badge ops-badge--cancelled" style={{ marginLeft: 8 }}>Hết</span> : null}
+                {!item.isAvailable ? <span className="ops-badge ops-badge--cancelled kitchen-menu-flag">Hết</span> : null}
               </span>
               <button
                 className={`ops-toggle-switch ${item.isAvailable ? "ops-toggle-switch--on" : ""}`}
