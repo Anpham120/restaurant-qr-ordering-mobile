@@ -84,8 +84,8 @@ $(tls_block)
 $(proxy_common)
     }
 
-    # `/hub/` SỐ ÍT — đường thật của endpoint STOMP, xem WebSocketConfig.addEndpoint.
-    # Viết `/hubs/` (đường của bản .NET) thì WebSocket rơi vào `location /`, nơi KHÔNG có header
+    # '/hub/' SỐ ÍT — đường thật của endpoint STOMP, xem WebSocketConfig.addEndpoint.
+    # Viết '/hubs/' (đường của bản .NET) thì WebSocket rơi vào 'location /', nơi KHÔNG có header
     # nâng cấp. Nginx cắt mất Upgrade, Tomcat trả 400 "Can Upgrade only to WebSocket", và client
     # thử lại vô hạn — giao diện hiện "Đang kết nối lại…" mãi mà không lỗi nào rõ ràng.
     location /hub/ {
@@ -128,8 +128,8 @@ server {
 $(proxy_common)
     }
 
-    # `/hub/` SỐ ÍT — đường thật của endpoint STOMP, xem WebSocketConfig.addEndpoint.
-    # Viết `/hubs/` (đường của bản .NET) thì WebSocket rơi vào `location /`, nơi KHÔNG có header
+    # '/hub/' SỐ ÍT — đường thật của endpoint STOMP, xem WebSocketConfig.addEndpoint.
+    # Viết '/hubs/' (đường của bản .NET) thì WebSocket rơi vào 'location /', nơi KHÔNG có header
     # nâng cấp. Nginx cắt mất Upgrade, Tomcat trả 400 "Can Upgrade only to WebSocket", và client
     # thử lại vô hạn — giao diện hiện "Đang kết nối lại…" mãi mà không lỗi nào rõ ràng.
     location /hub/ {
