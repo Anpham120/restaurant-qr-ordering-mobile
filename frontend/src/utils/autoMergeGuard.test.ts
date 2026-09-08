@@ -23,6 +23,55 @@ function migrationGlobsInWorkflow(): string[] {
   return [...workflow.matchAll(/grep -q(?:\s+)'([^']+)'/g)].map((m) => m[1]!);
 }
 
+/**
+ * Mọi dòng nằm trong một khối `run: |` của workflow, tức mọi dòng bash thật sự chạy.
+ */
+function dongBashTrongWorkflow(): string[] {
+  const dong = readFileSync(workflowPath, "utf8").split("\n");
+  const ra: string[] = [];
+  let thut = -1;
+  for (const d of dong) {
+    if (/^\s*run: \|/.test(d)) {
+      thut = d.search(/\S/);
+      continue;
+    }
+    if (thut < 0) continue;
+    if (d.trim() === "") continue;
+    // Ra khỏi khối khi gặp một khoá YAML thụt bằng hoặc nông hơn chính `run:`.
+    if (d.search(/\S/) <= thut && /^\s*[a-z-]+:/.test(d)) {
+      thut = -1;
+      continue;
+    }
+    ra.push(d);
+  }
+  return ra;
+}
+
+describe("bash trong auto-merge.yml", () => {
+  /**
+   * Dấu backtick trong chuỗi NHÁY KÉP là thay thế lệnh.
+   *
+   * Đã xảy ra ở nhánh "PR nhắm `main` từ nhánh X" — bash đi tìm một lệnh tên `main`, không thấy,
+   * và chữ `main` BIẾN MẤT khỏi thông báo: người đọc log thấy "PR nhắm  từ nhánh 'x'". Không phải
+   * lỗi gãy — exit code vẫn 0 — nên nó không bao giờ tự lộ ra. Nó chỉ làm thông báo sai đúng vào
+   * lúc người ta đang đọc log để hiểu vì sao PR không tự merge.
+   *
+   * Backtick trong dòng `#` thì bash bỏ qua, và trong chuỗi nháy đơn thì là ký tự thường — nên chỉ
+   * bắt phần còn lại, đúng chỗ nó có nghĩa.
+   */
+  it("không có backtick nào bị thực thi ngoài ý muốn", () => {
+    const pham = dongBashTrongWorkflow()
+      .filter((d) => !d.trim().startsWith("#"))
+      .filter((d) => d.replace(/'[^']*'/g, "").includes("`"));
+
+    expect(pham, "backtick trong chuỗi nháy kép là thay thế lệnh — dùng nháy đơn").toEqual([]);
+  });
+
+  it("thật sự đọc được các dòng bash", () => {
+    expect(dongBashTrongWorkflow().length).toBeGreaterThan(10);
+  });
+});
+
 describe("chốt chặn migration của auto-merge", () => {
   it("grep đúng thư mục migration đang tồn tại trên đĩa", () => {
     const globs = migrationGlobsInWorkflow();

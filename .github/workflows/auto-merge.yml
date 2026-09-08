@@ -78,7 +78,7 @@ jobs:
           # rào phải nằm ở đây để nó đúng cho cả PR cũ lẫn mọi nhánh lạ về sau.
           if [ "$HEAD" != "develop" ]; then
             echo "chan=true" >> "$GITHUB_OUTPUT"
-            echo "PR nhắm `main` từ nhánh '$HEAD', không phải từ 'develop' — không tự merge."
+            echo "PR nhắm 'main' từ nhánh '$HEAD', không phải từ 'develop' — không tự merge."
             exit 0
           fi
           # `|| true` vì `grep -q` trả 1 khi không khớp, và `set -e` sẽ giết bước.
