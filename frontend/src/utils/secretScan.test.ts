@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -44,6 +45,39 @@ describe("secret-scan", () => {
     );
   });
 });
+
+/**
+ * Mọi dòng bash trong một tệp `.sh`, kèm cờ nó có nằm trong một heredoc KHÔNG NHÁY hay không.
+ *
+ * `<<EOF` giãn biến và THAY THẾ LỆNH; `<<'EOF'` thì không. Backtick trong heredoc không nháy bị
+ * chạy y như trong chuỗi nháy kép — kể cả khi nó nằm trong một dòng bắt đầu bằng `#`, vì bên trong
+ * heredoc thì `#` chỉ là một ký tự chứ không phải dấu mở ghi chú.
+ *
+ * BỎ QUA BACKTICK ĐÃ ESCAPE. Bản đầu của hàm này không bỏ, và nó báo nhầm hai dòng
+ * ``\`\`\`json`` trong `health-check.sh` — đó là hàng rào mã markdown viết ĐÚNG cách: `\`` in ra
+ * một dấu backtick thật, bash không chạy gì cả. Một cổng báo nhầm thì người ta học cách lờ nó, và
+ * lúc nó báo đúng cũng không ai nhìn.
+ */
+function dongCoBacktickTrongScript(noiDung: string): string[] {
+  const ra: string[] = [];
+  let trongHeredocKhongNhay = false;
+  for (const dong of noiDung.split(/\r?\n/)) {
+    if (/<<'[A-Za-z_]+'|<<"[A-Za-z_]+"/.test(dong)) continue;
+    if (/<<[A-Za-z_]+\s*$/.test(dong)) {
+      trongHeredocKhongNhay = true;
+      continue;
+    }
+    if (trongHeredocKhongNhay && /^[A-Za-z_]+$/.test(dong.trim())) {
+      trongHeredocKhongNhay = false;
+      continue;
+    }
+    // Ngoài heredoc, một dòng `#` là ghi chú thật và bash không đụng tới nó.
+    if (!trongHeredocKhongNhay && dong.trim().startsWith("#")) continue;
+    const conLai = dong.replace(/\\`/g, "").replace(/'[^']*'/g, "");
+    if (conLai.includes("`")) ra.push(dong.trim());
+  }
+  return ra;
+}
 
 describe("backtick trong chuỗi nháy kép của bash", () => {
   /**
@@ -96,5 +130,33 @@ describe("backtick trong chuỗi nháy kép của bash", () => {
       "backtick trong chuỗi nháy kép là thay thế lệnh — bash chạy nó rồi thay bằng chuỗi rỗng, "
         + "và câu chữ mất đi một cách im lặng",
     ).toEqual([]);
+  });
+
+  /**
+   * LẦN THỨ TƯ, VÀ NÓ Ở NGOÀI TẦM CỦA CỔNG.
+   *
+   * Bản đầu của cổng này chỉ quét `.github/workflows/`. Ngay sau khi nó được viết, một lượt triển
+   * khai thật in ra:
+   *
+   *     write-nginx-config.sh: line 46: /hub/: No such file or directory
+   *     write-nginx-config.sh: line 46: /hubs/: No such file or directory
+   *
+   * Backtick nằm trong ghi chú kiểu markdown BÊN TRONG một heredoc `<<EOF`. Hai điều khiến nó thoát:
+   * tệp là `.sh` chứ không phải workflow, và dòng bắt đầu bằng `#` — nhưng bên trong heredoc thì `#`
+   * chỉ là một ký tự, không phải dấu mở ghi chú, nên bash vẫn chạy backtick.
+   *
+   * Cổng chỉ quét chỗ mình nghĩ tới thì nó canh phạm vi của trí nhớ người viết, không canh lớp lỗi.
+   */
+  it("không script triển khai nào có backtick bị thực thi ngoài ý muốn", () => {
+    const pham: string[] = [];
+    const thuMuc = fileURLToPath(new URL("deploy/scripts/", repoRoot));
+    for (const tep of readdirSync(thuMuc).filter((f) => f.endsWith(".sh"))) {
+      for (const dong of dongCoBacktickTrongScript(readFileSync(join(thuMuc, tep), "utf8"))) {
+        pham.push(`${tep}: ${dong}`);
+      }
+    }
+
+    expect(pham, "dùng nháy đơn trong ghi chú, hoặc `<<'EOF'` cho heredoc không cần giãn biến")
+      .toEqual([]);
   });
 });
