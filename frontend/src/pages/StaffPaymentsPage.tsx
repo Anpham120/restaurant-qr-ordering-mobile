@@ -313,7 +313,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
       ) : null}
 
       {awaiting.length === 0 ? (
-        <div className="ops-empty" style={{ padding: 32 }}>Không có bàn nào chờ thu</div>
+        <div className="ops-empty ops-empty--roomy">Không có bàn nào chờ thu</div>
       ) : (
         <div className="pos-grid">
           {awaiting.map((invoice, index) => {

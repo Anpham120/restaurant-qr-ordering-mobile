@@ -140,8 +140,8 @@ export function CounterShiftPanel({
     <section className="counter-workspace">
       {!embedded ? (
         <div className="ops-page-header">
-          <h2 style={{ margin: 0 }}>Ca quầy</h2>
-          <p style={{ margin: "4px 0 0" }}>Mở ca trước khi thu tiền, chốt ca cuối phiên</p>
+          <h2 className="ops-flush">Ca quầy</h2>
+          <p className="ops-note ops-note--stacked">Mở ca trước khi thu tiền, chốt ca cuối phiên</p>
         </div>
       ) : null}
 

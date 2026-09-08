@@ -188,11 +188,11 @@ export function AdminReportsPage() {
         ))}
         {preset === "custom" ? (
           <>
-            <div className="ops-form-group" style={{ margin: 0 }}>
+            <div className="ops-form-group ops-flush">
               <label className="ops-form-label">Từ ngày</label>
               <input className="ops-form-input" type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
             </div>
-            <div className="ops-form-group" style={{ margin: 0 }}>
+            <div className="ops-form-group ops-flush">
               <label className="ops-form-label">Đến ngày</label>
               <input className="ops-form-input" type="date" value={to} onChange={(event) => setTo(event.target.value)} />
             </div>
@@ -221,17 +221,17 @@ export function AdminReportsPage() {
             </div>
             <div className="ops-stat-card">
               <div className="ops-stat-label">Doanh thu gộp</div>
-              <div className="ops-stat-value" style={{ fontSize: 22 }}>{formatVnd(report.grossRevenue)}</div>
+              <div className="ops-stat-value ops-stat-value--trio">{formatVnd(report.grossRevenue)}</div>
               <div className="ops-stat-detail">Trước giảm giá</div>
             </div>
             <div className="ops-stat-card">
               <div className="ops-stat-label">Tổng giảm giá</div>
-              <div className="ops-stat-value" style={{ fontSize: 22 }}>{formatVnd(report.totalDiscount)}</div>
+              <div className="ops-stat-value ops-stat-value--trio">{formatVnd(report.totalDiscount)}</div>
               <div className="ops-stat-detail">Khuyến mãi áp dụng</div>
             </div>
             <div className="ops-stat-card">
               <div className="ops-stat-label">Doanh thu thực</div>
-              <div className="ops-stat-value" style={{ fontSize: 22 }}>{formatVnd(report.netRevenue)}</div>
+              <div className="ops-stat-value ops-stat-value--trio">{formatVnd(report.netRevenue)}</div>
               <div className="ops-stat-detail">Sau giảm giá</div>
             </div>
           </div>
@@ -264,7 +264,7 @@ export function AdminReportsPage() {
             </tbody>
           </table>
 
-          <div className="ops-page-header" style={{ marginTop: 24 }}><h2>Chi tiết theo ngày</h2></div>
+          <div className="ops-page-header ops-page-header--section"><h2>Chi tiết theo ngày</h2></div>
           <table className="ops-table">
             <thead>
               <tr>
