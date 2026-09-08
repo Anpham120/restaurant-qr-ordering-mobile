@@ -16,12 +16,16 @@ on:
   # chỉ sửa tài liệu (như #84) sẽ không bao giờ merge được. Đổi ~2 phút runner lấy việc
   # cổng chặn hoạt động đúng là đáng.
   pull_request:
+  # Chạy tay được, để kiểm backend trên một nhánh tính năng mà chưa muốn mở PR. Không có nó thì
+  # cách duy nhất chạy phép kiểm backend là mở PR — tức phải công khai một việc đang làm dở chỉ
+  # để biết nó có build được không.
+  workflow_dispatch:
 
 jobs:
   backend-java-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # `backend-java/.gitignore` từng có dòng `out/` không neo, nên nó khớp luôn
       # `src/main/java/.../orders/adapter/out/` — thư mục outbound adapter của §5.3. Hệ quả:
@@ -39,7 +43,7 @@ jobs:
           echo "OK — không có file nguồn nào bị loại."
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -80,7 +84,7 @@ jobs:
 
       - name: Upload test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java-test-report
           path: backend-java/build/reports/tests

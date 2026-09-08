@@ -20,6 +20,15 @@ public final class TableDtos {
 	}
 
 	/** Ghi chú khách nhập khi bấm gọi nhân viên — để trống thì dùng câu mặc định (#96). */
+	/**
+	 * Đóng phiên bàn. Cả hai trường đều tuỳ chọn — thân request vắng mặt nghĩa là đóng bình thường.
+	 *
+	 * @param force  ép đóng dù bàn còn tiền chưa thu
+	 * @param reason bắt buộc khi {@code force}, và được ghi lại vào {@code table_sessions.close_reason}
+	 */
+	public record CloseSessionRequest(boolean force, String reason) {
+	}
+
 	public record TableAssistanceRequest(String note) {
 	}
 

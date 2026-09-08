@@ -28,12 +28,18 @@ public class AdminMenuItemController {
 	private final MenuItemRepository menuItemRepository;
 	private final CategoryRepository categoryRepository;
 	private final MenuItemService menuItemService;
+	/** Qua CỔNG ứng dụng, không chọc thẳng vào repository của module orders — cùng lối mà
+	 * {@code AdminTableController} đã dùng, và là thứ ArchUnit đang canh. */
+	private final com.cmc.restaurant.orders.application.OrderLookup orderLookup;
 
 	public AdminMenuItemController(
-			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository, MenuItemService menuItemService) {
+			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository,
+			MenuItemService menuItemService,
+			com.cmc.restaurant.orders.application.OrderLookup orderLookup) {
 		this.menuItemRepository = menuItemRepository;
 		this.categoryRepository = categoryRepository;
 		this.menuItemService = menuItemService;
+		this.orderLookup = orderLookup;
 	}
 
 	/**
@@ -59,6 +65,22 @@ public class AdminMenuItemController {
 				.map(item -> MenuQueryService.toResponse(
 						item, tenDanhMuc.getOrDefault(item.getCategoryId(), "")))
 				.toList();
+	}
+
+	/**
+	 * Số phần đang chờ bếp, theo từng món.
+	 *
+	 * <p>Endpoint RIÊNG chứ không thêm trường vào {@code MenuItemResponse}: bản ghi đó dùng chung
+	 * với thực đơn CÔNG KHAI, và số món đang trong hàng đợi bếp là thông tin vận hành — khách
+	 * không cần biết, và không nên biết.
+	 *
+	 * <p>Quản lý cần nó ở đúng một lúc: trước khi tắt một món. Tắt món chỉ nói "khách sẽ không
+	 * thấy nữa" là thiếu vế quyết định — bỏ dở ba bát đang nấu là một việc khác hẳn tắt một món
+	 * chưa ai gọi.
+	 */
+	@GetMapping("/pending-quantities")
+	public java.util.Map<String, Integer> pendingQuantities() {
+		return orderLookup.soPhanDangChoTheoMon();
 	}
 
 	@GetMapping("/{menuItemId}")

@@ -18,9 +18,20 @@ export type ConfirmOptions = {
    * phải ĐỌC xem mình đang xoá cái gì.
    */
   requireText?: string;
+  /**
+   * Bắt nhập một LÝ DO tự do trước khi cho xác nhận.
+   *
+   * Khác {@link requireText} — cái đó bắt gõ lại một chuỗi đã biết để buộc người dùng ĐỌC. Cái
+   * này thu một câu người dùng tự viết, và câu đó được ghi lại. Dùng cho quyết định cần có tên:
+   * ép đóng bàn còn nợ tiền, huỷ một khoản đã thu.
+   *
+   * Đọc lý do bằng {@link useOpsReason}; {@link useOpsConfirm} vẫn chỉ trả true/false.
+   */
+  reasonLabel?: string;
+  reasonPlaceholder?: string;
 };
 
-type YeuCau = ConfirmOptions & { resolve: (ok: boolean) => void };
+type YeuCau = ConfirmOptions & { resolve: (lyDo: string | null) => void };
 
 /**
  * Có được phép bấm xác nhận chưa.
@@ -41,7 +52,7 @@ export function chophepXacNhan(requireText: string | undefined, typed: string): 
   return typed.trim() === requireText;
 }
 
-const ConfirmContext = createContext<((options: ConfirmOptions) => Promise<boolean>) | null>(null);
+const ConfirmContext = createContext<((options: ConfirmOptions) => Promise<string | null>) | null>(null);
 
 /**
  * Hộp xác nhận dùng chung, thay cho `confirm()` của trình duyệt.
@@ -63,31 +74,38 @@ const ConfirmContext = createContext<((options: ConfirmOptions) => Promise<boole
 export function OpsConfirmProvider({ children }: { children: ReactNode }) {
   const [yeuCau, setYeuCau] = useState<YeuCau | null>(null);
   const [typed, setTyped] = useState("");
-  const dangCho = useRef<((ok: boolean) => void) | null>(null);
+  const [lyDo, setLyDo] = useState("");
+  const dangCho = useRef<((lyDo: string | null) => void) | null>(null);
 
   const confirm = useCallback((options: ConfirmOptions) => {
-    return new Promise<boolean>((resolve) => {
+    // Giải bằng CHUỖI, không phải boolean: null = huỷ, "" = đồng ý mà không cần lý do. Nhờ vậy
+    // useOpsConfirm giữ nguyên hợp đồng cũ (Boolean của null là false) còn useOpsReason đọc được
+    // câu người dùng viết — không nơi gọi nào phải sửa.
+    return new Promise<string | null>((resolve) => {
       // Nếu có hộp thoại đang mở mà một hộp khác được yêu cầu, đóng cái cũ bằng "huỷ" thay vì bỏ
       // rơi lời hứa của nó — một `await` không bao giờ được giải sẽ treo hàm gọi vĩnh viễn.
-      dangCho.current?.(false);
+      dangCho.current?.(null);
       dangCho.current = resolve;
       setTyped("");
+      setLyDo("");
       setYeuCau({ ...options, resolve });
     });
   }, []);
 
-  const dong = useCallback((ok: boolean) => {
+  const dong = useCallback((ok: boolean, lyDoNhap = "") => {
     dangCho.current = null;
     setYeuCau((current) => {
-      current?.resolve(ok);
+      current?.resolve(ok ? lyDoNhap : null);
       return null;
     });
     setTyped("");
+    setLyDo("");
   }, []);
 
   const value = useMemo(() => confirm, [confirm]);
 
-  const canConfirm = chophepXacNhan(yeuCau?.requireText, typed);
+  const canConfirm = chophepXacNhan(yeuCau?.requireText, typed)
+    && (!yeuCau?.reasonLabel || lyDo.trim().length > 0);
 
   return (
     <ConfirmContext.Provider value={value}>
@@ -119,7 +137,25 @@ export function OpsConfirmProvider({ children }: { children: ReactNode }) {
                   value={typed}
                   onChange={(event) => setTyped(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter" && canConfirm) dong(true);
+                    if (event.key === "Enter" && canConfirm) dong(true, lyDo);
+                    if (event.key === "Escape") dong(false);
+                  }}
+                />
+              </div>
+            ) : null}
+
+            {yeuCau.reasonLabel ? (
+              <div className="ops-form-group">
+                <label className="ops-form-label" htmlFor="ops-confirm-reason">{yeuCau.reasonLabel}</label>
+                <input
+                  id="ops-confirm-reason"
+                  className="ops-form-input"
+                  autoFocus={!yeuCau.requireText}
+                  value={lyDo}
+                  placeholder={yeuCau.reasonPlaceholder}
+                  onChange={(event) => setLyDo(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && canConfirm) dong(true, lyDo);
                     if (event.key === "Escape") dong(false);
                   }}
                 />
@@ -132,7 +168,7 @@ export function OpsConfirmProvider({ children }: { children: ReactNode }) {
                 className={`ops-btn ${yeuCau.danger ? "ops-btn--danger" : "ops-btn--primary"}`}
                 disabled={!canConfirm}
                 type="button"
-                onClick={() => dong(true)}
+                onClick={() => dong(true, lyDo)}
               >
                 {yeuCau.confirmLabel ?? "Xác nhận"}
               </button>
@@ -157,6 +193,20 @@ export function useOpsConfirm() {
   const ctx = useContext(ConfirmContext);
   if (!ctx) {
     throw new Error("useOpsConfirm phải nằm trong <OpsConfirmProvider>.");
+  }
+  return async (options: ConfirmOptions) => (await ctx(options)) !== null;
+}
+
+/**
+ * Hỏi xác nhận VÀ thu một lý do. Trả về câu người dùng viết, hoặc `null` khi họ huỷ.
+ *
+ * Dùng chung đúng một modal với {@link useOpsConfirm} — hai hộp thoại cho hai việc gần giống nhau
+ * là hai chỗ để trôi khỏi nhau.
+ */
+export function useOpsReason() {
+  const ctx = useContext(ConfirmContext);
+  if (!ctx) {
+    throw new Error("useOpsReason phải nằm trong <OpsConfirmProvider>.");
   }
   return ctx;
 }

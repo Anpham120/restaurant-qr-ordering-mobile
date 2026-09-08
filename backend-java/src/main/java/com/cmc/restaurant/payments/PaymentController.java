@@ -51,8 +51,20 @@ public class PaymentController {
 		return paymentService.requestPayment(orderCode, body, idempotencyKey, request.getHeader("X-Order-Token"));
 	}
 
+	/**
+	 * {@code CounterStaff} có mặt ở ba đường tiền dưới đây là SỬA LỖI, không phải nới quyền.
+	 *
+	 * <p>Theo §13 tài liệu thiết kế, quầy SỞ HỮU việc "thu tiền, chốt hoá đơn". Nhưng danh sách
+	 * cũ chỉ có {@code Staff} và {@code Admin}, mà {@code Staff} là vai cũ không còn cấp mới được
+	 * ({@link com.cmc.restaurant.auth.UserRole#ADMIN_ASSIGNABLE}). Hệ quả cụ thể: người đứng quầy
+	 * KHÔNG hoàn được tiền cho khách — đường hoàn tiền duy nhất nằm ở đây.
+	 *
+	 * <p>Đường thu theo HOÁ ĐƠN BÀN ({@code /api/table-sessions/&#123;id&#125;/invoice/payment/*})
+	 * đã cho quầy vào từ trước, nên luồng ăn tại bàn không đứt. Ba đường này là mức ĐƠN, dùng cho
+	 * đơn không qua hoá đơn bàn và cho mọi lần hoàn tiền.
+	 */
 	@PostMapping("/api/orders/{orderCode}/payment/confirm")
-	@PreAuthorize("hasAnyRole('Staff', 'Admin')")
+	@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
 	public PaymentDtos.PaymentResponse confirmPayment(
 			@PathVariable String orderCode,
 			@RequestBody(required = false) PaymentDtos.ConfirmPaymentRequest body,
@@ -61,7 +73,7 @@ public class PaymentController {
 	}
 
 	@PostMapping("/api/orders/{orderCode}/payment/fail")
-	@PreAuthorize("hasAnyRole('Staff', 'Admin')")
+	@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
 	public PaymentDtos.PaymentResponse failPayment(
 			@PathVariable String orderCode,
 			@RequestBody(required = false) PaymentDtos.FailPaymentRequest body,
@@ -70,7 +82,7 @@ public class PaymentController {
 	}
 
 	@PostMapping("/api/orders/{orderCode}/payment/refund")
-	@PreAuthorize("hasAnyRole('Staff', 'Admin')")
+	@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
 	public PaymentDtos.PaymentResponse refundPayment(
 			@PathVariable String orderCode,
 			@RequestBody(required = false) PaymentDtos.RefundPaymentRequest body,

@@ -8,23 +8,36 @@ export type OrderEventSource = "Status" | "Payment";
 export type ChatRole = "user" | "assistant" | "system";
 
 export type AuthUser = { userId: string; fullName: string; email: string; role: UserRole };
-export type LoginRequest = { email: string; password: string };
+// `identifier`, KHÔNG phải `email`: backend nhận một ô cho cả hai loại người dùng — khách gõ số
+// điện thoại, nhân viên gõ email. Xem `AuthDtos.LoginRequest` bên Java. Gửi tên khác thì Jackson
+// để null và request chết ở 400 IDENTIFIER_REQUIRED trước cả bước kiểm mật khẩu.
+export type LoginRequest = { identifier: string; password: string };
 export type LoginResponse = { accessToken: string; expiresAt: string; user: AuthUser };
 export type ApiErrorBody = { error: { code: string; message: string; details: Record<string, unknown> } };
 export type Table = { tableCode: string; displayName: string; isActive: boolean };
 export type TableListResponse = { items: Table[]; total: number };
 export type AdminTable = Table & { qrToken: string | null; customerPath: string };
 export type AdminTableListResponse = { items: AdminTable[]; total: number };
-export type AdminTableSessionSummary = { sessionId: string; tableCode: string; tableDisplayName: string | null; status: string; openedAt: string; expiresAt: string; closedAt: string | null; isExpired: boolean; activeOrderCount: number };
+// `overdueSince`: mốc bàn lần đầu quá giờ mà VẪN CÒN tiền chưa thu. `null` là bình thường.
+// Phiên như vậy không hết hạn nữa mà được gia hạn, nên `expiresAt` của nó bị đẩy tới liên tục và
+// không nói được gì — đây mới là trường để quầy lọc ra bàn cần đi đòi tiền.
+export type AdminTableSessionSummary = { sessionId: string; tableCode: string; tableDisplayName: string | null; status: string; openedAt: string; expiresAt: string; closedAt: string | null; isExpired: boolean; activeOrderCount: number; overdueSince?: string | null; unpaidAmount?: number };
 export type AdminTableSessionListResponse = { items: AdminTableSessionSummary[]; total: number };
 export type TableSession = { sessionId: string; orderType: OrderType; status: "Open" | "Closed" | "Expired"; tableCode: string | null; tableDisplayName: string | null; openedAt: string; expiresAt: string; closedAt: string | null; isExpired: boolean };
 export type TableSessionResumeState = "New" | "CartPending" | "OrderInProgress" | "ReadyForPayment" | "PaymentPending" | "Paid";
 export type OpenTableSessionResponse = TableSession & { tableSessionToken: string; resumeState: TableSessionResumeState };
 export type MenuCategory = { categoryId: string; name: string };
-export type MenuItem = { id: string; name: string; description: string; price: number; categoryId: string; categoryName: string; imageUrl: string | null; isAvailable: boolean; tags: string[] };
+// `prepMinutes`: phút từ lúc bếp nhận món tới lúc món sẵn sàng, do BẾP khai. `null` = chưa khai
+// và món đó không có ước lượng — im lặng đúng, hơn là một con số bịa. Cột `menu_items.prep_minutes`
+// có từ V11 nhưng tới nay chỉ migration ghi được: entity không ánh xạ, DTO không có trường, giao
+// diện không có ô. Đây là kiểu cho đường ghi vừa mở.
+export type MenuItem = { id: string; name: string; description: string; price: number; categoryId: string; categoryName: string; imageUrl: string | null; isAvailable: boolean; tags: string[]; prepMinutes: number | null };
 export type MenuResponse = { categories: MenuCategory[]; items: MenuItem[] };
 export type CreateOrderRequest = { orderType: OrderType; tableCode?: string | null; qrToken?: string | null; tableSessionId?: string | null; items: Array<{ menuItemId: string; quantity: number }>; promotionCode?: string | null; customerPhoneNumber?: string | null };
-export type OrderItem = { orderItemId: string; menuItemId: string; name: string; unitPrice: number; quantity: number; status: OrderItemStatus; lineTotal: number; updatedAt: string };
+// `estimatedReadyMinutes*` và `kitchenBusy`: máy chủ ĐÃ gửi ba trường này từ lâu (xem
+// `OrderDtos.OrderItemResponse` bên Java) nhưng kiểu của web không khai, nên web vứt đi và khách
+// trên web không thấy ước lượng nào — trong khi app di động có. `null` khi món không còn chờ nữa.
+export type OrderItem = { orderItemId: string; menuItemId: string; name: string; unitPrice: number; quantity: number; status: OrderItemStatus; lineTotal: number; updatedAt: string; estimatedReadyMinutesLow?: number | null; estimatedReadyMinutesHigh?: number | null; kitchenBusy?: boolean };
 export type OrderStatusEvent = { status: OrderStatus | PaymentStatus; source?: OrderEventSource; changedByRole?: string | null; note?: string | null; createdAt: string };
 export type Order = { orderId: string; orderCode: string; orderType: OrderType; tableCode: string | null; tableSessionId?: string | null; status: OrderStatus; paymentStatus: PaymentStatus; paymentMethod: PaymentMethod; subtotalAmount: number; discountAmount: number; totalAmount: number; promotionCode?: string | null; createdAt: string; updatedAt: string; items: OrderItem[]; events: OrderStatusEvent[] };
 export type CreateOrderResponse = Order & { customerAccessToken: string };
@@ -37,8 +50,9 @@ export type PaymentRequestResponse = { payment: Payment; vietQr: VietQrPayment |
 export type TableInvoiceLine = { menuItemId: string; name: string; unitPrice: number; quantity: number; lineTotal: number };
 export type TableInvoiceOrderRound = { orderCode: string; status: OrderStatus; subtotalAmount: number; createdAt: string };
 export type TableInvoiceVietQr = { invoiceCode: string; amount: number; transferContent: string; quickLink: string; qrImageDataUri: string };
-export type TableInvoice = { tableSessionId: string; invoiceCode: string | null; tableCode: string | null; status: PaymentStatus; subtotalAmount: number; discountAmount: number; totalAmount: number; promotionCode: string | null; customerPhoneNumber: string | null; method: PaymentMethod; orderRounds: TableInvoiceOrderRound[]; items: TableInvoiceLine[]; vietQr: TableInvoiceVietQr | null };
-export type TableInvoicePaymentRequest = { method: "COD" | "VietQR"; promotionCode?: string | null; customerPhoneNumber?: string | null };
+export type TableInvoice = { tableSessionId: string; invoiceCode: string | null; tableCode: string | null; status: PaymentStatus; subtotalAmount: number; discountAmount: number; loyaltyDiscountAmount: number | null; totalAmount: number; promotionCode: string | null; customerPhoneNumber: string | null; method: PaymentMethod; orderRounds: TableInvoiceOrderRound[]; items: TableInvoiceLine[]; vietQr: TableInvoiceVietQr | null };
+/** `loyaltyCode` là mã đổi bằng điểm — cùng ô nhập với `promotionCode`, cộng dồn, cắt theo trần tổng. */
+export type TableInvoicePaymentRequest = { method: "COD" | "VietQR"; promotionCode?: string | null; customerPhoneNumber?: string | null; loyaltyCode?: string | null };
 export type TableInvoicePaymentRequestResponse = { invoice: TableInvoice; payment: { paymentId: string; status: PaymentStatus; method: PaymentMethod; amount: number }; vietQr: TableInvoiceVietQr | null };
 export type OrderCreatedEvent = { orderId: string; orderCode: string; orderType: OrderType; tableCode: string | null; status: OrderStatus; createdAt: string };
 export type OrderStatusChangedEvent = { orderId: string; orderCode: string; status: OrderStatus; updatedAt: string };
@@ -58,16 +72,85 @@ export type ChangePasswordRequest = { currentPassword: string; newPassword: stri
 export type RefundPaymentRequest = { note?: string | null };
 
 export type PromotionType = "Percentage" | "FixedAmount";
-export type Promotion = { promotionId: string; code: string; name: string; description: string | null; type: PromotionType; discountValue: number; minOrderAmount: number | null; maxDiscountAmount: number | null; isFlashSale: boolean; startsAt: string | null; endsAt: string | null; isActive: boolean; createdAt: string; updatedAt: string };
-export type PromotionRequest = { code: string; name: string; description?: string | null; type: PromotionType; discountValue: number; minOrderAmount?: number | null; maxDiscountAmount?: number | null; isFlashSale: boolean; startsAt?: string | null; endsAt?: string | null; isActive: boolean };
+export type Promotion = { promotionId: string; code: string; name: string; description: string | null; type: PromotionType; discountValue: number; minOrderAmount: number | null; maxDiscountAmount: number | null; isFlashSale: boolean; startsAt: string | null; endsAt: string | null; isActive: boolean; createdAt: string; updatedAt: string; usageLimit?: number | null; usedCount?: number };
+export type PromotionRequest = { code: string; name: string; description?: string | null; type: PromotionType; discountValue: number; minOrderAmount?: number | null; maxDiscountAmount?: number | null; isFlashSale: boolean; startsAt?: string | null; endsAt?: string | null; isActive: boolean; usageLimit?: number | null };
 export type ValidatePromotionRequest = { code: string; subtotalAmount: number };
 export type ValidatePromotionResponse = { code: string; name: string; type: PromotionType; subtotalAmount: number; discountAmount: number; totalAmount: number; isFlashSale: boolean };
 
 export type LoyaltyMember = { memberId: string; phoneNumber: string; fullName: string | null; points: number; lifetimeSpend: number; createdAt: string; updatedAt: string };
 export type LoyaltyMemberRequest = { phoneNumber: string; fullName?: string | null; points: number };
-export type LoyaltyReward = { rewardId: string; name: string; description: string | null; pointsRequired: number; isActive: boolean; createdAt: string; updatedAt: string };
-export type LoyaltyRewardRequest = { name: string; description?: string | null; pointsRequired: number; isActive: boolean };
-export type LoyaltyLookupResponse = { phoneNumber: string; points: number; lifetimeSpend: number; availableRewards: LoyaltyReward[] };
+/** FREE_ITEM tặng một món; DISCOUNT trừ thẳng tiền vào hoá đơn. */
+export type LoyaltyRewardType = "FREE_ITEM" | "DISCOUNT";
+
+export type LoyaltyMemberTier = "BAC" | "VANG" | "KIM_CUONG";
+
+export type LoyaltyReward = {
+  rewardId: string;
+  name: string;
+  description: string | null;
+  pointsRequired: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  rewardType: LoyaltyRewardType;
+  menuItemId: string | null;
+  discountAmount: number | null;
+  minTier: LoyaltyMemberTier;
+};
+
+/**
+ * Mỗi loại chỉ mang dữ liệu của nó: FREE_ITEM cần `menuItemId`, DISCOUNT cần `discountAmount`.
+ * Gửi thiếu thì backend trả 400 nói rõ thiếu gì — trước đây nó nổ 500 vì ràng buộc cơ sở dữ liệu.
+ */
+export type LoyaltyRewardRequest = {
+  name: string;
+  description?: string | null;
+  pointsRequired: number;
+  isActive: boolean;
+  rewardType: LoyaltyRewardType;
+  menuItemId?: string | null;
+  discountAmount?: number | null;
+  minTier?: LoyaltyMemberTier;
+};
+/** Một phiếu khách đã đổi. `honouredAt` khác null nghĩa là đã phát rồi. */
+export type LoyaltyVoucher = {
+  redemptionId: string;
+  rewardName: string;
+  pointsSpent: number;
+  redeemedAt: string;
+  honouredAt: string | null;
+};
+
+export type LoyaltyLookupResponse = {
+  phoneNumber: string;
+  /** Số này đã có HỒ SƠ tích điểm chưa — khác với việc đã nối vào một tài khoản app. */
+  hasProfile: boolean;
+  points: number;
+  lifetimeSpend: number;
+  spend12m: number;
+  tier: string;
+  tierName: string;
+  availableRewards: LoyaltyReward[];
+  pendingVouchers: LoyaltyVoucher[];
+};
+
+/**
+ * Kết quả một lần quầy đổi thưởng HỘ khách.
+ *
+ * Ba kết cục, và chúng khác nhau ở việc nhân viên phải LÀM GÌ tiếp:
+ *   - `code` có     → giảm tiền: đọc mã cho khách, khách tự nhập ở màn thanh toán
+ *   - `orderCode` có → tặng món đã vào đơn: bếp đang làm, không phải đọc gì
+ *   - cả hai null    → tặng món chưa gắn đơn: phiếu nằm chờ, quầy phát bằng tay
+ */
+export type LoyaltyCounterRedeem = {
+  redemptionId: string;
+  rewardName: string;
+  pointsSpent: number;
+  code: string | null;
+  orderCode: string | null;
+  /** Điểm còn lại, để quầy đọc lại cho khách ngay. */
+  soDuMoi: number;
+};
 
 export type TopMenuItemReport = { menuItemId: string; name: string; quantitySold: number; revenue: number };
 export type DailyRevenueReport = { date: string; orderCount: number; revenue: number };

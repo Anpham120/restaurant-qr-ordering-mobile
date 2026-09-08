@@ -42,12 +42,14 @@ class TableSessionTest {
 		TableSession stale = session(TableSessionStatus.Open, NOW.minusMinutes(1));
 		TableSession fresh = session(TableSessionStatus.Open, NOW.plusHours(1));
 
-		assertThat(stale.expireIfPast(NOW)).isTrue();
+		// `false` = bàn không nợ tiền. Bàn còn nợ đi theo nhánh gia hạn, có bộ test riêng ở
+		// PhienQuaGioConNoTest.
+		assertThat(stale.expireIfPast(NOW, false)).isTrue();
 		assertThat(stale.status()).isEqualTo(TableSessionStatus.Expired);
 		assertThat(stale.closedAt()).isEqualTo(NOW);
 
-		assertThat(fresh.expireIfPast(NOW)).isFalse();
-		assertThat(stale.expireIfPast(NOW)).as("gọi lần hai không đổi gì nữa").isFalse();
+		assertThat(fresh.expireIfPast(NOW, false)).isFalse();
+		assertThat(stale.expireIfPast(NOW, false)).as("gọi lần hai không đổi gì nữa").isFalse();
 	}
 
 	@Test
