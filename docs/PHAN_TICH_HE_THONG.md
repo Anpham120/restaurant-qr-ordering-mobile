@@ -403,7 +403,7 @@ Một tài liệu thiết kế chỉ liệt kê thứ chạy được thì khôn
 | Giới hạn | Vì sao còn |
 |---|---|
 | **Quay lui mã KHÔNG quay lui cơ sở dữ liệu** | Flyway bản cộng đồng chỉ chạy tiến. Mỗi thay đổi lược đồ phải nghĩ trước đường lùi: thêm cột thì lùi được, xoá cột thì không |
-| **`restore-postgres.sh` chưa từng được thử** | Có script sao lưu không bằng có khả năng khôi phục. Bản sao lưu được TẠO RA đã kiểm; việc KHÔI PHỤC thì chưa |
+| **Khôi phục bản sao lưu CŨ HƠN lược đồ chưa được thử** | Khôi phục *cùng* phiên bản lược đồ **đã diễn tập trên máy thật** ngày 09/09/2026 — xem §7 của `devops/PIPELINE_AND_DEPLOY.md`. Nhưng Flyway chỉ chạy tiến, nên nạp một bản cũ hơn lược đồ hiện tại là chuyện khác và chưa ai chứng minh |
 | **Ảnh được dựng trên VPS, không kéo từ registry** | Thứ CI kiểm và thứ chạy trên máy chủ là hai lần build khác nhau. Đẩy image lên GHCR là việc còn nợ |
 | **Không có tự động tạo release/tag** | 3 tag, 0 GitHub release. Không có gì ghi lại bản nào đã lên |
 | **Mặt khách hàng chưa qua đợt thiết kế lại** | 23 chỗ đặt style rời — nhưng **cả 23 nằm trong một tệp duy nhất**, `CustomerHomePage.tsx`. Mọi trang khách khác sạch. Đây là một lần sửa có phạm vi rõ, không phải một đợt quét |

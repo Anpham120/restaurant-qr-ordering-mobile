@@ -248,8 +248,45 @@ lược đồ phải nghĩ trước đường lùi — thêm cột thì lùi đ�
 `backup-postgres.sh` ghi bản kết xuất vào `/opt/cmc-restaurant/<môi trường>/backups`, đặt tên theo
 dấu thời gian UTC và lý do chạy. `restore-postgres.sh` đi ngược lại.
 
-Điều cần thành thật: có script sao lưu **không** bằng có khả năng khôi phục. Một bản sao lưu chưa
-từng được khôi phục thử là một giả định, không phải một bảo đảm. Đây là việc còn nợ.
+### Đã diễn tập trên máy thật — 09/09/2026
+
+Có script sao lưu **không** bằng có khả năng khôi phục. Một bản sao lưu chưa từng được khôi phục
+thử là một giả định, không phải một bảo đảm. Nên đường đó đã được chạy thật, không phải đọc qua.
+
+Bấm chạy `thu-khoi-phuc.yml` (workflow_dispatch, staging). Bài kiểm **hai chiều ngược nhau** — vì
+"chạy xong không lỗi" chưa chứng minh gì: một `dropdb` + `createdb` rồi `pg_restore` thất bại im
+lặng cũng thoát 0 và để lại cơ sở dữ liệu rỗng.
+
+```
+=== 1/6  Sao lưu điểm mốc ===
+PostgreSQL backup created: .../restaurant_qr-20260909T041301Z-truoc-thu-khoi-phuc.dump
+=== 2/6  Đếm dữ liệu THẬT trước khi thử ===
+menu_items: 91 hàng
+=== 3/6  Tạo dấu mốc SAU bản sao lưu ===
+Đã tạo bảng thu_khoi_phuc_20260909041258
+=== 4/6  KHÔI PHỤC từ bản sao lưu ===
+{"status":"ok"}Health check passed for staging
+PostgreSQL restore completed from: .../restaurant_qr-20260909T041301Z-truoc-thu-khoi-phuc.dump
+=== 5/6  Dấu mốc phải BIẾN MẤT ===
+Bảng thu_khoi_phuc_20260909041258 đã biến mất — khôi phục thật sự thay nội dung.
+=== 6/6  Dữ liệu thật phải CÒN NGUYÊN ===
+menu_items: 91 hàng — khớp trước khi thử.
+
+DIỄN TẬP ĐẠT: khôi phục thay đúng nội dung, và không mất dữ liệu.
+```
+
+Bước 5 chứng minh khôi phục **thật sự thay nội dung**; bước 6 chứng minh nó **không chỉ xoá sạch**.
+Thiếu một trong hai thì bài kiểm tự nó vô nghĩa.
+
+**Một lỗi tìm được trước khi chạy.** `restore-postgres.sh` khai 4 biến bắt buộc, nhưng bước cuối
+gọi `health-check.sh` — thứ đòi thêm `FRONTEND_SERVER_NAMES` và `API_SERVER_NAME`. Gọi đúng theo
+hợp đồng nó tự công bố thì mọi thứ chạy trót lọt rồi chết ở dòng cuối, **sau khi** cơ sở dữ liệu đã
+bị drop, tạo lại và nạp xong. Người trực sẽ thấy "khôi phục thất bại" đúng lúc đang xử lý sự cố mà
+không biết dữ liệu đã về hay chưa. Hai biến đó nay nằm trong khối đòi ở **đầu** script.
+
+**Vẫn còn giả định chưa kiểm:** bài này khôi phục một bản sao lưu vừa tạo, cùng phiên bản lược đồ.
+Khôi phục một bản **cũ hơn lược đồ hiện tại** là chuyện khác — Flyway chỉ chạy tiến, nên nó chưa
+được chứng minh và đừng cho là chạy được.
 
 ## 8. Vận hành hằng ngày
 
