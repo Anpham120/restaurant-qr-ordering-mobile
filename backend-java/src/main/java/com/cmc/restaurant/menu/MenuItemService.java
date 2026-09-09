@@ -37,6 +37,7 @@ public class MenuItemService {
 				OffsetDateTime.now());
 		item.setPrepMinutes(request.prepMinutes());
 		item.setCostPrice(request.costPrice());
+		item.setRemainingQuantity(request.remainingQuantity());
 
 		return menuItemRepository.save(item);
 	}
@@ -64,6 +65,11 @@ public class MenuItemService {
 		// vì báo cáo hao hụt sẽ tụt xuống mà không ai biết vì sao.
 		if (request.costPrice() != null) {
 			item.setCostPrice(request.costPrice());
+		}
+		// null = GIỮ NGUYÊN, cùng luật với prepMinutes và costPrice. Đặt 0 để báo hết thì gửi số 0,
+		// không gửi null — hai thứ đó khác nhau và trộn chúng là mất đường báo hết.
+		if (request.remainingQuantity() != null) {
+			item.setRemainingQuantity(request.remainingQuantity());
 		}
 		item.setUpdatedAt(OffsetDateTime.now());
 

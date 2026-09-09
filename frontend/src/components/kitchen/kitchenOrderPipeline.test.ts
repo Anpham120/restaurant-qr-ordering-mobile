@@ -14,6 +14,7 @@ import {
   getKitchenPrimaryAction,
   getKitchenPriority,
   getKitchenProgress,
+  getKitchenBoardPlanForColumn,
   getNextKitchenBoardColumn,
   isKitchenActiveOrderStatus,
   sortKitchenOrdersByPriority,
@@ -88,18 +89,61 @@ describe("kitchen order pipeline", () => {
     expect(getKitchenBoardAdvancePlan("Served")).toBeNull();
   });
 
-  it("accepts drag/drop only into the immediate next lane", () => {
-    expect(getNextKitchenBoardColumn("Placed")).toBe("preparing");
-    expect(getNextKitchenBoardColumn("Preparing")).toBe("ready");
-    expect(getNextKitchenBoardColumn("Ready")).toBe("served");
-    expect(getNextKitchenBoardColumn("Served")).toBeNull();
-
+  /**
+   * KÉO ĐƯỢC SANG BẤT KỲ CỘT NÀO PHÍA TRƯỚC, KHÔNG CHỈ CỘT KẾ TIẾP.
+   *
+   * Bản trước chỉ nhận cột kế tiếp, nên `Placed -> ready` bị từ chối. Đó là giao diện CHẶT HƠN
+   * miền: `OrderItem.canTransitionTo` cho phép nhảy cóc, và javadoc của nó nói rõ lý do — *"a fast
+   * kitchen legitimately finishes a dish without anyone marking it as started"*.
+   *
+   * Bếp làm nhanh thì món xong trước khi ai kịp bấm "đang nấu". Bắt họ bấm hai lần để ghi lại một
+   * việc đã xong là bắt họ nói dối hệ thống cho đủ bước — và thứ họ sẽ làm là bấm bừa cho qua.
+   */
+  it("cho kéo sang mọi cột phía trước, không chỉ cột kế tiếp", () => {
     expect(canDropKitchenOrder("Placed", "preparing")).toBe(true);
     expect(canDropKitchenOrder("Preparing", "ready")).toBe(true);
     expect(canDropKitchenOrder("Ready", "served")).toBe(true);
-    expect(canDropKitchenOrder("Placed", "ready")).toBe(false);
+
+    // Đây là chỗ đổi: nhảy qua "Đang nấu".
+    expect(canDropKitchenOrder("Placed", "ready")).toBe(true);
+    expect(canDropKitchenOrder("Confirmed", "ready")).toBe(true);
+  });
+
+  /**
+   * `served` VẪN CHỈ ĐI TỪ `ready`, và đó không phải bỏ sót.
+   *
+   * Bước đó chuyển trạng thái của ĐƠN, mà `Order.canTransitionTo` chỉ cho `Ready -> Served`. Nhảy
+   * thẳng tới `served` sẽ cần hai lệnh nối nhau, và một lệnh hỏng giữa chừng để đơn nằm ở trạng
+   * thái không ai chọn.
+   */
+  it("không kéo lùi, và 'đã ra món' chỉ đi từ 'chờ ra món'", () => {
+    expect(getNextKitchenBoardColumn("Placed")).toBe("preparing");
+    expect(getNextKitchenBoardColumn("Served")).toBeNull();
+
     expect(canDropKitchenOrder("Preparing", "confirmed")).toBe(false);
     expect(canDropKitchenOrder("Served", "ready")).toBe(false);
+    expect(canDropKitchenOrder("Ready", "ready")).toBe(false);
+
+    expect(canDropKitchenOrder("Placed", "served")).toBe(false);
+    expect(canDropKitchenOrder("Preparing", "served")).toBe(false);
+  });
+
+  /** Thả vào cột nào thì món đi tới trạng thái của CỘT ĐÓ, không phải trạng thái kế tiếp. */
+  it("kế hoạch bám theo cột được thả vào", () => {
+    expect(getKitchenBoardPlanForColumn("Placed", "ready")).toEqual({
+      kind: "items",
+      eligibleItemStatuses: ["Pending", "Preparing"],
+      nextItemStatus: "Ready",
+    });
+    expect(getKitchenBoardPlanForColumn("Placed", "preparing")).toEqual({
+      kind: "items",
+      eligibleItemStatuses: ["Pending"],
+      nextItemStatus: "Preparing",
+    });
+    expect(getKitchenBoardPlanForColumn("Ready", "served")).toEqual({
+      kind: "order",
+      nextOrderStatus: "Served",
+    });
   });
 
   it("prioritizes urgent and older orders first", () => {
