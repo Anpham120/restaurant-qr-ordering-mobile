@@ -1324,14 +1324,11 @@
   .ops-card-list { display: grid; gap: 12px; }
 }
 
-.ops-hub-tabs--sticky {
-  position: sticky;
-  top: 56px;
-  z-index: 20;
-  background: var(--color-bg);
-  padding-top: 8px;
-  margin-top: -8px;
-}
+/* `.ops-hub-tabs--sticky` đã bị XOÁ, không phải bỏ quên.
+   Nó dính ở `top: 56px` trong khi desktop không có thanh trên cùng nào — dải 56px đó trong suốt và
+   thẻ trôi xuyên qua khi cuộn. `OpsHubShell` đã tắt bằng `const stickyTabs = false`, nên luật này
+   là mã chết từ lúc đó. Giữ lại một luật hỏng mà không ai kích hoạt chỉ là mời người sau bật lên.
+   Cần dính mép trên thì dùng `top: var(--cmc-topbar-h, 0px)` — xem `hubLayoutAudit.test.ts`. */
 
 .ops-page-header--compact h1 {
   font-size: 24px;
@@ -1590,16 +1587,6 @@
     grid-template-columns: 1fr;
   }
 
-  .ops-hub-tabs--sticky {
-    top: 52px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-  }
-
-  .ops-hub-tabs--sticky::-webkit-scrollbar {
-    display: none;
-  }
 }
 
 /* Hộp xác nhận dùng chung (#23) — thay `confirm()` của trình duyệt. */
