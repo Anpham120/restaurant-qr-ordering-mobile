@@ -21,10 +21,12 @@ import {
   moTaChipMon,
   getKitchenBoardAdvancePlan,
   getKitchenBoardColumn,
+  getKitchenBoardPlanForColumn,
   getKitchenPrimaryAction,
   getKitchenPriority,
   getKitchenProgress,
   sortKitchenOrdersByPriority,
+  type KitchenBoardAdvancePlan,
   type KitchenBoardColumn,
 } from "./kitchenOrderPipeline";
 import "../operations/operations.css";
@@ -140,7 +142,7 @@ function OrderCard({
       onTouchStart={handleTouchStart}
       role="button"
       tabIndex={0}
-      title={isDraggable ? "Chạm món để cập nhật · Vuốt phải hoặc kéo sang cột kế tiếp" : undefined}
+      title={isDraggable ? "Chạm món để cập nhật · Vuốt phải để đi một bước · Kéo sang bất kỳ cột nào phía trước" : undefined}
       onKeyDown={(e) => {
         if (e.key === "Enter") onOpenDetail(order);
         if (e.key === " " && !primaryAction.disabled) {
@@ -441,11 +443,16 @@ export function KitchenBoard({ orders, onRefresh }: KitchenBoardProps) {
     }
   }, [orders]);
 
-  const handleMoveNext = useCallback(async (order: Order) => {
+  const handleMoveNext = useCallback(async (
+    order: Order,
+    // Kéo-thả truyền kế hoạch của ĐÚNG cột được thả vào. Nút "chuyển tiếp" không truyền gì và
+    // vẫn đi một bước như cũ — hai lối vào, một đường thực thi.
+    planCuThe?: KitchenBoardAdvancePlan | null,
+  ) => {
     setPendingCode(order.orderCode);
     setNotice("");
     try {
-      const plan = getKitchenBoardAdvancePlan(order.status);
+      const plan = planCuThe ?? getKitchenBoardAdvancePlan(order.status);
       if (!plan) {
         return;
       }
@@ -536,16 +543,13 @@ export function KitchenBoard({ orders, onRefresh }: KitchenBoardProps) {
     setDraggedOrderCode(null);
     setDropTargetColumn(null);
 
-    if (
-      !draggedOrder
-      || draggedOrder.orderCode === pendingCode
-      || !canDropKitchenOrder(draggedOrder.status, column)
-    ) {
-      setNotice("Chỉ có thể chuyển thẻ sang cột trạng thái kế tiếp.");
+    const plan = draggedOrder ? getKitchenBoardPlanForColumn(draggedOrder.status, column) : null;
+    if (!draggedOrder || draggedOrder.orderCode === pendingCode || !plan) {
+      setNotice("Chỉ kéo được sang cột phía trước. \"Đã ra món\" phải đi từ \"Chờ ra món\".");
       return;
     }
 
-    void handleMoveNext(draggedOrder);
+    void handleMoveNext(draggedOrder, plan);
   }, [draggedOrderCode, handleMoveNext, orders, pendingCode]);
 
   const handleItemAction = useCallback(async (order: Order, itemId: string, nextStatus: OrderItemStatus) => {

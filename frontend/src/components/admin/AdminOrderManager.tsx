@@ -1,5 +1,6 @@
 import { labelOrderEventStatus, labelOrderItemStatus, labelOrderStatus } from "../../utils/opsStatusLabels";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@cmc/auth";
 import type { Order, OrderListResponse, OrderStatus } from "@cmc/shared-types";
 import { confirmOrderPayment, refundOrderPayment } from "../../services/orderService";
 import { failOrderPayment } from "../../services/adminOrderService";
@@ -20,14 +21,43 @@ export function AdminOrderManager({
   /** When set, only orders for this table; hides global table filter and table column. */
   scopedTableCode?: string;
 }) {
+  const { user } = useAuth();
   const lockedTable = scopedTableCode ? normalizeTableCode(scopedTableCode) : "";
+
+  /**
+   * QUẦY CHỈ XEM. Vòng đời đơn thuộc về BẾP, không thuộc về quầy.
+   *
+   * Màn này trước đây cho quầy bấm "Xác nhận", "Phục vụ", "Hoàn tất", "Hủy" — tức đổi trạng thái
+   * đơn từ một màn hình KHÔNG nhìn thấy bếp. Hai người cùng đẩy một đơn từ hai chỗ, và người thua
+   * cuộc không biết mình vừa thua.
+   *
+   * Thanh toán cũng ẩn ở đây, dù đó LÀ việc của quầy: nó có màn riêng ("Quầy thu ngân"), và trang
+   * này đã có sẵn nút dẫn sang. Một thao tác tiền có hai lối vào là hai lối phải cùng đúng.
+   */
+  const chiXem = user?.role === "CounterStaff" || user?.role === "Staff";
+  // Dem cot MOT lan roi dung cho ca <thead> lan colSpan cua dong trong. Hai cho tu dem la hai cho
+  // lech nhau ngay khi them mot cot — va dong trong la thu it ai mo ra xem nhat.
+  const soCot = 5 + (lockedTable ? 0 : 1) + (chiXem ? 0 : 1);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterTable, setFilterTable] = useState(lockedTable);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  /**
+   * GIỮ MÃ ĐƠN, KHÔNG GIỮ BẢN SAO CỦA ĐƠN.
+   *
+   * Bản trước để `useState<Order | null>` và chỉ gán một lần lúc bấm mở. Từ đó ngăn chi tiết ĐÓNG
+   * BĂNG: `load()` chạy lại trên mọi sự kiện realtime và cập nhật `orders`, nhưng bản sao trong
+   * `selectedOrder` thì không ai đụng tới.
+   *
+   * Hệ quả đúng bằng thứ người trực quầy nhìn thấy: bếp chuyển món sang "Đang nấu", "Chờ ra món",
+   * màn bếp đổi ngay, còn ngăn chi tiết bên quầy vẫn hiện trạng thái lúc mở — cho tới khi có người
+   * đóng ra mở lại. Không lỗi nào hiện lên, vì mọi thứ khác trên màn hình VẪN cập nhật.
+   *
+   * Giữ mã rồi tra lại từ danh sách sống thì không còn hai bản để mà lệch nhau.
+   */
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -51,6 +81,13 @@ export function AdminOrderManager({
   useEffect(() => { setIsLoading(true); load(); }, [load]);
 
   useOpsRealtime({ refresh: load });
+
+  // Tra lại từ danh sách VỪA tải. Đơn biến mất khỏi kết quả lọc (đổi trạng thái, đổi bộ lọc) thì
+  // ngăn chi tiết tự đóng — đúng hơn là treo một bản ghi không còn trong tầm nhìn.
+  const selectedOrder = useMemo(
+    () => (selectedCode ? orders.find((o) => o.orderCode === selectedCode) ?? null : null),
+    [orders, selectedCode],
+  );
 
   const stats = useMemo(() => {
     const active = orders.filter((o) => !["Completed", "Cancelled"].includes(o.status)).length;
@@ -135,14 +172,14 @@ export function AdminOrderManager({
             <th>TT toán</th>
             <th data-money>Tổng tiền</th>
             <th>Thời gian</th>
-            <th>Thao tác</th>
+            {!chiXem ? <th>Thao tác</th> : null}
           </tr>
         </thead>
         <tbody>
           {orders.map((order) => (
             <tr key={order.orderId}>
               <td>
-                <button className="ops-btn ops-btn--ghost" onClick={() => setSelectedOrder(order)} type="button">
+                <button className="ops-btn ops-btn--ghost" onClick={() => setSelectedCode(order.orderCode)} type="button">
                   {order.orderCode}
                 </button>
               </td>
@@ -155,6 +192,7 @@ export function AdminOrderManager({
               </td>
               <td data-money>{formatVnd(order.totalAmount)}</td>
               <td className="ops-note">{new Date(order.createdAt).toLocaleString("vi-VN")}</td>
+              {!chiXem ? (
               <td>
                 <div className="ops-row ops-row--tight ops-row--wrap">
                   {order.status === "Placed" ? <button className="ops-btn ops-btn--primary" disabled={pendingCode === order.orderCode} onClick={() => handleStatusChange(order.orderCode, "Confirmed")} type="button">Xác nhận</button> : null}
@@ -167,19 +205,20 @@ export function AdminOrderManager({
                   ) : null}
                 </div>
               </td>
+              ) : null}
             </tr>
           ))}
-          {orders.length === 0 ? <tr><td colSpan={lockedTable ? 6 : 7}><div className="ops-empty">Không có đơn{lockedTable ? ` cho bàn ${lockedTable}` : ""}</div></td></tr> : null}
+          {orders.length === 0 ? <tr><td colSpan={soCot}><div className="ops-empty">Không có đơn{lockedTable ? ` cho bàn ${lockedTable}` : ""}</div></td></tr> : null}
         </tbody>
       </table>
 
       {/* Detail modal */}
       {selectedOrder ? (
-        <div className="ops-modal-overlay" onClick={() => setSelectedOrder(null)}>
+        <div className="ops-modal-overlay" onClick={() => setSelectedCode(null)}>
           <div className="ops-modal" onClick={(e) => e.stopPropagation()}>
             <div className="ops-modal-header">
               <h2>{selectedOrder.orderCode}</h2>
-              <button aria-label="Đóng" className="ops-modal-close" onClick={() => setSelectedOrder(null)} type="button"><X aria-hidden="true" size={18} /></button>
+              <button aria-label="Đóng" className="ops-modal-close" onClick={() => setSelectedCode(null)} type="button"><X aria-hidden="true" size={18} /></button>
             </div>
             <div className="ops-modal-body">
               <div className="ops-card-meta ops-card-meta--spaced">
@@ -222,16 +261,16 @@ export function AdminOrderManager({
               ) : null}
             </div>
             <div className="ops-modal-footer">
-              {!selectedOrder.tableSessionId && (selectedOrder.paymentStatus === "Pending" || selectedOrder.paymentStatus === "Unpaid") ? (
+              {!chiXem && !selectedOrder.tableSessionId && (selectedOrder.paymentStatus === "Pending" || selectedOrder.paymentStatus === "Unpaid") ? (
                 <>
                   <button className="ops-btn ops-btn--success" disabled={pendingCode === selectedOrder.orderCode} onClick={() => handlePaymentAction(selectedOrder.orderCode, "confirm")} type="button">Xác nhận thu</button>
                   <button className="ops-btn ops-btn--ghost" disabled={pendingCode === selectedOrder.orderCode} onClick={() => handlePaymentAction(selectedOrder.orderCode, "fail")} type="button">Từ chối</button>
                 </>
               ) : null}
-              {!selectedOrder.tableSessionId && (selectedOrder.paymentStatus === "Confirmed" || selectedOrder.paymentStatus === "Paid") ? (
+              {!chiXem && !selectedOrder.tableSessionId && (selectedOrder.paymentStatus === "Confirmed" || selectedOrder.paymentStatus === "Paid") ? (
                 <button className="ops-btn ops-btn--danger" disabled={pendingCode === selectedOrder.orderCode} onClick={() => handlePaymentAction(selectedOrder.orderCode, "refund")} type="button">Hoàn tiền</button>
               ) : null}
-              <button className="ops-btn ops-btn--ghost" onClick={() => setSelectedOrder(null)} type="button">Đóng</button>
+              <button className="ops-btn ops-btn--ghost" onClick={() => setSelectedCode(null)} type="button">Đóng</button>
             </div>
           </div>
         </div>
