@@ -23,7 +23,7 @@ class OrderTest {
 	private static final OffsetDateTime T0 = OffsetDateTime.parse("2026-08-18T10:00:00Z");
 
 	private static OrderItem item(String id, OrderItemStatus status) {
-		return new OrderItem(id, "m_001", "Phở bò", new BigDecimal("55000"), 1, status, T0, null);
+		return new OrderItem(id, "m_001", "Phở bò", new BigDecimal("55000"), 1, status, T0, null, null);
 	}
 
 	private static Order orderWith(OrderStatus status, OrderItem... items) {
@@ -206,4 +206,50 @@ class OrderTest {
 
 		assertThat(order.subtotal()).isEqualByComparingTo("55000");
 	}
+
+	// --- hao hụt khi huỷ món ---------------------------------------------------------------
+
+	/**
+	 * TRẠNG THÁI CŨ PHẢI ĐƯỢC GHI TRƯỚC KHI BỊ GHI ĐÈ.
+	 *
+	 * `moveTo` gán `status = next`. Sau dòng đó, thông tin "món đang ở đâu lúc bị huỷ" không còn ở
+	 * đâu trong hệ thống — không có lịch sử trạng thái ở tầng MÓN, chỉ có ở tầng ĐƠN.
+	 *
+	 * Đây là toàn bộ tín hiệu hao hụt mà hệ thống có. Ghi sai hoặc quên ghi thì báo cáo ra 0, và
+	 * số 0 trông rất giống "quán không huỷ món" — không ai đi kiểm một con số đẹp.
+	 */
+	@Test
+	void ghiLaiTrangThaiTruocKhiHuy() {
+		Order order = orderWith(OrderStatus.Preparing, item("oi_1", OrderItemStatus.Preparing));
+
+		order.updateItemStatus("oi_1", OrderItemStatus.Cancelled, Actor.SYSTEM, T0);
+
+		OrderItem mon = order.findItem("oi_1").orElseThrow();
+		assertThat(mon.status()).isEqualTo(OrderItemStatus.Cancelled);
+		assertThat(mon.cancelledFromStatus())
+				.as("huỷ lúc bếp đang nấu — đây là hao hụt thật")
+				.isEqualTo(OrderItemStatus.Preparing);
+	}
+
+	@Test
+	void huyMonChuaNauKhongTinhLaHaoHut() {
+		Order order = orderWith(OrderStatus.Placed, item("oi_1", OrderItemStatus.Pending));
+
+		order.updateItemStatus("oi_1", OrderItemStatus.Cancelled, Actor.SYSTEM, T0);
+
+		assertThat(order.findItem("oi_1").orElseThrow().cancelledFromStatus())
+				.as("huỷ lúc còn chờ — không mất nguyên liệu")
+				.isEqualTo(OrderItemStatus.Pending);
+	}
+
+	/** Món không bị huỷ thì trường này phải là null — nếu không, báo cáo đếm cả món đã bán. */
+	@Test
+	void monKhongBiHuyThiKhongCoTrangThaiHuy() {
+		Order order = orderWith(OrderStatus.Preparing, item("oi_1", OrderItemStatus.Preparing));
+
+		order.updateItemStatus("oi_1", OrderItemStatus.Ready, Actor.SYSTEM, T0);
+
+		assertThat(order.findItem("oi_1").orElseThrow().cancelledFromStatus()).isNull();
+	}
+
 }

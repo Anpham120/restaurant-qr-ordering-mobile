@@ -154,4 +154,18 @@ export type LoyaltyCounterRedeem = {
 
 export type TopMenuItemReport = { menuItemId: string; name: string; quantitySold: number; revenue: number };
 export type DailyRevenueReport = { date: string; orderCount: number; revenue: number };
-export type ReportSummaryResponse = { from: string; to: string; totalOrders: number; paidOrders: number; grossRevenue: number; totalDiscount: number; netRevenue: number; topItems: TopMenuItemReport[]; dailyRevenue: DailyRevenueReport[] };
+/**
+ * Hao hụt vì huỷ món. Ba con số chứ không một, vì gộp lại là mất đúng thứ cần biết.
+ *
+ * `khongRoNguonGoc` là món bị huỷ TRƯỚC migration V33 — không ai biết nó đang ở đâu lúc bị huỷ.
+ * Đếm riêng chứ không gộp vào nhóm "không hao hụt": làm thế là bịa ra một con số. Nhóm này tự teo
+ * đi theo thời gian.
+ */
+export type ReportWaste = {
+  huyKhiDangNau: number;
+  huyTruocKhiNau: number;
+  khongRoNguonGoc: number;
+  giaTriHuyKhiDangNau: number;
+};
+
+export type ReportSummaryResponse = { from: string; to: string; totalOrders: number; paidOrders: number; grossRevenue: number; totalDiscount: number; netRevenue: number; topItems: TopMenuItemReport[]; dailyRevenue: DailyRevenueReport[]; waste: ReportWaste };
