@@ -9,7 +9,7 @@
 
 ## Workflow và cổng chặn — SINH TỪ CẤU HÌNH
 
-**7 workflow**, **6 cổng `--check`** trong CI.
+**8 workflow**, **6 cổng `--check`** trong CI.
 
 | Workflow | Kích hoạt bởi |
 |---|---|
@@ -20,6 +20,7 @@
 | `ci.yml` | pull_request, push, workflow_dispatch, workflow_call |
 | `dependency-review.yml` | pull_request |
 | `security.yml` | pull_request, push, schedule, workflow_dispatch |
+| `thu-khoi-phuc.yml` | workflow_dispatch |
 
 ### Cổng `--check` — tệp sinh ra phải khớp nguồn
 
