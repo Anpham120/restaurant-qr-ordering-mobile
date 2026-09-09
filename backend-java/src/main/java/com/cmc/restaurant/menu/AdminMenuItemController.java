@@ -3,6 +3,7 @@ package com.cmc.restaurant.menu;
 import com.cmc.restaurant.menu.MenuDtos.MenuItemRequest;
 import com.cmc.restaurant.menu.MenuDtos.AdminMenuItemResponse;
 import com.cmc.restaurant.menu.MenuDtos.ToggleAvailabilityRequest;
+import com.cmc.restaurant.shared.ApiException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -116,5 +117,26 @@ public class AdminMenuItemController {
 				.map(CategoryEntity::getName)
 				.orElse("");
 		return MenuQueryService.toAdminResponse(item, categoryName);
+	}
+
+	/**
+	 * CHUẨN BỊ THỰC ĐƠN HÔM NAY — bật/tắt món và đặt số suất cho cả thực đơn, MỘT LƯỢT.
+	 *
+	 * <p>Đây là việc quản trị viên làm mỗi sáng trước giờ mở cửa: hôm nay bán món gì, và nguyên
+	 * liệu vừa nhập làm được mấy suất mỗi món.
+	 *
+	 * <p>Endpoint RIÊNG chứ không bắt gọi {@code PUT /{id}} 91 lần. Sửa từng món qua modal là hình
+	 * dạng đúng cho việc đổi giá hay đổi mô tả — mỗi năm vài lần, mỗi lần một món. Nó là hình dạng
+	 * SAI cho một việc chạm vào cả thực đơn mỗi ngày, và đó là lý do tính năng số suất nằm im: cách
+	 * duy nhất để dùng nó tốn 91 lần mở-gõ-lưu-đóng.
+	 */
+	@PutMapping("/chuan-bi-hom-nay")
+	public Map<String, Integer> chuanBiHomNay(
+			@RequestBody(required = false) MenuDtos.ChuanBiThucDonRequest request) {
+		if (request == null) {
+			throw ApiException.badRequest("REQUEST_INVALID", "Request body is required.");
+		}
+		int daSua = menuItemService.chuanBiThucDonHomNay(request.items());
+		return Map.of("daSua", daSua);
 	}
 }

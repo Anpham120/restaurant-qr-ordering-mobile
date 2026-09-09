@@ -118,6 +118,25 @@ export async function fetchKitchenMenuItems(): Promise<AdminMenuItem[]> {
   return api.request<AdminMenuItem[]>("/kitchen/menu-items");
 }
 
+export type ChuanBiMon = {
+  menuItemId: string;
+  isAvailable: boolean;
+  remainingQuantity: number | null;
+};
+
+/**
+ * Lưu thực đơn hôm nay: bật/tắt món và số suất, MỘT lượt gọi cho cả danh sách.
+ *
+ * Một lượt chứ không phải 91 lượt: nửa chừng mất mạng mà 40 món đã lưu còn 51 món chưa thì thực
+ * đơn hôm đó ở trạng thái không ai chọn, và người sửa không biết mình dừng ở đâu.
+ */
+export async function luuThucDonHomNay(items: ChuanBiMon[]): Promise<{ daSua: number }> {
+  return api.request<{ daSua: number }>("/admin/menu-items/chuan-bi-hom-nay", {
+    method: "PUT",
+    body: JSON.stringify({ items }),
+  });
+}
+
 // Kitchen-level toggle (also usable by Staff/Admin)
 /**
  * Bếp khai độ trễ RIÊNG cho một món. `delayMinutes: 0` là xoá.

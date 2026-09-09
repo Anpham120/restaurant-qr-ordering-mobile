@@ -82,6 +82,25 @@ public final class MenuDtos {
 	}
 
 	/**
+	 * Một dòng trong lượt chuẩn bị thực đơn hôm nay.
+	 *
+	 * @param isAvailable        hôm nay quán CÓ bán món này không — quyết định của người
+	 * @param remainingQuantity  nguyên liệu nhập hôm nay làm được mấy suất; {@code null} = không đếm
+	 */
+	public record ChuanBiMonRequest(String menuItemId, Boolean isAvailable, Integer remainingQuantity) {
+	}
+
+	/**
+	 * Chuẩn bị thực đơn cho hôm nay — bật/tắt món và đặt số suất, MỘT LƯỢT cho cả thực đơn.
+	 *
+	 * <p>Phải là một lượt chứ không phải 91 lượt gọi. Quản trị viên làm việc này mỗi sáng trước giờ
+	 * mở cửa; nửa chừng mất mạng mà 40 món đã lưu, 51 món chưa, thì thực đơn hôm đó ở trạng thái
+	 * không ai chọn — và người sửa không biết mình đang ở đâu trong danh sách.
+	 */
+	public record ChuanBiThucDonRequest(List<ChuanBiMonRequest> items) {
+	}
+
+	/**
 	 * Bếp khai độ trễ RIÊNG cho một món.
 	 *
 	 * @param delayMinutes 0 = xoá độ trễ. Trần 60 giống {@code kitchen_delay}: chậm hơn một tiếng
