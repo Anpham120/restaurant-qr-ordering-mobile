@@ -58,13 +58,23 @@
   padding: clamp(32px, 6vw, 80px);
 }
 
+/*
+  MỘT GIỌNG DUY NHẤT CHO NHÃN PHỤ, TRÊN TOÀN MẶT KHÁCH.
+
+  Chỗ này trước dùng `--font-script` ("Dancing Script") — chữ viết tay đặt ngay trên một tiêu đề
+  serif, trên một đoạn thân sans. Ba họ chữ trong một khối, và không cái nào dẫn tới cái nào.
+
+  Giọng thay thế là giọng đã có sẵn khắp nơi: nhỏ, in hoa, giãn chữ. "PHIÊN ĐANG MỞ", "LẦN GỌI MÓN
+  TIẾP THEO" đều nói như vậy. Trang giỏ hàng đã đổi trước; đổi nốt ở đây thì mặt khách hàng nói
+  cùng một giọng thay vì hai.
+*/
 .cmc-menu-hero-copy .cmc-kicker {
-  font-family: var(--font-script);
-  font-size: clamp(20px, 3vw, 28px);
-  font-weight: 600;
-  color: var(--vian-gold-light);
   margin: 0 0 12px;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vian-gold-light);
 }
 
 .cmc-menu-hero-copy h2 {
@@ -309,12 +319,11 @@
 
 .cmc-menu-master-title p {
   margin: 0 0 8px;
-  font-family: var(--font-script);
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--vian-green);
-  text-transform: none;
-  letter-spacing: 0.02em;
 }
 
 .cmc-menu-master-title h3 {
@@ -356,12 +365,11 @@
 
 .cmc-menu-category-heading p {
   margin: 0 0 8px;
-  font-family: var(--font-script);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--vian-gold);
-  text-transform: none;
-  letter-spacing: 0.02em;
 }
 
 .cmc-menu-category-heading h4 {
@@ -470,13 +478,12 @@
 }
 
 .cmc-card-category {
-  font-family: var(--font-script);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--vian-gold);
   margin: 0;
-  text-transform: none;
-  letter-spacing: 0.02em;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vian-gold);
 }
 
 .cmc-card-content h3 {
@@ -1601,16 +1608,8 @@
   border: 1px dashed var(--vian-border);
 }
 
-/* ==========================================================================
-   Menu Master Title - Vị An Style (Script label override)
-   ========================================================================== */
-.cmc-menu-master-title p,
-.cmc-menu-category-heading p {
-  margin: 0 0 8px;
-  font-family: var(--font-script);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--vian-gold);
-  text-transform: none;
-  letter-spacing: 0.02em;
-}
+/* Khối "Script label override" ở đây ĐÃ BỊ XOÁ, không phải bỏ quên.
+
+   Nó nối ở cuối tệp và ghi đè hai luật khai phía trên — cùng độ đặc hiệu, thắng nhờ đứng sau.
+   Sửa luật gốc mà không thấy khối này thì thay đổi KHÔNG có tác dụng gì, và người sửa đi tìm
+   nguyên nhân ở chỗ khác. Giá trị đã đưa về đúng luật gốc. */
