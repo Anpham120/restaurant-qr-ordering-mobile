@@ -7,13 +7,26 @@
   margin-bottom: 12px;
 }
 
+/* Thanh lọc DÍNH MÉP TRÊN, không chừa khe.
+   `top` lấy từ `--cmc-topbar-h` chứ không gõ tay: ở desktop biến đó là 0 (thanh trên cùng là
+   `display: none`, không có gì để tránh), ở ≤800px nó bằng đúng chiều cao mà `.cmc-mobile-topbar`
+   bị ép nhận. Một nguồn sự thật cho cả hai chế độ.
+
+   Bản trước gõ `top: 56px`. Số đó sai ở CẢ HAI: desktop không có thanh nào nên nó chừa một dải
+   trong suốt cao 56px, và thẻ món trôi xuyên qua dải đó — nền của thanh lọc chỉ phủ hộp của chính
+   nó, không phủ phần trên. Ở ≤800px thanh thật cao ~66px nên vẫn hụt.
+
+   Nền phải ĐỤC. Trong suốt là nội dung hiện xuyên qua lúc cuộn, đúng lỗi cũ dưới dạng khác. */
 .ops-hub-shell--menu .amm-menu-controls {
+  position: sticky;
+  top: var(--cmc-topbar-h, 0px);
+  z-index: 15;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 4px 0 10px;
+  padding: 10px 0;
   margin-bottom: 4px;
-  background: var(--color-bg, #f4f9fd);
+  background: var(--color-bg, #ffffff);
   border-bottom: 1px solid var(--color-border-light, #e8f1f8);
 }
 

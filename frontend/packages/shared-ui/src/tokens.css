@@ -130,6 +130,14 @@
   --cmc-cyan: var(--color-cyan);
   --cmc-teal: var(--color-teal);
   --cmc-bg: var(--color-bg);
+
+  /* Chiều cao thanh trên cùng của portal vận hành — MỘT nguồn sự thật.
+     `.cmc-mobile-topbar` ép đúng con số này, và mọi phần tử sticky bên dưới lấy nó làm `top`.
+     Ở desktop thanh đó là `display: none`, nên giá trị là 0: không có gì để tránh.
+     Đây là chỗ đã hỏng hai lần. Cả hai lần đều là một số px gõ tay không khớp thứ gì cả —
+     `top: 56px` trong khi desktop không có thanh nào (chừa khe 56px cho nội dung trôi xuyên qua)
+     và mobile có thanh cao 66px (vẫn hụt 10px). Số gõ tay không thể đúng ở cả hai chế độ. */
+  --cmc-topbar-h: 0px;
   --cmc-card: var(--color-card);
   --cmc-border: var(--color-border);
   --cmc-text: var(--color-ink);
