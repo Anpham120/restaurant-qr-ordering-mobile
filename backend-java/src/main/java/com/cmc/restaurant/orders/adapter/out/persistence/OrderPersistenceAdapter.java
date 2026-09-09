@@ -47,7 +47,7 @@ public class OrderPersistenceAdapter {
 		List<OrderItem> items = entity.getItems().stream()
 				.map(i -> new OrderItem(
 						i.getId(), i.getMenuItemId(), i.getMenuItemName(), i.getUnitPrice(), i.getQuantity(),
-						i.getStatus(), i.getUpdatedAt(), i.getReadyAt()))
+						i.getStatus(), i.getUpdatedAt(), i.getReadyAt(), i.getCancelledFromStatus()))
 				.toList();
 		return new Order(
 				entity.getId(), entity.getOrderCode(), entity.getTableCode(), entity.getTableSessionId(),
@@ -74,6 +74,9 @@ public class OrderPersistenceAdapter {
 				itemEntity.setStatus(item.status());
 				itemEntity.setUpdatedAt(item.updatedAt());
 				itemEntity.setReadyAt(item.readyAt());
+				// Ghi cùng lượt với `status`: hai cột này mô tả cùng một sự kiện, tách ra là mời
+				// chúng lệch nhau.
+				itemEntity.setCancelledFromStatus(item.cancelledFromStatus());
 				orderItemRepository.save(itemEntity);
 			}
 		}

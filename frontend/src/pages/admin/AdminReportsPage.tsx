@@ -234,6 +234,21 @@ export function AdminReportsPage() {
               <div className="ops-stat-value ops-stat-value--trio">{formatVnd(report.netRevenue)}</div>
               <div className="ops-stat-detail">Sau giảm giá</div>
             </div>
+            {/* Hao hụt: món bị huỷ TRONG LÚC bếp đang nấu — nguyên liệu đã mất.
+                Đặt cạnh doanh thu vì nó là mặt kia của cùng một khoảng thời gian.
+                Giá trị tính theo GIÁ BÁN, không phải giá vốn: hệ thống không lưu giá vốn. */}
+            <div className="ops-stat-card">
+              <div className="ops-stat-label">Huỷ khi đang nấu</div>
+              <div className="ops-stat-value ops-stat-value--trio">
+                {formatVnd(report.waste.giaTriHuyKhiDangNau)}
+              </div>
+              <div className="ops-stat-detail">
+                {report.waste.huyKhiDangNau} món · {report.waste.huyTruocKhiNau} huỷ trước khi nấu
+                {report.waste.khongRoNguonGoc > 0
+                  ? ` · ${report.waste.khongRoNguonGoc} không rõ`
+                  : ""}
+              </div>
+            </div>
           </div>
 
           <div className="ops-page-header"><h2>Doanh thu theo ngày</h2></div>

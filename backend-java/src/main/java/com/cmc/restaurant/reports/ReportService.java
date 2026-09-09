@@ -117,6 +117,34 @@ public class ReportService {
 				RevenueLedger.sum(revenue, RevenueLedger.Settlement::subtotal),
 				RevenueLedger.sum(revenue, RevenueLedger.Settlement::discount),
 				RevenueLedger.sum(revenue, RevenueLedger.Settlement::total),
-				topItems, daily);
+				topItems, daily,
+				haoHut(range));
+	}
+
+	/**
+	 * Hao hụt vì huỷ món trong khoảng thời gian.
+	 *
+	 * <p>Lọc theo {@code oi.updated_at} chứ không theo ngày thanh toán: món bị huỷ thì KHÔNG có lần
+	 * thanh toán nào để mà neo vào. Dùng lại điều kiện doanh thu ở trên sẽ loại sạch mọi món huỷ và
+	 * báo cáo luôn ra 0 — đúng loại lỗi tự xác nhận, vì con số 0 trông rất giống "quán không huỷ
+	 * món".
+	 *
+	 * <p>Đếm cả ba nhóm trong MỘT truy vấn: chúng cùng đọc một tập hàng, và tách ra là mời chúng
+	 * lệch khoảng thời gian với nhau.
+	 */
+	private ReportDtos.WasteResponse haoHut(ReportRange range) {
+		return jdbcTemplate.queryForObject(
+				"select "
+						+ "  coalesce(sum(case when cancelled_from_status = 'Preparing' then 1 else 0 end), 0) as dang_nau, "
+						+ "  coalesce(sum(case when cancelled_from_status = 'Pending' then 1 else 0 end), 0) as truoc_nau, "
+						+ "  coalesce(sum(case when cancelled_from_status is null then 1 else 0 end), 0) as khong_ro, "
+						+ "  coalesce(sum(case when cancelled_from_status = 'Preparing' "
+						+ "       then unit_price * quantity else 0 end), 0) as gia_tri "
+						+ "from order_items "
+						+ "where status = 'Cancelled' and updated_at >= ? and updated_at < ?",
+				(rs, n) -> new ReportDtos.WasteResponse(
+						rs.getInt("dang_nau"), rs.getInt("truoc_nau"), rs.getInt("khong_ro"),
+						rs.getBigDecimal("gia_tri")),
+				range.from(), range.to());
 	}
 }
