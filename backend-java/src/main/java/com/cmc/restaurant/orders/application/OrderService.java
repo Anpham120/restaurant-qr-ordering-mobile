@@ -143,6 +143,33 @@ public class OrderService {
 			MenuItemEntity menuItem = menuItemRepository.findById(requestItem.menuItemId().trim())
 					.orElseThrow(() -> ApiException.badRequest("MENU_ITEM_UNAVAILABLE", "Menu item is unavailable."));
 
+			// BẾP TẮT MÓN THÌ KHÁCH KHÔNG ĐẶT ĐƯỢC NỮA.
+			//
+			// Trước đây chỗ này CHỈ kiểm món có tồn tại hay không — dù mã lỗi đã tên là
+			// `MENU_ITEM_UNAVAILABLE`. Tắt một món chỉ làm nó biến khỏi danh sách thực đơn; ai đã
+			// mở trang từ trước, hoặc còn món trong giỏ, vẫn gửi đơn thành công. Bếp nhận một món
+			// vừa báo hết, và không có gì chặn.
+			if (!menuItem.isAvailable()) {
+				throw ApiException.conflict(
+						"MENU_ITEM_UNAVAILABLE",
+						"Món \"" + menuItem.getName() + "\" đã hết. Vui lòng chọn món khác.");
+			}
+
+			// TRỪ TỒN KHO TRƯỚC KHI THÊM VÀO ĐƠN, và trừ bằng MỘT câu lệnh có điều kiện.
+			//
+			// Đọc rồi ghi là sai ở đây: hai khách cùng gọi phần cuối thì cả hai đọc thấy "còn 1",
+			// cả hai thấy đủ, và bếp nhận hai đơn cho một phần. Xem `MenuItemRepository.truTonKho`.
+			//
+			// Món không đếm phần (`remaining_quantity IS NULL`) luôn qua được, nên hành vi của 91
+			// món hiện tại không đổi cho tới khi có người nhập số.
+			if (menuItemRepository.truTonKho(menuItem.getId(), requestItem.quantity()) == 0) {
+				Integer con = menuItem.getRemainingQuantity();
+				throw ApiException.conflict(
+						"MENU_ITEM_OUT_OF_STOCK",
+						"Món \"" + menuItem.getName() + "\" chỉ còn " + (con == null ? 0 : con)
+								+ " phần, không đủ " + requestItem.quantity() + " phần bạn chọn.");
+			}
+
 			OrderItemEntity item = new OrderItemEntity(
 					"oi_" + UUID.randomUUID().toString().replace("-", ""), menuItem.getId(), menuItem.getName(),
 					menuItem.getPrice(), requestItem.quantity(), now, menuItem.getCostPrice());
@@ -398,6 +425,21 @@ public class OrderService {
 		// khách huỷ được món tặng mà không lấy lại điểm, và không có gì báo động.
 		if (item.status() == OrderItemStatus.Cancelled) {
 			suKien.publishEvent(new MonBiHuyEvent(order.orderCode(), item.id(), item.updatedAt()));
+
+			// TRẢ PHẦN VỀ KHO — CHỈ KHI CHƯA NẤU.
+			//
+			// Huỷ từ `Pending` là chưa ai động tới nguyên liệu: phần đó vẫn bán được, và không trả
+			// về là kho tụt dần theo mỗi lần khách đổi ý — tới cuối ca hệ thống báo hết trong khi
+			// bếp vẫn còn đồ.
+			//
+			// Huỷ từ `Preparing` thì KHÔNG trả: nguyên liệu đã mất. Trả về là nói rằng quán vẫn bán
+			// được nó, rồi bán tiếp một phần không còn gì để nấu.
+			//
+			// Đây đúng ranh giới mà báo cáo hao hụt (V33) đang dùng — một định nghĩa "đã tiêu hay
+			// chưa" cho cả hai chỗ, nên chúng không thể lệch nhau.
+			if (item.cancelledFromStatus() == OrderItemStatus.Pending) {
+				menuItemRepository.traTonKho(item.menuItemId(), item.quantity());
+			}
 		}
 
 		realtimeNotifier.orderItemStatusChanged(

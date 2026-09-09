@@ -74,11 +74,23 @@ describe("giá vốn không lọt ra thực đơn công khai", () => {
    * Kiểu của web phải khớp ranh giới của máy chủ. `MenuItem` là kiểu cho `/api/menu`; thêm
    * `costPrice` vào đó là mời người viết giao diện khách hiển thị nó.
    */
-  it("kiểu MenuItem dùng chung KHÔNG có costPrice", () => {
-    const ts = doc("frontend/packages/shared-types/src/index.ts");
-    const dong = ts.split(/\r?\n/).find((l) => l.startsWith("export type MenuItem ="));
+  /**
+   * CÓ HAI KIỂU TÊN `MenuItem`, VÀ CẢ HAI ĐỀU LÀ ĐƯỜNG CÔNG KHAI.
+   *
+   * `packages/shared-types` phục vụ api-client; `src/types/menu.ts` là thứ thẻ món của KHÁCH dùng.
+   * Bản đầu của phép kiểm này chỉ canh cái thứ nhất — tức nó canh một nửa ranh giới và im lặng về
+   * nửa kia. Phát hiện ra khi thêm một trường vào kiểu này mà `tsc` báo lỗi ở kiểu kia.
+   */
+  it("cả hai kiểu MenuItem công khai đều KHÔNG có costPrice", () => {
+    for (const tep of ["frontend/packages/shared-types/src/index.ts", "frontend/src/types/menu.ts"]) {
+      const ts = doc(tep);
+      const i = ts.indexOf("export type MenuItem =");
+      expect(i, `không thấy khai báo MenuItem trong ${tep}`).toBeGreaterThan(-1);
 
-    expect(dong, "không thấy khai báo MenuItem").toBeTruthy();
-    expect(dong, "MenuItem là kiểu của thực đơn CÔNG KHAI").not.toContain("costPrice");
+      // Tới dấu `};` đóng khai báo — kiểu ở `src/types` viết nhiều dòng, kiểu kia viết một dòng.
+      const ket = ts.indexOf("};", i);
+      const than = ts.slice(i, ket < 0 ? ts.indexOf("\n", i) : ket);
+      expect(than, `${tep}: MenuItem là kiểu của thực đơn CÔNG KHAI`).not.toContain("costPrice");
+    }
   });
 });

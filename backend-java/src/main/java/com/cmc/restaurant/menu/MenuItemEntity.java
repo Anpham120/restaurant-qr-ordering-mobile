@@ -38,6 +38,15 @@ public class MenuItemEntity {
 	@Column(name = "cost_price", precision = 18, scale = 2)
 	private BigDecimal costPrice;
 
+	/**
+	 * Số phần còn bán được. {@code null} = KHÔNG GIỚI HẠN, không phải bằng 0.
+	 *
+	 * <p>Mặc định null cho mọi món: quán nào không muốn đếm phần thì không phải nhập gì, và hành vi
+	 * cũ giữ nguyên. Chọn 0 làm mặc định sẽ khoá sạch thực đơn ngay lúc triển khai.
+	 */
+	@Column(name = "remaining_quantity")
+	private Integer remainingQuantity;
+
 	@Column(name = "image_url")
 	private String imageUrl;
 
@@ -120,6 +129,14 @@ public class MenuItemEntity {
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public Integer getRemainingQuantity() {
+		return remainingQuantity;
+	}
+
+	public void setRemainingQuantity(Integer remainingQuantity) {
+		this.remainingQuantity = remainingQuantity;
 	}
 
 	public BigDecimal getCostPrice() {

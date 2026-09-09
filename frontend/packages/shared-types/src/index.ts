@@ -31,7 +31,10 @@ export type MenuCategory = { categoryId: string; name: string };
 // và món đó không có ước lượng — im lặng đúng, hơn là một con số bịa. Cột `menu_items.prep_minutes`
 // có từ V11 nhưng tới nay chỉ migration ghi được: entity không ánh xạ, DTO không có trường, giao
 // diện không có ô. Đây là kiểu cho đường ghi vừa mở.
-export type MenuItem = { id: string; name: string; description: string; price: number; categoryId: string; categoryName: string; imageUrl: string | null; isAvailable: boolean; tags: string[]; prepMinutes: number | null };
+// `remainingQuantity`: số phần còn bán được. `null` = KHÔNG giới hạn (mặc định của mọi món), `0` =
+// hết. Có mặt ở thực đơn CÔNG KHAI và đó là chủ ý — khách cần biết món sắp hết để đổi ý TRƯỚC khi
+// gọi, chứ không phải nhận lỗi sau khi đã gửi bếp. Ngược với `costPrice`, thứ chỉ có ở đường admin.
+export type MenuItem = { id: string; name: string; description: string; price: number; categoryId: string; categoryName: string; imageUrl: string | null; isAvailable: boolean; tags: string[]; prepMinutes: number | null; remainingQuantity: number | null };
 export type MenuResponse = { categories: MenuCategory[]; items: MenuItem[] };
 export type CreateOrderRequest = { orderType: OrderType; tableCode?: string | null; qrToken?: string | null; tableSessionId?: string | null; items: Array<{ menuItemId: string; quantity: number }>; promotionCode?: string | null; customerPhoneNumber?: string | null };
 // `estimatedReadyMinutes*` và `kitchenBusy`: máy chủ ĐÃ gửi ba trường này từ lâu (xem
