@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Mirrors the admin CRUD half of {@code RestaurantQrAiOrdering.Api.Menu.MenuEndpoints} (.NET). */
 @Service
@@ -211,5 +212,59 @@ public class MenuItemService {
 		item.khaiDoTre(phut, phut == 0 ? null : now.plusMinutes(giu));
 		item.setUpdatedAt(now);
 		return menuItemRepository.save(item);
+	}
+
+	/**
+	 * Chuẩn bị thực đơn hôm nay: bật/tắt món và đặt số suất, MỘT GIAO DỊCH cho cả danh sách.
+	 *
+	 * <p><b>Vì sao một giao dịch.</b> Quản trị viên làm việc này mỗi sáng trước giờ mở cửa. Nửa
+	 * chừng mất mạng mà 40 món đã lưu còn 51 món chưa thì thực đơn hôm đó ở một trạng thái không
+	 * ai chọn — và người sửa không biết mình dừng ở đâu trong danh sách. Hoặc cả thực đơn hôm nay
+	 * được đặt, hoặc không gì cả.
+	 *
+	 * <p><b>{@code null} là KHÔNG ĐỔI, không phải xoá</b> — cùng luật với mọi trường khác của
+	 * module này. Gửi thiếu một trường không được im lặng thổi bay giá trị đang có.
+	 *
+	 * <p><b>Số suất KHÔNG tự tắt món.</b> Đặt 0 là hết suất; công tắc {@code isAvailable} vẫn là
+	 * quyết định riêng của người. Hai sự thật khác nhau — "bán hết mẻ hôm nay" và "hôm nay quán
+	 * không bán món này" — nên báo cáo phân biệt được chúng. Gộp vào một cờ là mất vĩnh viễn.
+	 *
+	 * @return số món thật sự đổi
+	 */
+	@Transactional
+	public int chuanBiThucDonHomNay(List<MenuDtos.ChuanBiMonRequest> dong) {
+		if (dong == null || dong.isEmpty()) {
+			throw ApiException.badRequest("REQUEST_INVALID", "Danh sách món trống.");
+		}
+
+		OffsetDateTime now = OffsetDateTime.now();
+		int daSua = 0;
+
+		for (MenuDtos.ChuanBiMonRequest yeuCau : dong) {
+			if (yeuCau.remainingQuantity() != null && yeuCau.remainingQuantity() < 0) {
+				throw ApiException.badRequest(
+						"MENU_ITEM_QUANTITY_INVALID", "Số suất không được âm.");
+			}
+			MenuItemEntity mon = menuItemRepository.findById(yeuCau.menuItemId())
+					.orElseThrow(() -> ApiException.notFound(
+							"MENU_ITEM_NOT_FOUND", "Không thấy món " + yeuCau.menuItemId() + "."));
+
+			boolean coDoi = false;
+			if (yeuCau.isAvailable() != null && mon.isAvailable() != yeuCau.isAvailable()) {
+				mon.setAvailable(yeuCau.isAvailable());
+				coDoi = true;
+			}
+			if (yeuCau.remainingQuantity() != null
+					&& !yeuCau.remainingQuantity().equals(mon.getRemainingQuantity())) {
+				mon.setRemainingQuantity(yeuCau.remainingQuantity());
+				coDoi = true;
+			}
+			if (coDoi) {
+				mon.setUpdatedAt(now);
+				menuItemRepository.save(mon);
+				daSua++;
+			}
+		}
+		return daSua;
 	}
 }

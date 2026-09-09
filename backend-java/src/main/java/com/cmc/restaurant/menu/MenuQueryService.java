@@ -31,7 +31,17 @@ public class MenuQueryService {
 		List<String> activeCategoryIds = activeCategories.stream().map(CategoryEntity::getId).toList();
 		List<MenuItemEntity> availableItems = menuItemRepository.findByCategoryIdInAndAvailableTrue(activeCategoryIds);
 
+		// MÓN HẾT SUẤT KHÔNG HIỆN TRONG THỰC ĐƠN KHÁCH.
+		//
+		// Lọc lúc HIỂN THỊ, không ghi `is_available = false`. Hai sự thật khác nhau và phải giữ
+		// riêng: "bán hết mẻ hôm nay" là một phép ĐẾM, còn công tắc là một QUYẾT ĐỊNH của người.
+		// Ghi phép đếm vào công tắc thì sáng mai lúc quản trị viên đặt lại thực đơn, hệ thống không
+		// còn phân biệt được đâu là món hết mẻ, đâu là món quán cố ý không bán — và báo cáo mất
+		// vĩnh viễn khả năng nói "món này hết sớm" khác "món này hôm nay không phục vụ".
+		//
+		// `remainingQuantity == null` là KHÔNG đếm suất, luôn hiện. Không phải bằng 0.
 		List<MenuItemResponse> sortedItems = availableItems.stream()
+				.filter(item -> item.getRemainingQuantity() == null || item.getRemainingQuantity() > 0)
 				.sorted(Comparator
 						.<MenuItemEntity>comparingInt(item -> categoryLookup.get(item.getCategoryId()).getDisplayOrder())
 						.thenComparing(item -> item.getName().toLowerCase(java.util.Locale.ROOT)))

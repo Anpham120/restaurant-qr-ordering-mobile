@@ -2333,3 +2333,11 @@
   color: var(--ops-warn);
   font-weight: 700;
 }
+
+/* Ô số suất trong bảng "Chuẩn bị thực đơn hôm nay".
+   Hẹp lại vì nội dung là 1-3 chữ số; để rộng như ô tìm kiếm thì bảng trôi ngang trên tablet, mà
+   quản trị viên làm việc này trên chính máy ở quầy. */
+.chuan-bi-so-suat {
+  max-width: 150px;
+  font-variant-numeric: tabular-nums;
+}
