@@ -11,9 +11,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class MenuItemService {
 
-	/** Ngưỡng chặn lỗi gõ cho thời gian lên món (phút). */
-	private static final int MAX_PREP_MINUTES = 240;
-
+	/** Ngưỡng chặn lỗi gõ cho thời gian lên món (phút). */
+	private static final int MAX_PREP_MINUTES = 240;
+
 	private final MenuItemRepository menuItemRepository;
 	private final CategoryRepository categoryRepository;
 
@@ -54,13 +54,13 @@ public class MenuItemService {
 		item.setPrice(request.price());
 		item.setImageUrl(normalizeOptional(request.imageUrl()));
 		item.setAvailable(request.isAvailable() == null || request.isAvailable());
-		item.setTags(normalizeTags(request.tags()));
-		// null = GIỮ NGUYÊN, không phải xoá. Xem ghi chú ở MenuItemRequest: PUT thay toàn bộ bản ghi,
-		// nên coi null là xoá thì một lần sửa TÊN món bằng client cũ sẽ thổi bay con số bếp đã khai và
-		// mọi ước lượng của món đó, không một tiếng động.
-		if (request.prepMinutes() != null) {
-			item.setPrepMinutes(request.prepMinutes());
-		}
+		item.setTags(normalizeTags(request.tags()));
+		// null = GIỮ NGUYÊN, không phải xoá. Xem ghi chú ở MenuItemRequest: PUT thay toàn bộ bản ghi,
+		// nên coi null là xoá thì một lần sửa TÊN món bằng client cũ sẽ thổi bay con số bếp đã khai và
+		// mọi ước lượng của món đó, không một tiếng động.
+		if (request.prepMinutes() != null) {
+			item.setPrepMinutes(request.prepMinutes());
+		}
 		// Cùng luật, cùng lý do: một lần sửa TÊN món bằng client cũ không được thổi bay giá vốn,
 		// vì báo cáo hao hụt sẽ tụt xuống mà không ai biết vì sao.
 		if (request.costPrice() != null) {
@@ -114,18 +114,18 @@ public class MenuItemService {
 			throw ApiException.badRequest("MENU_ITEM_NAME_REQUIRED", "Menu item name is required.");
 		}
 
-		if (request.price() == null || request.price().compareTo(BigDecimal.ZERO) <= 0) {
-			throw ApiException.badRequest("MENU_ITEM_PRICE_INVALID", "Menu item price must be greater than zero.");
-		}
-
-		// Chặn LỖI GÕ, không phải chặn nghiệp vụ. Món lâu nhất trong thực đơn hiện tại là 35 phút
-		// (quay nguyên con); ngưỡng để rộng gấp nhiều lần để không cãi nhau với bếp. Nhưng 0 hay số âm
-		// thì không có nghĩa nào cả, và một con số ba chữ số gõ nhầm sẽ đẩy ước lượng của cả bếp đi xa.
-		Integer prepMinutes = request.prepMinutes();
-		if (prepMinutes != null && (prepMinutes < 1 || prepMinutes > MAX_PREP_MINUTES)) {
-			throw ApiException.badRequest(
-					"MENU_ITEM_PREP_MINUTES_INVALID",
-					"Prep minutes must be between 1 and " + MAX_PREP_MINUTES + ".");
+		if (request.price() == null || request.price().compareTo(BigDecimal.ZERO) <= 0) {
+			throw ApiException.badRequest("MENU_ITEM_PRICE_INVALID", "Menu item price must be greater than zero.");
+		}
+
+		// Chặn LỖI GÕ, không phải chặn nghiệp vụ. Món lâu nhất trong thực đơn hiện tại là 35 phút
+		// (quay nguyên con); ngưỡng để rộng gấp nhiều lần để không cãi nhau với bếp. Nhưng 0 hay số âm
+		// thì không có nghĩa nào cả, và một con số ba chữ số gõ nhầm sẽ đẩy ước lượng của cả bếp đi xa.
+		Integer prepMinutes = request.prepMinutes();
+		if (prepMinutes != null && (prepMinutes < 1 || prepMinutes > MAX_PREP_MINUTES)) {
+			throw ApiException.badRequest(
+					"MENU_ITEM_PREP_MINUTES_INVALID",
+					"Prep minutes must be between 1 and " + MAX_PREP_MINUTES + ".");
 		}
 
 		// Giá vốn ÂM là lỗi gõ. Bằng 0 thì HỢP LỆ — có món lấy nguyên liệu từ nguồn khác.
@@ -181,5 +181,35 @@ public class MenuItemService {
 
 	private static boolean isBlank(String value) {
 		return value == null || value.isBlank();
+	}
+
+	/** Trần 60 phút, giống `kitchen_delay`. Chậm hơn một tiếng thì câu trả lời trung thực là TẮT món. */
+	public static final int TRAN_DO_TRE_MON = 60;
+
+	/** Mặc định giữ hiệu lực 60 phút — đủ dài để không phải bấm lại liên tục, đủ ngắn để một lần
+	 *  quên không cộng oan cho khách cả buổi. */
+	public static final int GIU_MAC_DINH_PHUT = 60;
+
+	/**
+	 * Bếp khai độ trễ riêng cho một món.
+	 *
+	 * <p>{@code phut == 0} là XOÁ: đặt luôn mốc hết hạn về null để trạng thái chỉ có một cách biểu
+	 * diễn. Để lại mốc cũ với số 0 là tạo ra hai kiểu "không có độ trễ", rồi chờ chỗ đọc phân biệt
+	 * nhầm.
+	 */
+	public MenuItemEntity khaiDoTreMon(String menuItemId, int phut, Integer giuPhut) {
+		if (phut < 0 || phut > TRAN_DO_TRE_MON) {
+			throw ApiException.badRequest(
+					"MENU_ITEM_DELAY_INVALID",
+					"Độ trễ phải trong khoảng 0 tới " + TRAN_DO_TRE_MON + " phút.");
+		}
+		MenuItemEntity item = menuItemRepository.findById(menuItemId)
+				.orElseThrow(() -> ApiException.notFound("MENU_ITEM_NOT_FOUND", "Menu item not found."));
+
+		OffsetDateTime now = OffsetDateTime.now();
+		int giu = giuPhut == null || giuPhut <= 0 ? GIU_MAC_DINH_PHUT : giuPhut;
+		item.khaiDoTre(phut, phut == 0 ? null : now.plusMinutes(giu));
+		item.setUpdatedAt(now);
+		return menuItemRepository.save(item);
 	}
 }

@@ -86,4 +86,33 @@ public class KitchenMenuController {
 				item,
 				categoryRepository.findById(item.getCategoryId()).map(CategoryEntity::getName).orElse(""));
 	}
+
+	/**
+	 * BẾP KHAI ĐỘ TRỄ RIÊNG CHO MỘT MÓN.
+	 *
+	 * <p>Đặt ở ĐÂY, cạnh công tắc bật/tắt món, chứ không thành một màn hình mới. Bếp đã mở đúng
+	 * bảng này mỗi khi một món gặp vấn đề — hỏng lò, hết nguyên liệu phải đi mua. Thêm một nút ở
+	 * chỗ họ đã đứng sẵn thì không có khái niệm nào mới phải học.
+	 *
+	 * <p>Khác `PUT /api/kitchen/delay` (độ trễ của CẢ bếp) và CỘNG DỒN với nó.
+	 */
+	@PatchMapping("/{menuItemId}/delay")
+	public MenuItemResponse khaiDoTre(
+			@PathVariable String menuItemId,
+			@RequestBody(required = false) MenuDtos.KhaiDoTreMonRequest request) {
+		if (request == null || request.delayMinutes() == null) {
+			throw ApiException.badRequest("REQUEST_INVALID", "delayMinutes là bắt buộc.");
+		}
+		MenuItemEntity item = menuItemService.khaiDoTreMon(
+				menuItemId, request.delayMinutes(), request.keepMinutes());
+
+		// Bắn realtime cùng kênh với việc tắt/bật món: ước lượng của khách đổi ngay, không đợi lần
+		// tải lại kế tiếp. Cùng lý do đã ghi ở `toggleAvailability`.
+		realtimeNotifier.menuAvailabilityChanged(new RealtimeDtos.MenuAvailabilityChangedEvent(
+				item.getId(), item.getName(), item.isAvailable(), item.getUpdatedAt()));
+
+		return MenuQueryService.toResponse(
+				item,
+				categoryRepository.findById(item.getCategoryId()).map(CategoryEntity::getName).orElse(""));
+	}
 }
