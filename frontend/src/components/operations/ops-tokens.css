@@ -26,7 +26,6 @@
   --ops-text-2xl: 2.5rem;     /* 40px — con số DUY NHẤT của màn hình */
 
   --ops-line-tight: 1.25;
-  --ops-line-normal: 1.5;
 
   /* ---- Vùng chạm --------------------------------------------------------
      Quầy CÓ màn cảm ứng và bếp dùng tablet — đã xác nhận, không phải giả định.
@@ -52,18 +51,24 @@
   /* ---- Nền riêng của mặt vận hành --------------------------------------
      KHÔNG dùng gradient, không glass, không blur trong vùng đọc dữ liệu. Chúng hợp
      với trang bán hàng; dưới một con số phải đọc trong hai giây thì chúng là nhiễu. */
-  --ops-bg: #f4f6f9;
   --ops-panel: #ffffff;
   --ops-panel-raised: #ffffff;
   --ops-line: #d8e2ec;
-  --ops-line-strong: #b9c9d8;
   --ops-ink: #0d2437;
   --ops-ink-muted: #55708a;
 
   /* ---- Màu mang thông tin ----------------------------------------------
      Trên mặt vận hành, mỗi màu ứng một trạng thái. Không màu nào để trang trí.
      Luôn đi kèm nhãn chữ hoặc hình dạng — bếp bị chói làm mất phân biệt màu, và
-     có người mù màu. */
+     có người mù màu.
+
+     MỖI TRẠNG THÁI LÀ MỘT CẶP: màu chữ + màu nền. `--ops-warn-bg` và `--ops-urgent-bg` đang được
+     dùng, nên quy ước này là thật chứ không phải dự phòng.
+
+     `--ops-ok-bg` và `--ops-info-bg` hiện CHƯA chỗ nào dùng, và vẫn được giữ có chủ ý. Xoá đi thì
+     người viết badge "thành công" tiếp theo tìm thấy `--ops-ok` mà không thấy nền của nó, rồi gõ
+     cứng một mã hex — đúng thứ bộ token này sinh ra để chặn. Một cặp thiếu một nửa còn tệ hơn một
+     token chưa dùng. */
   --ops-ok: #15803d;
   --ops-ok-bg: #dcfce7;
   --ops-warn: #b45309;

@@ -7,18 +7,31 @@ const MO_STYLE = "style={{";
 const srcRoot = fileURLToPath(new URL("../", import.meta.url));
 
 /**
- * Cây thư mục của MẶT VẬN HÀNH. Mặt khách hàng (`pages/customer`, `CustomerHomePage`) nằm ngoài
- * đợt này — nó có 23 chỗ đặt style rời và một hệ thiết kế riêng, sửa nó là một đợt việc khác.
+ * QUÉT CẢ MẶT KHÁCH HÀNG, KHÔNG CHỈ MẶT VẬN HÀNH.
+ *
+ * Bản trước loại mặt khách hàng ra với lý do ghi thẳng ở đây: *"nó có 23 chỗ đặt style rời và một
+ * hệ thiết kế riêng, sửa nó là một đợt việc khác"*. Lý do đó đã hết hạn — 23 chỗ ấy nay là lớp CSS
+ * thật trong `customer-landing.css`.
+ *
+ * Giữ nguyên chỗ loại trừ sau khi lý do biến mất là cách một ngoại lệ tạm thành vĩnh viễn: không
+ * ai kiểm lại một dòng đã nằm sẵn trong tệp, và phạm vi cổng cứ nhỏ đi theo thời gian.
  */
 const MAT_VAN_HANH = [
   "components/admin",
   "components/kitchen",
   "components/operations",
   "components/staff",
+  "components/landing",
+  "components/customer",
   "pages/admin",
   "pages/counter",
+  "pages/customer",
 ];
-const TEP_LE = ["pages/AdminInvoicesPage.tsx", "pages/StaffPaymentsPage.tsx"];
+const TEP_LE = [
+  "pages/AdminInvoicesPage.tsx",
+  "pages/StaffPaymentsPage.tsx",
+  "pages/CustomerHomePage.tsx",
+];
 
 function tepNguon(): string[] {
   const ra: string[] = [];
