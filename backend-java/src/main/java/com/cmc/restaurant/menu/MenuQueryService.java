@@ -49,7 +49,8 @@ public class MenuQueryService {
 		return new MenuItemResponse(
 				item.getId(), item.getName(), item.getDescription(), item.getPrice(), item.getCategoryId(),
 				categoryName, item.getImageUrl(), item.isAvailable(), item.getTags(), item.getPrepMinutes(),
-				item.getRemainingQuantity());
+				item.getRemainingQuantity(),
+				item.delayConHieuLuc(java.time.OffsetDateTime.now()));
 	}
 
 	/**
@@ -62,6 +63,7 @@ public class MenuQueryService {
 		return new MenuDtos.AdminMenuItemResponse(
 				item.getId(), item.getName(), item.getDescription(), item.getPrice(), item.getCategoryId(),
 				categoryName, item.getImageUrl(), item.isAvailable(), item.getTags(), item.getPrepMinutes(),
-				item.getCostPrice(), item.getRemainingQuantity());
+				item.getCostPrice(), item.getRemainingQuantity(),
+				item.delayConHieuLuc(java.time.OffsetDateTime.now()));
 	}
 }

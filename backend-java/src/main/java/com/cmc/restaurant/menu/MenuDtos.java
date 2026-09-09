@@ -35,7 +35,7 @@ public final class MenuDtos {
 	public record MenuItemResponse(
 			String id, String name, String description, BigDecimal price, String categoryId,
 			String categoryName, String imageUrl, boolean isAvailable, List<String> tags,
-			Integer prepMinutes, Integer remainingQuantity) {
+			Integer prepMinutes, Integer remainingQuantity, Integer delayMinutes) {
 	}
 
 	/**
@@ -52,7 +52,7 @@ public final class MenuDtos {
 	public record AdminMenuItemResponse(
 			String id, String name, String description, BigDecimal price, String categoryId,
 			String categoryName, String imageUrl, boolean isAvailable, List<String> tags,
-			Integer prepMinutes, BigDecimal costPrice, Integer remainingQuantity) {
+			Integer prepMinutes, BigDecimal costPrice, Integer remainingQuantity, Integer delayMinutes) {
 	}
 
 	public record CategoryRequest(String name, int displayOrder, Boolean isActive) {
@@ -79,5 +79,16 @@ public final class MenuDtos {
 	}
 
 	public record ToggleAvailabilityRequest(boolean isAvailable) {
+	}
+
+	/**
+	 * Bếp khai độ trễ RIÊNG cho một món.
+	 *
+	 * @param delayMinutes 0 = xoá độ trễ. Trần 60 giống {@code kitchen_delay}: chậm hơn một tiếng
+	 *     thì câu trả lời trung thực là TẮT món, không phải hiện một con số to hơn.
+	 * @param keepMinutes  giữ hiệu lực bao lâu. Hết hạn thì độ trễ tự về 0 — bếp khai xong không
+	 *     phải nhớ quay lại xoá, và một lần quên không cộng oan cho khách mãi mãi.
+	 */
+	public record KhaiDoTreMonRequest(Integer delayMinutes, Integer keepMinutes) {
 	}
 }

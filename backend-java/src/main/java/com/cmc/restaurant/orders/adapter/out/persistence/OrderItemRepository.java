@@ -99,6 +99,19 @@ public interface OrderItemRepository extends JpaRepository<OrderItemEntity, Stri
 			nativeQuery = true)
 	Optional<Integer> findPrepMinutes(String menuItemId);
 
+	/**
+	 * Độ trễ CÒN HIỆU LỰC mà bếp khai riêng cho món này — 0 nếu chưa khai hoặc đã quá hạn.
+	 *
+	 * <p>So mốc TRONG câu truy vấn, không đọc hai cột ra rồi so ở Java: mọi chỗ tự so là mọi chỗ có
+	 * thể quên so, và quên ở đây nghĩa là cộng oan phút cho khách sau khi độ trễ đã hết.
+	 */
+	@Query(value = """
+			select case when m.delay_expires_at is not null and m.delay_expires_at > now()
+			            then m.delay_minutes else 0 end
+			  from menu_items m where m.id = :menuItemId
+			""", nativeQuery = true)
+	Optional<Integer> findDoTreMon(String menuItemId);
+
 	/** Nhãn và danh mục của một món, để biết nó thuộc trạm nào. */
 	interface NhanDanhMuc {
 		String getNhan();

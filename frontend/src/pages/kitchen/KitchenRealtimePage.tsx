@@ -15,16 +15,16 @@ import {
 import { OpsConnectionBadge } from "../../components/operations/OpsConnectionBadge";
 import { useOpsRealtime } from "../../hooks/useOpsRealtime";
 import { getKitchenOrders } from "../../services/orderService";
-import { fetchKitchenMenuItems, toggleMenuItemAvailability } from "../../services/adminMenuService";
+import { fetchKitchenMenuItems, khaiDoTreMon, toggleMenuItemAvailability } from "../../services/adminMenuService";
 import { locMonTheoTen } from "./kitchenMenuFilter";
 import { getKitchenDelay, setKitchenDelay } from "../../services/kitchenDelayService";
 import type { KitchenDelay } from "../../services/kitchenDelayService";
 import { moTaTreBep, sapHetHan } from "../../components/kitchen/kitchenDelayLabel";
-import { TRAN_PHUT, chiGiuChuSo, docSoPhut } from "../../components/kitchen/kitchenDelayInput";
+import { TRAN_PHUT, chiGiuChuSo, docSoPhut, phutDoTreTiepTheo } from "../../components/kitchen/kitchenDelayInput";
 import { ChefHat, RefreshCw, Timer, UtensilsCrossed } from "lucide-react";
 import "../../components/operations/operations.css";
 
-type MenuItemSummary = { id: string; name: string; isAvailable: boolean };
+type MenuItemSummary = { id: string; name: string; isAvailable: boolean; delayMinutes?: number };
 
 export function KitchenRealtimePage() {
   const [searchParams] = useSearchParams();
@@ -176,6 +176,31 @@ export function KitchenRealtimePage() {
       }
     },
   });
+
+  /**
+   * Cộng dồn 5 phút mỗi lần bấm; tới trần 60 thì vòng về 0 (xoá).
+   *
+   * MỘT NÚT, KHÔNG PHẢI MỘT Ô NHẬP. Bếp đang cầm dao, đeo găng, tay ướt — gõ số vào ô là thao tác
+   * sai với hoàn cảnh. Bấm vài lần thì tới con số cần, và bấm quá thì vòng lại chứ không phải đi
+   * tìm nút xoá.
+   *
+   * Không cần nút xoá riêng: bấm tiếp là về 0. Một nút làm hai việc thì không có nút thứ hai để
+   * mà đặt nhầm chỗ.
+   */
+  async function handleKhaiDoTre(item: MenuItemSummary) {
+    const phutMoi = phutDoTreTiepTheo(item.delayMinutes ?? 0);
+    setTogglingId(item.id);
+    try {
+      await khaiDoTreMon(item.id, phutMoi);
+      setMenuItems((prev) =>
+        prev.map((m) => (m.id === item.id ? { ...m, delayMinutes: phutMoi } : m)),
+      );
+    } catch {
+      setError("Không đặt được độ trễ cho món.");
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   // Toggle dish availability
   async function handleToggleAvailability(itemId: string, currentlyAvailable: boolean) {
@@ -341,6 +366,19 @@ export function KitchenRealtimePage() {
                 {item.name}
                 {!item.isAvailable ? <span className="ops-badge ops-badge--cancelled kitchen-menu-flag">Hết</span> : null}
               </span>
+              {/* Độ trễ RIÊNG của món, đặt ngay cạnh công tắc "hết món".
+                  Bếp đã mở đúng bảng này mỗi khi một món gặp vấn đề — hỏng lò, hết nguyên liệu
+                  phải đi mua. Thêm nút ở chỗ họ đã đứng sẵn thì không có khái niệm nào mới.
+                  Bấm cộng dồn 5 phút mỗi lần; bấm tiếp khi đã tới trần thì vòng về 0 (xoá). */}
+              <button
+                className={`ops-btn ops-btn--ghost kitchen-mon-delay${(item.delayMinutes ?? 0) > 0 ? " kitchen-mon-delay--on" : ""}`}
+                disabled={togglingId === item.id}
+                onClick={() => handleKhaiDoTre(item)}
+                type="button"
+                title={`Độ trễ riêng của "${item.name}". Bấm để cộng 5 phút, tới 60 thì về 0.`}
+              >
+                {(item.delayMinutes ?? 0) > 0 ? `+${item.delayMinutes}p` : "+ phút"}
+              </button>
               <button
                 className={`ops-toggle-switch ${item.isAvailable ? "ops-toggle-switch--on" : ""}`}
                 disabled={togglingId === item.id}

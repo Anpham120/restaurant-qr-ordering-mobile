@@ -47,6 +47,21 @@ public class MenuItemEntity {
 	@Column(name = "remaining_quantity")
 	private Integer remainingQuantity;
 
+	/**
+	 * Số phút bếp khai thêm RIÊNG cho món này, chỉ có hiệu lực tới {@link #delayExpiresAt}.
+	 *
+	 * <p>Khác với {@code kitchen_delay} (độ trễ của CẢ bếp) và CỘNG DỒN với nó: một cái nói "cả bếp
+	 * đang chậm", cái này nói "riêng món này đang chậm".
+	 *
+	 * <p>Đọc qua {@link #delayConHieuLuc}, KHÔNG đọc thẳng trường này — quá hạn thì con số phải là
+	 * 0, và mọi chỗ tự so mốc là mọi chỗ có thể quên so.
+	 */
+	@Column(name = "delay_minutes", nullable = false)
+	private int delayMinutes;
+
+	@Column(name = "delay_expires_at")
+	private OffsetDateTime delayExpiresAt;
+
 	@Column(name = "image_url")
 	private String imageUrl;
 
@@ -137,6 +152,32 @@ public class MenuItemEntity {
 
 	public void setRemainingQuantity(Integer remainingQuantity) {
 		this.remainingQuantity = remainingQuantity;
+	}
+
+	public int getDelayMinutes() {
+		return delayMinutes;
+	}
+
+	public OffsetDateTime getDelayExpiresAt() {
+		return delayExpiresAt;
+	}
+
+	/**
+	 * Độ trễ CÒN HIỆU LỰC tại thời điểm {@code now} — 0 nếu chưa khai hoặc đã quá hạn.
+	 *
+	 * <p>Một hàm, một chỗ so mốc. Trả trường thô ra ngoài rồi để người gọi tự so là mời mỗi nơi gọi
+	 * quên một kiểu, và quên ở đây nghĩa là cộng oan phút cho khách sau khi độ trễ đã hết.
+	 */
+	public int delayConHieuLuc(OffsetDateTime now) {
+		if (delayExpiresAt == null || !delayExpiresAt.isAfter(now)) {
+			return 0;
+		}
+		return delayMinutes;
+	}
+
+	public void khaiDoTre(int phut, OffsetDateTime hetHanLuc) {
+		this.delayMinutes = phut;
+		this.delayExpiresAt = hetHanLuc;
 	}
 
 	public BigDecimal getCostPrice() {

@@ -169,6 +169,16 @@ public class OrderItemEstimationService {
 		// việc tách trạm sinh ra để dẹp.
 		int treBepKhai = tram == TramChuanBi.BEP ? tai.treBepKhai() : 0;
 
+		// ĐỘ TRỄ RIÊNG CỦA MÓN, cộng dồn với độ trễ chung.
+		//
+		// KHÔNG lọc theo trạm như phần trên, và đó là khác biệt có chủ ý: độ trễ CHUNG nói "bếp
+		// đang đông" nên không được áp cho ly bia; độ trễ RIÊNG nói "món này đang chậm" — nếu bếp
+		// khai cho một món đồ uống thì đúng là món đồ uống đó chậm thật.
+		int treRiengMon = menuItemId == null
+				? 0
+				: orderItemRepository.findDoTreMon(menuItemId).orElse(0);
+		int treKhai = treBepKhai + treRiengMon;
+
 		// Biên độ ±25% CHỈ áp lên phần máy tự tính, rồi mới cộng phần bếp khai vào cả hai đầu.
 		//
 		// Bản trước cộng trước rồi mới nhân biên độ, nên bếp bấm "+20 phút" bị hệ thống dịch thành
@@ -176,8 +186,8 @@ public class OrderItemEstimationService {
 		// lời người vừa khai. Người trực bếp nói một con số dứt khoát thì phải giữ nguyên con số
 		// đó, nếu không cái nút mất ý nghĩa: bấm 20 mà ra 25 thì lần sau họ bấm 30.
 		double giua = prep + cho;
-		int low = (int) Math.max(1, Math.round(giua * (1 - BIEN_DO))) + treBepKhai;
-		int high = (int) Math.round(giua * (1 + BIEN_DO)) + treBepKhai;
+		int low = (int) Math.max(1, Math.round(giua * (1 - BIEN_DO))) + treKhai;
+		int high = (int) Math.round(giua * (1 + BIEN_DO)) + treKhai;
 		if (high <= low) {
 			high = low + 1;
 		}
