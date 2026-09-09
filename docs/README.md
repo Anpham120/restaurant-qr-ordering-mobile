@@ -1,6 +1,6 @@
 # CMC Restaurant — chỉ mục tài liệu
 
-**17 tài liệu**, nhóm theo mục đích. Trang này **được SINH RA** bởi
+**18 tài liệu**, nhóm theo mục đích. Trang này **được SINH RA** bởi
 `docs/build_docs_index.py` từ chính các tệp có thật — nên nó không thể trỏ vào tệp không
 tồn tại, và không thể bỏ sót tệp mới.
 
@@ -25,6 +25,7 @@ Thêm tài liệu mới: đặt đúng thư mục rồi chạy `python docs/buil
 |---|---|
 | [DAC_TA_THIET_KE_VAN_HANH.md](DAC_TA_THIET_KE_VAN_HANH.md) | Đặc tả thiết kế lại giao diện vận hành |
 | [KE_HOACH_GIAO_DIEN.md](KE_HOACH_GIAO_DIEN.md) | Kế hoạch làm lại giao diện |
+| [PHAN_TICH_HE_THONG.md](PHAN_TICH_HE_THONG.md) | Phân tích thiết kế hệ thống — CMC Restaurant QR |
 | [THIET_KE_NGHIEP_VU.md](THIET_KE_NGHIEP_VU.md) | Thiết kế nghiệp vụ — CMC Restaurant |
 | [API_CONTRACT.md](backend/API_CONTRACT.md) | Hop Dong API - CMC Restaurant |
 | [ARCHITECTURE.md](backend/ARCHITECTURE.md) | Kiến trúc backend |
