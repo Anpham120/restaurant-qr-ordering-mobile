@@ -82,6 +82,8 @@ env_file="${work_dir}/deploy.env"
 cat > "$env_file" <<EOF
 DEPLOY_ENV=$(env_quote "$DEPLOY_ENV")
 COMPOSE_PROJECT_NAME=$(env_quote "$COMPOSE_PROJECT_NAME")
+BACKEND_JAVA_IMAGE=$(env_quote "${BACKEND_JAVA_IMAGE:-}")
+FRONTEND_IMAGE=$(env_quote "${FRONTEND_IMAGE:-}")
 FRONTEND_PORT=$(env_quote "$FRONTEND_PORT")
 BACKEND_PORT=$(env_quote "$BACKEND_PORT")
 POSTGRES_PORT=$(env_quote "$POSTGRES_PORT")
@@ -146,19 +148,64 @@ DEMO_KITCHEN_EMAIL=$(env_quote "${DEMO_KITCHEN_EMAIL:-}")
 DEMO_KITCHEN_PASSWORD=$(env_quote "${DEMO_KITCHEN_PASSWORD:-}")
 EOF
 
-"${scp_base[@]}" "$env_file" "${SSH_USER}@${SSH_HOST}:${remote_root}/.env"
+# GỬI SANG TÊN TẠM, KHÔNG GHI ĐÈ `.env` NGAY.
+#
+# `.env` nay mang cả TÊN ẢNH. Ghi đè nó trước khi chuyển `repo` -> `repo.previous` là để lại một
+# trạng thái không lùi được: mã cũ nằm ở `repo.previous`, còn `.env` đã trỏ sang ảnh MỚI. Lùi lại
+# sẽ chạy ảnh mới với mã cũ — tức không lùi gì cả, chỉ làm mọi thứ khó hiểu hơn.
+#
+# Nên `.env` cũ được giữ thành `.env.previous`, đi cùng cặp với `repo.previous`.
+"${scp_base[@]}" "$env_file" "${SSH_USER}@${SSH_HOST}:${remote_root}/.env.new"
+
+# KÉO ẢNH ĐÃ DỰNG, HAY DỰNG TẠI CHỖ?
+#
+# Có đủ hai tên ảnh thì máy chủ KÉO thứ CI đã dựng và đã kiểm. Thiếu một trong hai thì quay về
+# đường cũ — dựng trên VPS. Đường cũ phải còn sống: chạy tay và chạy local không có registry.
+#
+# Vì sao đáng đổi: trước đây thứ CI kiểm và thứ máy chủ chạy là HAI lần build khác nhau, trên hai
+# máy khác nhau, vào hai thời điểm khác nhau. "CI xanh" không nói gì chắc chắn về nhị phân đang
+# phục vụ khách. Kéo ảnh làm hai thứ đó thành MỘT.
+#
+# Lợi thêm, không nhỏ: `up -d --build` trên VPS là vài phút im lặng, và chính khoảng im lặng đó đã
+# làm đứt SSH ngày 08/08 (xem lib-ssh.sh). `pull` in tiến độ đều nên kết nối không bị coi là chết.
+if [ -n "${BACKEND_JAVA_IMAGE:-}" ] && [ -n "${FRONTEND_IMAGE:-}" ]; then
+  che_do_anh="pull"
+else
+  che_do_anh="build"
+  echo "Không có tên ảnh — dựng trên máy chủ như trước."
+fi
+
+# Đăng nhập registry bằng STDIN, không bằng tham số dòng lệnh: tham số hiện trong `ps` của mọi
+# người dùng trên máy chủ. Chạy như một lệnh riêng để token không lọt vào chuỗi lệnh dài bên dưới.
+if [ "$che_do_anh" = "pull" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+  printf '%s' "$GHCR_TOKEN" \
+    | "${ssh_base[@]}" "docker login ghcr.io -u '${GHCR_USER:-x}' --password-stdin" >/dev/null
+  echo "Đã đăng nhập ghcr.io trên máy chủ."
+fi
+
+if [ "$che_do_anh" = "pull" ]; then
+  # `pull` trước, rồi `up -d` KHÔNG kèm `--build`: compose sẽ dùng đúng ảnh vừa kéo.
+  lenh_anh="docker compose --env-file .env -f repo/deploy/docker-compose.java.yml -p '${COMPOSE_PROJECT_NAME}' pull api frontend"
+  co_build=""
+else
+  lenh_anh="true"
+  co_build="--build"
+fi
 
 "${ssh_base[@]}" "cd '${remote_root}' && \
-  chmod 600 .env && \
   rm -rf repo.previous && \
   if [ -d repo ]; then mv repo repo.previous; fi && \
+  if [ -f .env ]; then cp .env .env.previous && chmod 600 .env.previous; fi && \
+  mv .env.new .env && \
+  chmod 600 .env && \
   mkdir -p repo && \
   tar -xzf release.tgz -C repo && \
   rm -f release.tgz && \
   set -a && . ./.env && set +a && \
-  docker compose --env-file .env -f repo/deploy/docker-compose.java.yml -p '${COMPOSE_PROJECT_NAME}' up -d --build postgres && \
+  docker compose --env-file .env -f repo/deploy/docker-compose.java.yml -p '${COMPOSE_PROJECT_NAME}' up -d ${co_build} postgres && \
   bash repo/deploy/scripts/backup-postgres.sh truoc-migration && \
-  docker compose --env-file .env -f repo/deploy/docker-compose.java.yml -p '${COMPOSE_PROJECT_NAME}' --profile migrate run --rm --build migrate && \
-  docker compose --env-file .env -f repo/deploy/docker-compose.java.yml -p '${COMPOSE_PROJECT_NAME}' up -d --build --remove-orphans && \
+  ${lenh_anh} && \
+  docker compose --env-file .env -f repo/deploy/docker-compose.java.yml -p '${COMPOSE_PROJECT_NAME}' --profile migrate run --rm ${co_build} migrate && \
+  docker compose --env-file .env -f repo/deploy/docker-compose.java.yml -p '${COMPOSE_PROJECT_NAME}' up -d ${co_build} --remove-orphans && \
   bash repo/deploy/scripts/write-nginx-config.sh && \
   bash repo/deploy/scripts/health-check.sh"

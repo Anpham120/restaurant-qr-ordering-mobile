@@ -105,9 +105,69 @@ jobs:
           JWT_SIGNING_KEY: kiem-cu-phap
         run: docker compose -f deploy/docker-compose.java.yml config >/dev/null
 
+  # DỰNG ẢNH MỘT LẦN, Ở ĐÂY, RỒI MÁY CHỦ KÉO VỀ.
+  #
+  # Trước đây VPS tự `docker compose up -d --build`. Nghĩa là thứ CI kiểm và thứ khách hàng dùng là
+  # HAI lần build khác nhau, trên hai máy khác nhau, vào hai thời điểm khác nhau. "CI xanh" không
+  # nói gì chắc chắn về nhị phân đang phục vụ.
+  #
+  # ẢNH BACKEND DÙNG CHUNG, ẢNH FRONTEND KHÔNG.
+  #
+  # Java đọc cấu hình lúc CHẠY, nên một ảnh `api` phục vụ được cả staging lẫn production. Frontend
+  # thì Vite NƯỚNG các URL vào bundle lúc build (`ARG VITE_API_BASE_URL` …), nên mỗi môi trường
+  # phải có ảnh riêng — một ảnh frontend dùng chung sẽ trỏ khách của môi trường này sang API của
+  # môi trường kia. Đó là lý do job này cần `environment:`: để đọc đúng `vars.PUBLIC_*`.
+  dung-anh:
+    name: Dựng ảnh cho ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+    needs: kiem-truoc
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      anh_api: ${{ steps.ten.outputs.api }}
+      anh_frontend: ${{ steps.ten.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Đặt tên ảnh
+        id: ten
+        env:
+          MOI_TRUONG: ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+        run: |
+          set -euo pipefail
+          # GHCR chỉ nhận tên viết thường. `github.repository_owner` có thể có chữ hoa.
+          chu="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "api=ghcr.io/${chu}/cmc-restaurant-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "frontend=ghcr.io/${chu}/cmc-restaurant-frontend:${MOI_TRUONG}-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Đăng nhập ghcr.io
+        run: echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+
+      - name: Dựng và đẩy ảnh api
+        run: |
+          set -euo pipefail
+          docker build -f backend-java/Dockerfile -t '${{ steps.ten.outputs.api }}' .
+          docker push '${{ steps.ten.outputs.api }}'
+
+      - name: Dựng và đẩy ảnh frontend
+        run: |
+          set -euo pipefail
+          # Cùng bộ ARG mà `docker-compose.java.yml` truyền, lấy từ vars của ĐÚNG môi trường này.
+          # Bỏ sót một cái là bundle rơi về mặc định trong Dockerfile — một địa chỉ production ghi
+          # cứng — và staging sẽ âm thầm gọi vào API của production.
+          docker build -f frontend/Dockerfile \
+            --build-arg VITE_API_BASE_URL='${{ vars.PUBLIC_API_BASE_URL }}' \
+            --build-arg VITE_ORDER_HUB_URL='${{ vars.PUBLIC_ORDER_HUB_URL }}' \
+            --build-arg VITE_ORDERING_BASE_URL='${{ vars.PUBLIC_ORDERING_BASE_URL }}' \
+            --build-arg VITE_MARKETING_BASE_URL='${{ vars.PUBLIC_MARKETING_BASE_URL }}' \
+            -t '${{ steps.ten.outputs.frontend }}' .
+          docker push '${{ steps.ten.outputs.frontend }}'
+
   trien-khai:
     name: Triển khai ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
-    needs: kiem-truoc
+    needs: [kiem-truoc, dung-anh]
     runs-on: ubuntu-latest
 
     # `contents: write` để tạo tag và release ở bước cuối. Đặt Ở JOB chứ không ở đầu tệp: job
@@ -127,6 +187,16 @@ jobs:
       - name: Chạy deploy-vps.sh
         env:
           DEPLOY_ENV: ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+
+          # Ảnh do job `dung-anh` vừa đẩy lên. Có đủ hai tên thì `deploy-vps.sh` kéo về thay vì
+          # dựng trên VPS; thiếu thì nó tự quay lại đường cũ.
+          BACKEND_JAVA_IMAGE: ${{ needs.dung-anh.outputs.anh_api }}
+          FRONTEND_IMAGE: ${{ needs.dung-anh.outputs.anh_frontend }}
+
+          # Token NGẮN HẠN của chính lượt chạy này — hết hiệu lực khi job kết thúc. Không đặt một
+          # token dài hạn lên máy chủ chỉ để kéo ảnh.
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # Máy chủ đích. KHÔNG ghi cứng địa chỉ ở đây: mỗi environment trỏ tới máy của mình, và
           # một địa chỉ nằm trong tệp là một địa chỉ ai sửa cũng được mà không ai duyệt.
