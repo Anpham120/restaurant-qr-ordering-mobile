@@ -16,6 +16,13 @@ export type AdminMenuItemPayload = {
    * biết tới trường này không thổi bay con số bếp đã khai chỉ vì sửa cái tên.
    */
   prepMinutes: number | null;
+  /**
+   * Giá vốn. Cùng luật `null` = GIỮ NGUYÊN khi sửa, cùng lý do với `prepMinutes`.
+   *
+   * Để trống là hợp lệ và là trạng thái mặc định: không món nào có giá vốn cho tới khi có người
+   * ngồi nhập. Báo cáo hao hụt hiện riêng số món chưa nhập thay vì cộng 0 cho chúng.
+   */
+  costPrice: number | null;
 };
 
 function enrichMenuItem(item: AdminMenuItem): AdminMenuItem {

@@ -145,7 +145,7 @@ public class OrderService {
 
 			OrderItemEntity item = new OrderItemEntity(
 					"oi_" + UUID.randomUUID().toString().replace("-", ""), menuItem.getId(), menuItem.getName(),
-					menuItem.getPrice(), requestItem.quantity(), now);
+					menuItem.getPrice(), requestItem.quantity(), now, menuItem.getCostPrice());
 			order.addItem(item);
 			subtotal = subtotal.add(item.lineTotal());
 		}

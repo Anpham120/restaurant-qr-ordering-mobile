@@ -50,6 +50,7 @@ const EMPTY_FORM: AdminMenuItemPayload = {
   isAvailable: true,
   tags: [],
   prepMinutes: null,
+  costPrice: null,
 };
 
 export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
@@ -130,6 +131,7 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
       isAvailable: item.isAvailable,
       tags: item.tags ?? [],
       prepMinutes: item.prepMinutes ?? null,
+      costPrice: item.costPrice ?? null,
     });
     setTagsInput((item.tags ?? []).join(", "));
     setShowForm(true);
@@ -406,6 +408,24 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                   Tính từ lúc bếp nhận món tới lúc món sẵn sàng — KHÔNG phải tổng thời gian nấu. Phở ninh
                   nước dùng cả đêm nhưng múc ra bát chỉ vài phút. Để trống thì món này không hiện ước lượng
                   cho khách, và đó là đúng: một con số bịa còn tệ hơn không có.
+                </div>
+              </div>
+              <div className="ops-form-group">
+                <label className="ops-form-label" htmlFor="amm-cost-price">Giá vốn (đ)</label>
+                <input
+                  className="ops-form-input"
+                  id="amm-cost-price"
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={form.costPrice ?? ""}
+                  onChange={(e) => setForm({ ...form, costPrice: e.target.value === "" ? null : Number(e.target.value) })}
+                  placeholder="Chưa nhập"
+                />
+                <div className="ops-form-hint">
+                  Tiền nguyên liệu cho một phần. Chỉ dùng cho báo cáo hao hụt khi huỷ món — KHÔNG hiện
+                  cho khách, và không nằm trong thực đơn công khai. Để trống thì món này không được cộng
+                  vào phần thiệt hại, và báo cáo hiện riêng số món chưa nhập thay vì coi chúng bằng 0.
                 </div>
               </div>
               <div className="ops-form-group">

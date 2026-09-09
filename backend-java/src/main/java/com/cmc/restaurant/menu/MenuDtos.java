@@ -32,6 +32,23 @@ public final class MenuDtos {
 			Integer prepMinutes) {
 	}
 
+	/**
+	 * Bản dành cho ADMIN — có thêm giá vốn.
+	 *
+	 * <p>MỘT RECORD RIÊNG, KHÔNG PHẢI THÊM TRƯỜNG VÀO {@link MenuItemResponse}. Record kia là thứ
+	 * {@code GET /api/menu} trả về cho KHÁCH quét QR. Thêm {@code costPrice} vào đó rồi nhớ xoá nó
+	 * ở đường công khai là đặt cược vào trí nhớ: một lần quên là giá vốn của cả 91 món nằm trong
+	 * JSON mà bất kỳ ai mở DevTools cũng đọc được, và không có gì báo động.
+	 *
+	 * <p>Tách kiểu thì đường công khai KHÔNG THỂ trả giá vốn — nó không có trường đó để mà trả.
+	 * An toàn theo kiểu dữ liệu, không theo kỷ luật.
+	 */
+	public record AdminMenuItemResponse(
+			String id, String name, String description, BigDecimal price, String categoryId,
+			String categoryName, String imageUrl, boolean isAvailable, List<String> tags,
+			Integer prepMinutes, BigDecimal costPrice) {
+	}
+
 	public record CategoryRequest(String name, int displayOrder, Boolean isActive) {
 	}
 
@@ -43,9 +60,15 @@ public final class MenuDtos {
 	 *     curl — cũng xoá luôn con số bếp đã khai, im lặng, và mọi ước lượng của món đó biến mất.
 	 *     <p>Chưa có đường XOÁ giá trị. Sửa sai thì đặt số khác; "không còn biết nữa" là ca chưa gặp.
 	 */
+	/**
+	 * @param costPrice giá vốn. Cùng luật "{@code null} = GIỮ NGUYÊN" với {@code prepMinutes}, và
+	 *     cùng một lý do: {@code PUT} thay toàn bộ bản ghi, nên nếu {@code null} là xoá thì bất kỳ
+	 *     ai sửa TÊN món bằng một client cũ cũng xoá luôn giá vốn — im lặng, và báo cáo hao hụt
+	 *     tụt xuống mà không ai biết vì sao.
+	 */
 	public record MenuItemRequest(
 			String categoryId, String name, String description, BigDecimal price, String imageUrl,
-			Boolean isAvailable, List<String> tags, Integer prepMinutes) {
+			Boolean isAvailable, List<String> tags, Integer prepMinutes, BigDecimal costPrice) {
 	}
 
 	public record ToggleAvailabilityRequest(boolean isAvailable) {

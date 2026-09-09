@@ -139,12 +139,20 @@ public class ReportService {
 						+ "  coalesce(sum(case when cancelled_from_status = 'Pending' then 1 else 0 end), 0) as truoc_nau, "
 						+ "  coalesce(sum(case when cancelled_from_status is null then 1 else 0 end), 0) as khong_ro, "
 						+ "  coalesce(sum(case when cancelled_from_status = 'Preparing' "
-						+ "       then unit_price * quantity else 0 end), 0) as gia_tri "
+						+ "       then unit_price * quantity else 0 end), 0) as gia_tri, "
+						// Chỉ cộng món CÓ giá vốn. `coalesce(unit_cost, 0)` sẽ âm thầm coi món
+						// chưa nhập giá vốn là miễn phí, và tổng thiệt hại tụt xuống mà không ai biết.
+						+ "  coalesce(sum(case when cancelled_from_status = 'Preparing' "
+						+ "       and unit_cost is not null then unit_cost * quantity else 0 end), 0) as gia_von, "
+						// Đếm phần KHÔNG cộng được, để con số trên không bị đọc nhầm là toàn bộ.
+						+ "  coalesce(sum(case when cancelled_from_status = 'Preparing' "
+						+ "       and unit_cost is null then 1 else 0 end), 0) as thieu_gia_von "
 						+ "from order_items "
 						+ "where status = 'Cancelled' and updated_at >= ? and updated_at < ?",
 				(rs, n) -> new ReportDtos.WasteResponse(
 						rs.getInt("dang_nau"), rs.getInt("truoc_nau"), rs.getInt("khong_ro"),
-						rs.getBigDecimal("gia_tri")),
+						rs.getBigDecimal("gia_tri"), rs.getBigDecimal("gia_von"),
+						rs.getInt("thieu_gia_von")),
 				range.from(), range.to());
 	}
 }

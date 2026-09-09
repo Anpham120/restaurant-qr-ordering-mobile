@@ -50,4 +50,17 @@ public class MenuQueryService {
 				item.getId(), item.getName(), item.getDescription(), item.getPrice(), item.getCategoryId(),
 				categoryName, item.getImageUrl(), item.isAvailable(), item.getTags(), item.getPrepMinutes());
 	}
+
+	/**
+	 * Bản có giá vốn, CHỈ dùng sau lớp {@code hasRole('Admin')}.
+	 *
+	 * <p>Hàm trên không bao giờ trả giá vốn vì kiểu trả về của nó không có trường đó — đường công
+	 * khai an toàn theo kiểu dữ liệu, không theo việc ai đó nhớ xoá trường trước khi trả.
+	 */
+	static MenuDtos.AdminMenuItemResponse toAdminResponse(MenuItemEntity item, String categoryName) {
+		return new MenuDtos.AdminMenuItemResponse(
+				item.getId(), item.getName(), item.getDescription(), item.getPrice(), item.getCategoryId(),
+				categoryName, item.getImageUrl(), item.isAvailable(), item.getTags(), item.getPrepMinutes(),
+				item.getCostPrice());
+	}
 }

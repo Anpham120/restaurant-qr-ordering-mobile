@@ -1,7 +1,7 @@
 package com.cmc.restaurant.menu;
 
 import com.cmc.restaurant.menu.MenuDtos.MenuItemRequest;
-import com.cmc.restaurant.menu.MenuDtos.MenuItemResponse;
+import com.cmc.restaurant.menu.MenuDtos.AdminMenuItemResponse;
 import com.cmc.restaurant.menu.MenuDtos.ToggleAvailabilityRequest;
 import java.util.List;
 import java.util.Map;
@@ -58,11 +58,11 @@ public class AdminMenuItemController {
 	 * đây là an toàn — khác với việc nạp hết MÓN, thứ có thể phình.
 	 */
 	@GetMapping
-	public List<MenuItemResponse> list() {
+	public List<AdminMenuItemResponse> list() {
 		Map<String, String> tenDanhMuc = categoryRepository.findAll().stream()
 				.collect(Collectors.toMap(CategoryEntity::getId, CategoryEntity::getName));
 		return menuItemRepository.findAllByOrderByNameAsc().stream()
-				.map(item -> MenuQueryService.toResponse(
+				.map(item -> MenuQueryService.toAdminResponse(
 						item, tenDanhMuc.getOrDefault(item.getCategoryId(), "")))
 				.toList();
 	}
@@ -70,7 +70,7 @@ public class AdminMenuItemController {
 	/**
 	 * Số phần đang chờ bếp, theo từng món.
 	 *
-	 * <p>Endpoint RIÊNG chứ không thêm trường vào {@code MenuItemResponse}: bản ghi đó dùng chung
+	 * <p>Endpoint RIÊNG chứ không thêm trường vào {@code MenuItemResponse}: bản ghi ĐÓ dùng chung
 	 * với thực đơn CÔNG KHAI, và số món đang trong hàng đợi bếp là thông tin vận hành — khách
 	 * không cần biết, và không nên biết.
 	 *
@@ -84,23 +84,23 @@ public class AdminMenuItemController {
 	}
 
 	@GetMapping("/{menuItemId}")
-	public MenuItemResponse get(@PathVariable String menuItemId) {
+	public AdminMenuItemResponse get(@PathVariable String menuItemId) {
 		return toResponse(menuItemService.getOrThrow(menuItemId));
 	}
 
 	@PostMapping
-	public ResponseEntity<MenuItemResponse> create(@RequestBody MenuItemRequest request) {
+	public ResponseEntity<AdminMenuItemResponse> create(@RequestBody MenuItemRequest request) {
 		MenuItemEntity created = menuItemService.create(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(created));
 	}
 
 	@PutMapping("/{menuItemId}")
-	public MenuItemResponse update(@PathVariable String menuItemId, @RequestBody MenuItemRequest request) {
+	public AdminMenuItemResponse update(@PathVariable String menuItemId, @RequestBody MenuItemRequest request) {
 		return toResponse(menuItemService.update(menuItemId, request));
 	}
 
 	@PatchMapping("/{menuItemId}/availability")
-	public MenuItemResponse toggleAvailability(
+	public AdminMenuItemResponse toggleAvailability(
 			@PathVariable String menuItemId, @RequestBody ToggleAvailabilityRequest request) {
 		return toResponse(menuItemService.toggleAvailability(menuItemId, request.isAvailable()));
 	}
@@ -111,10 +111,10 @@ public class AdminMenuItemController {
 		return ResponseEntity.noContent().build();
 	}
 
-	private MenuItemResponse toResponse(MenuItemEntity item) {
+	private AdminMenuItemResponse toResponse(MenuItemEntity item) {
 		String categoryName = categoryRepository.findById(item.getCategoryId())
 				.map(CategoryEntity::getName)
 				.orElse("");
-		return MenuQueryService.toResponse(item, categoryName);
+		return MenuQueryService.toAdminResponse(item, categoryName);
 	}
 }

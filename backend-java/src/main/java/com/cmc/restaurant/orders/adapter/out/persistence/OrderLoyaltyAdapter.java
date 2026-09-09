@@ -61,8 +61,10 @@ public class OrderLoyaltyAdapter implements OrderLoyaltyPort {
 		// Một biến, dùng cho cả dòng đơn lẫn sự kiện báo bếp. Tính riêng hai lần là cách hai chỗ
 		// lệch nhau: bảng bếp hiện "Gỏi cuốn chay" trong khi phiếu in ra "Gỏi cuốn chay (đổi điểm)".
 		String tenDong = mon.getName() + " (đổi điểm)";
+		// Giá BÁN bằng 0 — khách đổi bằng điểm. Giá VỐN thì không: bếp vẫn nấu nó và nguyên liệu
+		// vẫn mất. Ghi ZERO vào cả hai chỗ sẽ làm món tặng bị huỷ giữa chừng trông như không tốn gì.
 		order.addItem(new OrderItemEntity(
-				orderItemId, mon.getId(), tenDong, BigDecimal.ZERO, 1, now));
+				orderItemId, mon.getId(), tenDong, BigDecimal.ZERO, 1, now, mon.getCostPrice()));
 		orders.save(order);
 
 		// Báo bếp. Mọi thay đổi khác của đơn đều đi qua đường này; bỏ sót đúng chỗ thêm món tặng sẽ
