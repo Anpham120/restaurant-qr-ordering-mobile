@@ -6,6 +6,18 @@ set -euo pipefail
 : "${POSTGRES_DB:?POSTGRES_DB is required}"
 : "${POSTGRES_USER:?POSTGRES_USER is required}"
 
+# HAI BIẾN NÀY CỦA `health-check.sh` Ở BƯỚC CUỐI, KHÔNG PHẢI CỦA RIÊNG SCRIPT NÀY.
+#
+# Bản trước không khai chúng. Gọi script đúng theo hợp đồng nó tự công bố (4 biến trên) thì mọi
+# thứ chạy trót lọt tới dòng cuối, rồi `health-check.sh` chết vì thiếu biến — SAU KHI cơ sở dữ liệu
+# đã bị drop, tạo lại và nạp xong.
+#
+# Hỏng kiểu đó tệ hơn hỏng sớm: người trực thấy lệnh khôi phục "thất bại" đúng lúc đang xử lý sự
+# cố, và không có cách nào biết dữ liệu đã về hay chưa nếu không tự đi kiểm tay. Đòi đủ biến NGAY
+# ĐẦU nghĩa là hỏng xảy ra lúc chưa đụng gì tới dữ liệu.
+: "${FRONTEND_SERVER_NAMES:?FRONTEND_SERVER_NAMES is required (health-check.sh ở bước cuối cần)}"
+: "${API_SERVER_NAME:?API_SERVER_NAME is required (health-check.sh ở bước cuối cần)}"
+
 backup_file="${1:?Usage: restore-postgres.sh /opt/cmc-restaurant/<env>/backups/<file>.dump}"
 remote_root="/opt/cmc-restaurant/${DEPLOY_ENV}"
 compose_file="${remote_root}/repo/deploy/docker-compose.java.yml"

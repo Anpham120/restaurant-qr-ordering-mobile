@@ -1,0 +1,46 @@
+# DIỄN TẬP KHÔI PHỤC CƠ SỞ DỮ LIỆU
+#
+# Chỉ chạy khi có người bấm. KHÔNG gắn vào `push` — đây là thao tác cố ý làm hỏng dữ liệu rồi khôi
+# phục lại, nó phải là một quyết định chứ không phải một tác dụng phụ của việc merge.
+#
+# `restore-postgres.sh` nằm trong repo từ lâu và chưa từng chạy. Có script sao lưu không bằng có
+# khả năng khôi phục — và ngày người ta cần tới nó là ngày tệ nhất để phát hiện nó hỏng.
+name: Thử khôi phục
+
+on:
+  workflow_dispatch:
+    inputs:
+      moi_truong:
+        description: "Môi trường diễn tập (production bị script từ chối)"
+        type: choice
+        options: [staging]
+        default: staging
+
+concurrency:
+  # Dùng chung khoá với `cd.yml`: diễn tập chạy chen vào giữa một lượt triển khai là hai tiến trình
+  # cùng drop/tạo lại một cơ sở dữ liệu.
+  group: deploy-${{ inputs.moi_truong }}
+  cancel-in-progress: false
+
+jobs:
+  dien-tap:
+    name: Diễn tập khôi phục ${{ inputs.moi_truong }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.moi_truong }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Chạy thu-khoi-phuc.sh
+        env:
+          DEPLOY_ENV: ${{ inputs.moi_truong }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          FRONTEND_SERVER_NAMES: ${{ vars.FRONTEND_SERVER_NAMES }}
+          API_SERVER_NAME: ${{ vars.API_SERVER_NAME }}
+        run: |
+          chmod +x deploy/scripts/thu-khoi-phuc.sh
+          deploy/scripts/thu-khoi-phuc.sh
