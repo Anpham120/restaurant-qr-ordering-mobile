@@ -79,6 +79,18 @@ env_quote() {
 }
 
 env_file="${work_dir}/deploy.env"
+# 11 biến ĐÃ ĐƯỢC XOÁ khỏi đây, không phải bỏ quên: BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD,
+# SEED_DEMO_USERS, và 8 biến DEMO_*. Không dòng nào trong backend-java đọc chúng — di sản của bản
+# .NET, cùng loại với /hubs/orders và cấu hình trợ lý AI đã gỡ.
+#
+# HAI CÁI ĐẦU LÀ CÁI BẪY, không chỉ là rác: backend đọc ADMIN_BOOTSTRAP_EMAIL/PASSWORD, còn tệp
+# này ghi thêm BOOTSTRAP_ADMIN_EMAIL/PASSWORD — ĐẢO THỨ TỰ TỪ. Ai đặt đúng cái tên đó sẽ tưởng đã
+# cấu hình xong tài khoản quản trị đầu tiên, rồi triển khai lên một CSDL trống và không đăng nhập
+# được: năm cổng web lên xanh, không ai vào được.
+#
+# Tám biến DEMO_* còn tệ hơn ở một điểm: bốn trong số đó là MẬT KHẨU, nằm trong .env trên máy chủ
+# mà không phục vụ gì.
+
 cat > "$env_file" <<EOF
 DEPLOY_ENV=$(env_quote "$DEPLOY_ENV")
 COMPOSE_PROJECT_NAME=$(env_quote "$COMPOSE_PROJECT_NAME")
@@ -135,17 +147,6 @@ RUN_DB_MIGRATIONS_ON_STARTUP=$(env_quote "${RUN_DB_MIGRATIONS_ON_STARTUP:-false}
 # Giữ lại dù không còn profile nào: compose vẫn đọc biến này, và để trống là hành vi mặc định.
 COMPOSE_PROFILES=$(env_quote "${COMPOSE_PROFILES:-}")
 VITE_USE_MOCK_ORDER=$(env_quote "${VITE_USE_MOCK_ORDER:-false}")
-BOOTSTRAP_ADMIN_EMAIL=$(env_quote "${BOOTSTRAP_ADMIN_EMAIL:-}")
-BOOTSTRAP_ADMIN_PASSWORD=$(env_quote "${BOOTSTRAP_ADMIN_PASSWORD:-}")
-SEED_DEMO_USERS=$(env_quote "${SEED_DEMO_USERS:-false}")
-DEMO_ADMIN_EMAIL=$(env_quote "${DEMO_ADMIN_EMAIL:-}")
-DEMO_ADMIN_PASSWORD=$(env_quote "${DEMO_ADMIN_PASSWORD:-}")
-DEMO_COUNTER_EMAIL=$(env_quote "${DEMO_COUNTER_EMAIL:-}")
-DEMO_COUNTER_PASSWORD=$(env_quote "${DEMO_COUNTER_PASSWORD:-}")
-DEMO_STAFF_EMAIL=$(env_quote "${DEMO_STAFF_EMAIL:-}")
-DEMO_STAFF_PASSWORD=$(env_quote "${DEMO_STAFF_PASSWORD:-}")
-DEMO_KITCHEN_EMAIL=$(env_quote "${DEMO_KITCHEN_EMAIL:-}")
-DEMO_KITCHEN_PASSWORD=$(env_quote "${DEMO_KITCHEN_PASSWORD:-}")
 EOF
 
 # GỬI SANG TÊN TẠM, KHÔNG GHI ĐÈ `.env` NGAY.

@@ -24,7 +24,6 @@
   
   /* Font families */
   --font-display-vian: var(--brand-font-display);
-  --font-script: "Dancing Script", cursive;
   --font-body-vian: var(--brand-font-body);
   
   display: grid;
@@ -913,14 +912,6 @@
 .vian-why-header {
   text-align: center;
   margin-bottom: 40px;
-}
-
-.vian-script-label {
-  font-family: var(--font-script);
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--vian-gold);
-  margin: 0 0 8px;
 }
 
 .vian-why-header h2 {
