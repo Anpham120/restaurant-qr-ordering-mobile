@@ -40,31 +40,44 @@
   gap: 4px;
   cursor: pointer;
   text-align: left;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.floor-map-tile:hover,
+.floor-map-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  border-color: var(--color-primary);
+}
+
 .floor-map-tile.is-selected {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 0 0 2px var(--color-primary), 0 8px 24px rgba(15, 23, 42, 0.12);
+  border-color: var(--color-primary);
 }
 
 .floor-map-tile--free {
-  border-color: #cbd5e1;
+  border-color: var(--color-border-light, #e2e8f0);
+  opacity: 0.85;
+}
+
+.floor-map-tile--free:hover {
+  opacity: 1;
 }
 
 .floor-map-tile--serving {
   border-color: #86efac;
-  background: #f0fdf4;
+  border-left: 4px solid #22c55e;
+  background: linear-gradient(135deg, #f0fdf4, var(--color-surface));
 }
 
 .floor-map-tile--payment {
   border-color: #fdba74;
-  background: #fff7ed;
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(135deg, #fffbeb, var(--color-surface));
 }
 
 .floor-map-tile--inactive {
-  opacity: 0.55;
+  opacity: 0.45;
   background: var(--color-bg-subtle);
 }
 
@@ -338,4 +351,25 @@
   .floor-drawer {
     width: 100%;
   }
+}/* ==========================================================================
+   Lớp bị DÙNG mà chưa được định nghĩa
+
+   `ts-value--serving`, `ts-value--orders`, `ts-last-updated` xuất hiện trong
+   `AdminTableSessionMonitor.tsx` nhưng không có CSS nào. Hậu quả: số bàn đang
+   phục vụ và số đơn cùng màu với tổng số bàn, và dòng "Cập nhật lúc..." dùng
+   kiểu mặc định.
+   ========================================================================== */
+.ts-value--serving {
+  color: var(--ops-ok, #15803d);
+}
+
+.ts-value--orders {
+  color: var(--ops-info, #005bac);
+}
+
+.ts-last-updated {
+  margin: 4px 0 12px;
+  font-size: var(--ops-text-xs, 0.8125rem);
+  color: var(--ops-ink-muted, #55708a);
+  font-variant-numeric: tabular-nums;
 }

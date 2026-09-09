@@ -17,7 +17,6 @@ import { useOpsRealtime } from "../../hooks/useOpsRealtime";
 import { getKitchenOrders } from "../../services/orderService";
 import { fetchKitchenMenuItems, toggleMenuItemAvailability } from "../../services/adminMenuService";
 import { locMonTheoTen } from "./kitchenMenuFilter";
-import { useKitchenDarkTheme } from "./useKitchenDarkTheme";
 import { getKitchenDelay, setKitchenDelay } from "../../services/kitchenDelayService";
 import type { KitchenDelay } from "../../services/kitchenDelayService";
 import { moTaTreBep, sapHetHan } from "../../components/kitchen/kitchenDelayLabel";
@@ -28,7 +27,6 @@ import "../../components/operations/operations.css";
 type MenuItemSummary = { id: string; name: string; isAvailable: boolean };
 
 export function KitchenRealtimePage() {
-  useKitchenDarkTheme();
   const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemSummary[]>([]);

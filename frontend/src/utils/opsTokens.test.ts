@@ -28,56 +28,6 @@ function bienTheoKhoi(css: string): { ten: string; trongKhoiDieuKien: boolean }[
   }
   return ra;
 }
-
-/** Đọc thân của khối bắt đầu tại `batDau`, cân bằng ngoặc nhọn. */
-function thanKhoi(css: string, batDau: number): string {
-  if (batDau < 0) return "";
-  const dau = css.indexOf("{", batDau);
-  let sau = 0;
-  let i = dau;
-  for (; i < css.length; i++) {
-    if (css[i] === "{") sau++;
-    else if (css[i] === "}" && --sau === 0) break;
-  }
-  return css.slice(dau, i);
-}
-
-/**
- * Biến khai trong khối `:root[data-theme="dark"]` — khối người dùng CHỌN TAY chế độ tối.
- *
- * Phải neo vào đúng selector đó. Bản đầu của phép kiểm này bắt `[data-theme` đầu tiên gặp được,
- * mà cái đó lại là `:not([data-theme="light"])` NẰM TRONG khối `@media` — nên nó so khối tối với
- * chính nó và luôn xanh. Đã kiểm: xoá một biến khỏi khối chọn-tay mà phép kiểm không đỏ.
- */
-function bienTrongDataTheme(css: string): Set<string> {
-  const ra = new Set<string>();
-  const than = thanKhoi(css, css.indexOf(':root[data-theme="dark"]'));
-  for (const m of than.matchAll(/(--[a-z0-9-]+)\s*:/g)) ra.add(m[1]!);
-  return ra;
-}
-
-/**
- * Biến khai trong khối `@media (prefers-color-scheme: dark)`.
- *
- * Phải tách riêng khỏi "mọi khối @media": tệp này còn một khối `@media` nữa cho bậc `pos`, và
- * khối đó CỐ Ý đặt lại cỡ chữ với vùng chạm mà không liên quan gì tới chủ đề. Gộp chúng lại là
- * so một danh sách với một danh sách khác loại.
- */
-function bienTrongMediaToi(css: string): Set<string> {
-  const ra = new Set<string>();
-  const batDau = css.indexOf("@media (prefers-color-scheme: dark)");
-  if (batDau < 0) return ra;
-  let sau = 0;
-  let i = css.indexOf("{", batDau);
-  const dau = i;
-  for (; i < css.length; i++) {
-    if (css[i] === "{") sau++;
-    else if (css[i] === "}" && --sau === 0) break;
-  }
-  for (const m of css.slice(dau, i).matchAll(/(--[a-z0-9-]+)\s*:/g)) ra.add(m[1]!);
-  return ra;
-}
-
 /** `.ops-btn--sm` dùng làm SELECTOR, không tính chỗ nhắc tới nó trong ghi chú. */
 function selectorOpsBtnSm(css: string): string[] {
   return [...css.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/\.ops-btn--sm\s*[,{]/g)].map((m) => m[0]);
@@ -94,24 +44,24 @@ function bienORootTran(css: string): Set<string> {
 
 describe("token của mặt vận hành", () => {
   /**
-   * LỖI KINH ĐIỂN CỦA CHẾ ĐỘ TỐI, VÀ NÓ CHỈ HIỆN VỚI MỘT NHÓM NGƯỜI DÙNG.
+   * KHỐI ĐIỀU KIỆN CHỈ ĐƯỢC ĐỊNH NGHĨA LẠI, KHÔNG ĐƯỢC LÀ NƠI KHAI DUY NHẤT.
    *
-   * Trình duyệt báo BA trạng thái, không phải hai: chọn sáng, chọn tối, và — mặc định —
-   * KHÔNG chọn gì, lúc đó chỉ `prefers-color-scheme` phân biệt.
+   * Chế độ tối đã bị gỡ bỏ, nên đường điều kiện duy nhất còn lại trong tệp này là khối `@media`
+   * của bậc POS. Luật thì không đổi vì nó không nói về chủ đề, nó nói về điểm ngắt.
    *
-   * Một màu chỉ được khai bên trong `@media` hay `[data-theme]` thì ở trạng thái mặc định nó
-   * KHÔNG tồn tại. Trang hiện chữ của chủ đề này trên nền của chủ đề kia — và chỉ hiện với người
-   * để thiết lập mặc định, tức phần lớn người dùng, tức nhóm ít có khả năng đi báo lỗi nhất.
+   * Một biến chỉ được khai bên trong `@media` thì ở ngoài điểm ngắt đó nó KHÔNG tồn tại, và mọi
+   * chỗ `var()` của nó im lặng rơi về giá trị dự phòng — hoặc về không có gì. Hỏng kiểu này không
+   * báo lỗi ở đâu cả; nó chỉ hiện ra thành một màn hình trông sai, trên đúng nhóm máy không ai
+   * ngồi thử.
    *
    * Nên mọi biến phải có mặt ở `:root` trần trước đã; khối điều kiện chỉ ĐỊNH NGHĨA LẠI.
    */
-  it("không màu nào chỉ tồn tại trong @media hoặc [data-theme]", () => {
+  it("không màu nào chỉ tồn tại trong khối @media", () => {
     const css = tokens();
     const oRootTran = bienORootTran(css);
     const chiTrongDieuKien = [
       ...new Set([
         ...bienTheoKhoi(css).filter((b) => b.trongKhoiDieuKien).map((b) => b.ten),
-        ...bienTrongDataTheme(css),
       ]),
     ].filter((ten) => !oRootTran.has(ten));
 
@@ -138,18 +88,45 @@ describe("token của mặt vận hành", () => {
     }
   });
 
-  it("chế độ tối định nghĩa lại cùng bộ biến ở cả hai đường", () => {
-    const css = tokens();
-    const quaMedia = bienTrongMediaToi(css);
-    const quaDataTheme = bienTrongDataTheme(css);
+  /**
+   * KHÔNG CÒN CHẾ ĐỘ TỐI — VÀ CỔNG NÀY QUÉT CẢ KHO, KHÔNG CHỈ TỆP NÓ NHỚ.
+   *
+   * Chế độ tối đã được thử và bị gỡ bỏ có chủ đích. Lý do không phải "làm chưa xong" mà là ĐO
+   * ĐƯỢC: năm mặt nền cách nhau 1.02–1.12:1 (mắt người không phân biệt nổi, nên ranh giới thẻ
+   * nhoè thành một mảng), chữ chính 14.1:1 gây halation, và mười sắc trạng thái bão hoà trung
+   * bình 72% với sáu cặp cách nhau dưới 30° — tức chúng không mã hoá nổi ý nghĩa khác nhau, chỉ
+   * thêm nhiễu. Người vận hành báo mỏi mắt hơn cả khi không có chế độ tối.
+   *
+   * Bài học về PHẠM VI, đã trả giá ba lần trong kho này: cổng cũ chỉ quét `ops-tokens.css`, nên
+   * khi khối tối mọc sang `operations.css`, `floor-map.css` và `counter-hub.css` thì nó không
+   * thấy gì. Cổng chỉ quét chỗ người viết nhớ tới thì nó canh trí nhớ, không canh luật.
+   *
+   * Nên cổng này quét MỌI tệp css/ts/tsx của frontend. Muốn dựng lại chế độ tối thì xoá phép
+   * kiểm này một cách công khai, kèm bảng màu đã đo — đừng để nó bò về từng khối một.
+   */
+  it("không còn chế độ tối ở bất cứ đâu trong frontend", () => {
+    const goc = fileURLToPath(new URL("../../", import.meta.url));
+    const boQua = new Set(["node_modules", "dist", "build", ".vite", "coverage"]);
+    const pham: string[] = [];
 
-    expect(quaMedia.size, "không đọc được khối @media chế độ tối").toBeGreaterThan(0);
+    const quet = (thuMuc: string) => {
+      for (const ten of readdirSync(thuMuc)) {
+        if (boQua.has(ten)) continue;
+        const duong = join(thuMuc, ten);
+        if (statSync(duong).isDirectory()) { quet(duong); continue; }
+        if (!/\.(css|ts|tsx)$/.test(ten)) continue;
+        if (duong.endsWith("opsTokens.test.ts")) continue; // tệp này nhắc tên trong ghi chú
+        const noiDung = readFileSync(duong, "utf8");
+        for (const [i, dong] of noiDung.split(/\r?\n/).entries()) {
+          if (/prefers-color-scheme|data-theme/.test(dong)) {
+            pham.push(`${duong.slice(goc.length).split(String.fromCharCode(92)).join("/")}:${i + 1}  ${dong.trim()}`);
+          }
+        }
+      }
+    };
+    quet(goc);
 
-    // Thiếu một biến ở một trong hai đường = nút chuyển chủ đề cho kết quả khác với hệ điều hành.
-    const lech = [...quaMedia].filter((t) => !quaDataTheme.has(t))
-      .concat([...quaDataTheme].filter((t) => !quaMedia.has(t)));
-
-    expect(lech, "hai đường vào chế độ tối phải đặt cùng một bộ biến").toEqual([]);
+    expect(pham, "chế độ tối đã bị gỡ bỏ có chủ đích — xem ghi chú ngay trên").toEqual([]);
   });
 });
 

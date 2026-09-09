@@ -14,9 +14,20 @@ name: cd
 # người thật đang dùng, nên vẫn phải có người chọn một cách có ý thức, và `environment:` bên dưới
 # còn giữ chốt duyệt.
 on:
+  # MÔI TRƯỜNG SUY RA TỪ NHÁNH, KHÔNG PHẢI TỪ MỘT LẦN BẤM NỮA.
+  #
+  #   push develop -> staging
+  #   push main    -> production
+  #
+  # Vì sao production cũng tự chạy: chốt duyệt trước đây KHÔNG gác chất lượng mã — 12 phép kiểm
+  # bắt buộc làm việc đó, và mã vào `main` thì đã chạy trên staging rồi. Thứ nó gác là THỜI ĐIỂM,
+  # và thời điểm đã được chọn một lần khi người ta merge PR promote `develop -> main`. Hỏi lại lần
+  # thứ hai ngay sau đó là hỏi cùng một câu hỏi hai lần, và một chốt lần nào cũng được bấm qua thì
+  # chỉ dạy tay quen bấm chứ không gác gì.
   push:
     branches:
       - develop
+      - main
   workflow_dispatch:
     inputs:
       moi_truong:
@@ -32,7 +43,7 @@ on:
 # (`cancel-in-progress: false`): cắt ngang giữa lúc chạy migration để lại cơ sở dữ liệu ở trạng
 # thái nửa vời, thứ mà một lần triển khai lại KHÔNG sửa được.
 concurrency:
-  group: cd-${{ inputs.moi_truong || 'staging' }}
+  group: cd-${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
   cancel-in-progress: false
 
 permissions:
@@ -95,18 +106,18 @@ jobs:
         run: docker compose -f deploy/docker-compose.java.yml config >/dev/null
 
   trien-khai:
-    name: Triển khai ${{ inputs.moi_truong || 'staging' }}
+    name: Triển khai ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
     needs: kiem-truoc
     runs-on: ubuntu-latest
     # Bắt buộc có người duyệt, và giữ bí mật riêng cho từng môi trường. Đặt "required reviewers"
     # cho environment `production` trong Settings → Environments.
-    environment: ${{ inputs.moi_truong || 'staging' }}
+    environment: ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Chạy deploy-vps.sh
         env:
-          DEPLOY_ENV: ${{ inputs.moi_truong || 'staging' }}
+          DEPLOY_ENV: ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
 
           # Máy chủ đích. KHÔNG ghi cứng địa chỉ ở đây: mỗi environment trỏ tới máy của mình, và
           # một địa chỉ nằm trong tệp là một địa chỉ ai sửa cũng được mà không ai duyệt.
@@ -189,7 +200,7 @@ jobs:
       - name: Lùi lại nếu triển khai hỏng
         if: failure()
         env:
-          DEPLOY_ENV: ${{ inputs.moi_truong || 'staging' }}
+          DEPLOY_ENV: ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
           COMPOSE_PROJECT_NAME: ${{ vars.COMPOSE_PROJECT_NAME }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -203,5 +214,5 @@ jobs:
       - name: Báo đỏ dù đã lùi thành công
         if: failure()
         run: |
-          echo "::error::Triển khai ${{ inputs.moi_truong || 'staging' }} HỎNG. Máy chủ đã được lùi về bản trước."
+          echo "::error::Triển khai ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }} HỎNG. Máy chủ đã được lùi về bản trước."
           exit 1

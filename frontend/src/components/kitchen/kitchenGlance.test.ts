@@ -109,19 +109,4 @@ describe("bảng bếp — đọc được trong 2 giây", () => {
     expect(page(), "`style={{` quay lại — mỗi cái là một chỗ hệ thiết kế không phủ tới")
       .not.toContain("style={{");
   });
-
-  /**
-   * `data-theme` nằm trên `<html>` nên nó áp cho CẢ bundle, mà ba vai dùng chung một bundle. Rời
-   * bảng bếp mà không gỡ là mang nền tối sang quầy.
-   */
-  it("chế độ tối của bếp được gỡ khi rời trang", () => {
-    const hook = doc("src/pages/kitchen/useKitchenDarkTheme.ts");
-
-    expect(hook).toContain('setAttribute("data-theme", "dark")');
-    expect(hook, "thiếu hàm dọn — nền tối theo người dùng sang màn khác").toContain(
-      'removeAttribute("data-theme")',
-    );
-    // Không ghi đè lựa chọn người dùng đã tự đặt.
-    expect(hook).toMatch(/getAttribute\("data-theme"\)\)?\s*\)?\s*return/);
-  });
-});
+});

@@ -78,12 +78,36 @@ describe("thứ tự các bước trên máy chủ", () => {
 });
 
 describe("cd.yml tự động hoá", () => {
-  it("tự chạy khi merge vào develop", () => {
+  it("tự chạy khi merge vào develop và vào main", () => {
     const wf = cdWorkflow();
     const khoiOn = wf.slice(wf.indexOf("\non:"), wf.indexOf("\nconcurrency:"));
 
     expect(khoiOn, "cd.yml không có trigger push").toContain("push:");
     expect(khoiOn, "cd.yml không nhắm nhánh develop").toMatch(/push:[\s\S]*?-\s*develop/);
+    expect(khoiOn, "cd.yml không nhắm nhánh main").toMatch(/push:[\s\S]*?-\s*main/);
+  });
+
+  /**
+   * MÔI TRƯỜNG SUY RA TỪ NHÁNH.
+   *
+   * Nếu một chỗ nào đó vẫn rơi thẳng về `'staging'` mà không xét nhánh, thì một lần đẩy vào `main`
+   * sẽ triển khai lên STAGING trong khi mọi thứ khác của lượt chạy đó nói là production — và nó
+   * hỏng im lặng, vì staging deploy thành công nên job vẫn xanh.
+   *
+   * Không kiểm được từ trong kho: chốt duyệt của environment `production` phải được GỠ, nếu không
+   * lượt tự chạy vẫn dừng chờ người y như trước. Đó là cấu hình trên GitHub, ghi ở §2 của
+   * `docs/devops/PIPELINE_AND_DEPLOY.md`.
+   */
+  it("main ra production, còn lại ra staging", () => {
+    const dong = [...cdWorkflow().matchAll(/^.*inputs\.moi_truong.*$/gm)].map((m) => m[0]);
+
+    expect(dong.length, "không thấy chỗ nào quyết định môi trường").toBeGreaterThan(3);
+    for (const d of dong) {
+      expect(d, `thiếu nhánh main -> production: ${d.trim()}`).toContain(
+        "github.ref == 'refs/heads/main' && 'production'",
+      );
+      expect(d, `thiếu giá trị lùi về staging: ${d.trim()}`).toContain("|| 'staging'");
+    }
   });
 
   /**
