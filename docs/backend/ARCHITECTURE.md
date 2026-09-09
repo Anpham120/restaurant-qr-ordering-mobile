@@ -28,7 +28,7 @@
 | `realtime` | 0 | 6 |
 | `reports` | 1 | 6 |
 | `shared` | 1 | 8 |
-| `tables` | 18 | 28 |
+| `tables` | 18 | 29 |
 
 <!-- HET:backend-modules -->
 
