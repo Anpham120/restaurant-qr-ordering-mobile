@@ -139,8 +139,9 @@ Mũi tên đứt là **sự kiện thời gian thực**; mũi tên liền là ph
 Gói dùng chung: `api-client`, `auth`, `brand-ui`, `i18n`, `realtime-client`, `shared-types`,
 `shared-ui`.
 
-**Ba vai vận hành dùng chung một bundle.** Hệ quả cần nhớ: bất cứ thứ gì đặt trên `<html>` — ví dụ
-`data-theme` của chế độ tối bếp — áp cho cả ba vai, nên phải được gỡ khi rời trang.
+**Ba vai vận hành dùng chung một bundle.** Hệ quả cần nhớ: bất cứ thứ gì đặt trên `<html>` áp cho
+cả ba vai, không riêng trang đang mở. Đây chính là lý do hệ thống chỉ có **một bảng màu sáng duy
+nhất** — xem PHẦN VI.
 
 ## 6. Dữ liệu — 19 bảng đang sống
 
@@ -301,7 +302,6 @@ Mọi màn hình vận hành đều có **poll dự phòng** (5–15 giây) ch�
 - Ngưỡng chờ **12 phút** cảnh báo / **20 phút** khẩn — mã hoá bằng màu, viền và **nhãn chữ**
 - Tự khai độ trễ để ước lượng của khách phản ánh thực tế
 - Tắt/mở món hết, tìm món không dấu
-- **Chế độ tối mặc định**
 
 ### Quầy
 - Mở ca / chốt ca, đối chiếu quỹ tiền mặt
@@ -408,6 +408,25 @@ Một tài liệu thiết kế chỉ liệt kê thứ chạy được thì khôn
 | **Không có tự động tạo release/tag** | 3 tag, 0 GitHub release. Không có gì ghi lại bản nào đã lên |
 | **Mặt khách hàng chưa qua đợt thiết kế lại** | 23 chỗ đặt style rời — nhưng **cả 23 nằm trong một tệp duy nhất**, `CustomerHomePage.tsx`. Mọi trang khách khác sạch. Đây là một lần sửa có phạm vi rõ, không phải một đợt quét |
 | **Lỗ hổng nghiệp vụ đang mở** | Xem §22 của `THIET_KE_NGHIEP_VU.md` — đã soát theo tình huống thật, không phải theo danh sách suy đoán |
+
+## Một quyết định đã đảo: hệ thống chỉ có MỘT bảng màu sáng
+
+Chế độ tối từng được xây, rồi bị **gỡ bỏ có chủ đích**. Ghi lại đây vì lý do gỡ không phải "làm
+chưa xong" — nó đã chạy được — mà là **đo xong thấy nó tệ hơn không có**:
+
+| Đo được | Con số | Hệ quả khi nhìn lâu |
+|---|---|---|
+| Năm mặt nền tối cách nhau | **1.02 – 1.12:1** | Mắt người không phân biệt nổi. Thẻ, nền và vùng chìm nhoè thành một mảng — ranh giới biến mất |
+| Chữ chính trên nền thẻ | **14.1:1** | Vượt xa ngưỡng đọc được, nhưng ở nền tối thì đó là *halation*: chữ tự phát sáng nhoè viền. Vùng dễ chịu là 10–12:1 |
+| Sắc trạng thái | **10 sắc, bão hoà TB 72%**, 6 cặp cách nhau <30° | Màu bão hoà cao trên nền tối gây quang sai. Sáu cặp gần nhau tới mức không mã hoá nổi ý nghĩa khác nhau — `info` 213° và `cancelled` 215° cách đúng **2°** |
+
+Ba con số này giải thích một nghịch lý: mọi cặp màu đều **đạt WCAG 4.5:1**, mà người dùng vẫn báo
+mỏi mắt. Tỷ lệ tương phản đo **đọc được**, nó không đo **nhìn cả ca có chịu nổi không**.
+
+Nên bây giờ toàn hệ thống dùng đúng một bảng màu sáng, kể cả bảng bếp. Một phép kiểm quét **mọi**
+tệp `css`/`ts`/`tsx` của frontend chặn `prefers-color-scheme` và `data-theme` quay lại — quét cả
+kho chứ không riêng tệp token, vì bản trước của cổng chỉ canh `ops-tokens.css` và đã bỏ lọt khi
+khối tối mọc sang ba tệp khác.
 
 ## Cách giữ tài liệu này khỏi nói dối
 
