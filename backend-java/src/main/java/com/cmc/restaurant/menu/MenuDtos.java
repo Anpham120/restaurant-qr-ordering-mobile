@@ -26,10 +26,16 @@ public final class MenuDtos {
 	 *     Có mặt cả ở thực đơn công khai — đây là con số vô hại và là thứ duy nhất giải thích được
 	 *     vì sao món này ước lượng lâu hơn món kia.
 	 */
+	/**
+	 * @param remainingQuantity số phần còn bán được; {@code null} = KHÔNG giới hạn.
+	 *     <p>Trường này CÓ ở thực đơn công khai, và đó là chủ ý — ngược với {@code costPrice}.
+	 *     Khách cần biết món sắp hết để đổi ý trước khi gọi, chứ không phải nhận lỗi sau khi gửi.
+	 *     Nó không tiết lộ gì về chi phí hay vận hành nội bộ.
+	 */
 	public record MenuItemResponse(
 			String id, String name, String description, BigDecimal price, String categoryId,
 			String categoryName, String imageUrl, boolean isAvailable, List<String> tags,
-			Integer prepMinutes) {
+			Integer prepMinutes, Integer remainingQuantity) {
 	}
 
 	/**
@@ -46,7 +52,7 @@ public final class MenuDtos {
 	public record AdminMenuItemResponse(
 			String id, String name, String description, BigDecimal price, String categoryId,
 			String categoryName, String imageUrl, boolean isAvailable, List<String> tags,
-			Integer prepMinutes, BigDecimal costPrice) {
+			Integer prepMinutes, BigDecimal costPrice, Integer remainingQuantity) {
 	}
 
 	public record CategoryRequest(String name, int displayOrder, Boolean isActive) {
@@ -68,7 +74,8 @@ public final class MenuDtos {
 	 */
 	public record MenuItemRequest(
 			String categoryId, String name, String description, BigDecimal price, String imageUrl,
-			Boolean isAvailable, List<String> tags, Integer prepMinutes, BigDecimal costPrice) {
+			Boolean isAvailable, List<String> tags, Integer prepMinutes, BigDecimal costPrice,
+			Integer remainingQuantity) {
 	}
 
 	public record ToggleAvailabilityRequest(boolean isAvailable) {

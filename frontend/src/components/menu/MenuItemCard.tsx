@@ -1,5 +1,6 @@
 import { formatVnd as formatBrandVnd } from "@cmc/brand-ui";
 import { useI18n } from "@cmc/i18n";
+import { trangThaiTonKho } from "./menuStock";
 import { localizeMenuItem, localizeMenuTag } from "@cmc/i18n/menu";
 import type { MenuItem } from "../../types";
 
@@ -232,13 +233,16 @@ export function MenuItemCard({
   const { formatMoney, locale, t } = useI18n();
   const displayItem = localizeMenuItem(item, locale);
   const formattedPrice = formatMoney(item.price);
+  // Tính theo CẢ số đã có trong giỏ: món còn 2 phần mà giỏ đã lấy 2 thì "+" phải khoá ngay, chứ
+  // không để khách bấm tiếp rồi nhận lỗi sau khi đã gửi bếp.
+  const tonKho = trangThaiTonKho(item, quantity ?? 0);
 
   return (
-    <article className={item.isAvailable ? "cmc-menu-card" : "cmc-menu-card disabled"}>
+    <article className={tonKho.hetMon ? "cmc-menu-card disabled" : "cmc-menu-card"}>
       <div className="cmc-card-image-wrap">
         <img alt={displayItem.name} className="cmc-card-image" src={item.imageUrl} />
-        <span className={item.isAvailable ? "cmc-availability ready" : "cmc-availability muted"}>
-          {item.isAvailable ? t("Còn món") : t("Tạm hết")}
+        <span className={tonKho.hetMon ? "cmc-availability muted" : "cmc-availability ready"}>
+          {tonKho.nhan ? t(tonKho.nhan) : t("Còn món")}
         </span>
       </div>
       <div className="cmc-card-content">
@@ -262,14 +266,14 @@ export function MenuItemCard({
                 -
               </button>
               <span>{quantity}</span>
-              <button disabled={!item.isAvailable} onClick={() => onAdd?.(item.id)} type="button">
+              <button disabled={tonKho.khoaThem} onClick={() => onAdd?.(item.id)} type="button">
                 +
               </button>
             </div>
           ) : (
             <button
               className="cmc-add-button"
-              disabled={!item.isAvailable}
+              disabled={tonKho.khoaThem}
               onClick={() => onAdd?.(item.id)}
               type="button"
             >

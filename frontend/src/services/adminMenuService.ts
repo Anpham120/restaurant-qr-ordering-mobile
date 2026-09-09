@@ -23,6 +23,13 @@ export type AdminMenuItemPayload = {
    * ngồi nhập. Báo cáo hao hụt hiện riêng số món chưa nhập thay vì cộng 0 cho chúng.
    */
   costPrice: number | null;
+  /**
+   * Số phần còn bán được. `null` khi SỬA = giữ nguyên; gửi `0` để báo HẾT.
+   *
+   * `null` và `0` là hai thứ khác nhau: `null` là không đếm phần, `0` là đã hết. Trộn chúng lại
+   * là mất đường báo hết.
+   */
+  remainingQuantity: number | null;
 };
 
 function enrichMenuItem(item: AdminMenuItem): AdminMenuItem {

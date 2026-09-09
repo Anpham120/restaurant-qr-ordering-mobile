@@ -51,6 +51,7 @@ const EMPTY_FORM: AdminMenuItemPayload = {
   tags: [],
   prepMinutes: null,
   costPrice: null,
+  remainingQuantity: null,
 };
 
 export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
@@ -132,6 +133,7 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
       tags: item.tags ?? [],
       prepMinutes: item.prepMinutes ?? null,
       costPrice: item.costPrice ?? null,
+      remainingQuantity: item.remainingQuantity ?? null,
     });
     setTagsInput((item.tags ?? []).join(", "));
     setShowForm(true);
@@ -426,6 +428,23 @@ export function AdminMenuManager({ embedded = false }: { embedded?: boolean }) {
                   Tiền nguyên liệu cho một phần. Chỉ dùng cho báo cáo hao hụt khi huỷ món — KHÔNG hiện
                   cho khách, và không nằm trong thực đơn công khai. Để trống thì món này không được cộng
                   vào phần thiệt hại, và báo cáo hiện riêng số món chưa nhập thay vì coi chúng bằng 0.
+                </div>
+              </div>
+              <div className="ops-form-group">
+                <label className="ops-form-label" htmlFor="amm-remaining">Số phần còn lại</label>
+                <input
+                  className="ops-form-input"
+                  id="amm-remaining"
+                  type="number"
+                  min={0}
+                  value={form.remainingQuantity ?? ""}
+                  onChange={(e) => setForm({ ...form, remainingQuantity: e.target.value === "" ? null : Number(e.target.value) })}
+                  placeholder="Không giới hạn"
+                />
+                <div className="ops-form-hint">
+                  Khách THẤY con số này khi món sắp hết, và nút "Thêm" tự khoá khi về 0. Để trống là
+                  KHÔNG đếm phần — món bán thoải mái, đúng như trước giờ. Gõ <strong>0</strong> để báo
+                  hết ngay; để trống và gõ 0 là hai việc khác nhau.
                 </div>
               </div>
               <div className="ops-form-group">
