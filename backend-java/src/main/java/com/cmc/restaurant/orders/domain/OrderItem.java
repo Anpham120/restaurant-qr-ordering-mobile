@@ -19,9 +19,22 @@ public class OrderItem {
 	private OffsetDateTime updatedAt;
 	private OffsetDateTime readyAt;
 
+	/**
+	 * Trạng thái ngay TRƯỚC khi món bị huỷ, hoặc {@code null} nếu món không bị huỷ.
+	 *
+	 * <p>Chỉ có hai giá trị có thể xảy ra, và đó là do {@link #canTransitionTo} quy định chứ không
+	 * phải do chọn: huỷ chỉ hợp lệ từ {@code Pending} hoặc {@code Preparing}. Huỷ một món đã
+	 * {@code Ready} hay {@code Served} bị máy trạng thái từ chối.
+	 *
+	 * <p>Đây là toàn bộ tín hiệu hao hụt mà hệ thống có: {@code Preparing -> Cancelled} là bếp đã
+	 * bắt tay vào và nguyên liệu đã mất; {@code Pending -> Cancelled} thì chưa ai động tới.
+	 */
+	private OrderItemStatus cancelledFromStatus;
+
 	public OrderItem(
 			String id, String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity,
-			OrderItemStatus status, OffsetDateTime updatedAt, OffsetDateTime readyAt) {
+			OrderItemStatus status, OffsetDateTime updatedAt, OffsetDateTime readyAt,
+			OrderItemStatus cancelledFromStatus) {
 		this.id = id;
 		this.menuItemId = menuItemId;
 		this.menuItemName = menuItemName;
@@ -30,13 +43,15 @@ public class OrderItem {
 		this.status = status;
 		this.updatedAt = updatedAt;
 		this.readyAt = readyAt;
+		this.cancelledFromStatus = cancelledFromStatus;
 	}
 
 	/** A brand-new line, always {@code Pending}. */
 	public static OrderItem create(
 			String id, String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity,
 			OffsetDateTime now) {
-		return new OrderItem(id, menuItemId, menuItemName, unitPrice, quantity, OrderItemStatus.Pending, now, null);
+		return new OrderItem(
+				id, menuItemId, menuItemName, unitPrice, quantity, OrderItemStatus.Pending, now, null, null);
 	}
 
 	/**
@@ -58,6 +73,11 @@ public class OrderItem {
 	}
 
 	void moveTo(OrderItemStatus next, OffsetDateTime now) {
+		// Ghi trạng thái cũ TRƯỚC khi ghi đè nó. Đây là chỗ duy nhất biết được món đang ở đâu lúc
+		// bị huỷ — sau dòng dưới thì thông tin đó không còn ở đâu cả.
+		if (next == OrderItemStatus.Cancelled) {
+			this.cancelledFromStatus = this.status;
+		}
 		this.status = next;
 		this.updatedAt = now;
 		// Recorded once, on the first transition into Ready. Not overwritten by the later move to
@@ -93,6 +113,15 @@ public class OrderItem {
 
 	public OffsetDateTime updatedAt() {
 		return updatedAt;
+	}
+
+	/**
+	 * {@code Preparing} nghĩa là bếp đã bắt tay vào — nguyên liệu mất. {@code Pending} thì không.
+	 * {@code null} nghĩa là món không bị huỷ, HOẶC bị huỷ trước migration V33 nên không ai biết.
+	 * Hai nghĩa đó khác nhau, và báo cáo phải đếm riêng thay vì gộp cho gọn.
+	 */
+	public OrderItemStatus cancelledFromStatus() {
+		return cancelledFromStatus;
 	}
 
 	public OffsetDateTime readyAt() {

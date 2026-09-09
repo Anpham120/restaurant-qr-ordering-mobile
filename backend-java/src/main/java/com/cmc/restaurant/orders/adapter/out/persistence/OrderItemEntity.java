@@ -53,6 +53,11 @@ public class OrderItemEntity {
 	@Column(name = "ready_at")
 	private OffsetDateTime readyAt;
 
+	/** Xem {@code OrderItem.cancelledFromStatus} — NULL nghĩa là không bị huỷ, hoặc huỷ trước V33. */
+	@Enumerated(EnumType.STRING)
+	@Column(name = "cancelled_from_status")
+	private OrderItemStatus cancelledFromStatus;
+
 	protected OrderItemEntity() {
 		// JPA
 	}
@@ -121,6 +126,14 @@ public class OrderItemEntity {
 
 	public void setReadyAt(OffsetDateTime readyAt) {
 		this.readyAt = readyAt;
+	}
+
+	public OrderItemStatus getCancelledFromStatus() {
+		return cancelledFromStatus;
+	}
+
+	public void setCancelledFromStatus(OrderItemStatus cancelledFromStatus) {
+		this.cancelledFromStatus = cancelledFromStatus;
 	}
 
 	public BigDecimal lineTotal() {
