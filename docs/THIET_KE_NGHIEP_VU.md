@@ -733,105 +733,134 @@ cũng hỏi lại.
 
 # PHẦN V — DUYỆT VÀ THỰC HIỆN
 
-## 22. Lỗ hổng nghiệp vụ đang mở — soát theo tình huống thật
+## 22. Bốn lỗ hổng đã soát — TẤT CẢ ĐÃ ĐÓNG
 
-Soát bằng cách hỏi những câu một quán thật sẽ gặp, rồi đối chiếu mã. Bốn chỗ hở, xếp theo mức
-nghiêm trọng.
+Mục này từng mang tên *"Lỗ hổng nghiệp vụ đang mở"* và liệt kê bốn chỗ hở, mở đầu bằng *"Nghiêm
+trọng nhất. Đây là mất tiền, im lặng."* Cả bốn nay **đã được sửa trong mã**.
 
-### L. Phiên hết hạn khi khách chưa trả tiền → hoá đơn mồ côi
+Không xoá mục đi. Cách soát — hỏi những câu một quán thật sẽ gặp rồi đối chiếu mã — là thứ đáng
+giữ, và biết một lỗ hổng đã đóng **ở đâu** thì hữu ích hơn là không còn dấu vết nó từng tồn tại.
 
-**Nghiêm trọng nhất. Đây là mất tiền, im lặng.**
+> **Vì sao mục này được viết lại.** Nó đứng nguyên văn "đang mở" một thời gian sau khi cả bốn đã
+> đóng, và một tài liệu khác trỏ sang đây như nguồn quyền uy về lỗ hổng đang có. Tài liệu nói sai
+> trạng thái còn tệ hơn tài liệu thiếu: người đọc đi sửa một lỗi không tồn tại, hoặc mất tin vào cả
+> mục. Đây là đúng hình dạng lỗi mà §23 mô tả — **văn xuôi kể lại trạng thái mã** — chỉ khác là lần
+> này văn xuôi lạc hậu theo hướng bi quan.
 
-Chuỗi sự việc:
+| | Lỗ hổng | Đóng bằng |
+|---|---|---|
+| **L** | Phiên hết hạn khi khách chưa trả tiền → hoá đơn mồ côi | `TableSession.expireIfPast(now, conNoTien)` |
+| **M** | Quầy không đóng được phiên bàn | `@PreAuthorize` trên `/close` |
+| **N** | Đóng phiên bằng tay không kiểm đã trả tiền chưa | `TableSessionService.kiemNoTruocKhiDong` |
+| **O** | Hoàn tiền không trừ lại điểm đã cộng | Dòng sổ `REFUND` trong `LoyaltyLedgerEntity` |
 
+### L. Phiên hết hạn khi chưa trả tiền — ĐÃ ĐÓNG
+
+Kịch bản cũ: bàn tiệc ngồi quá 4 giờ → phiên `Expired` → khách quét lại QR mở phiên MỚI, giỏ rỗng,
+hoá đơn 0đ. Món đã ăn nằm ở phiên cũ. Không hoá đơn nào được tạo, nên không màn hình nào hiện việc
+đó — mất tiền hoàn toàn im lặng.
+
+**Sửa ở `TableSession.expireIfPast`:** hết hạn không còn là một nhánh, nó là hai.
+
+```java
+if (conNoTien) {
+    if (overdueSince == null) {
+        overdueSince = expiresAt;   // mốc GỐC, ghi đúng một lần
+    }
+    expiresAt = now.plus(GIA_HAN_KHI_CON_NO);
+    return true;
+}
+status = TableSessionStatus.Expired;
 ```
-1. Bàn 6 người, tiệc sinh nhật, ngồi hơn 4 giờ.
-2. Phiên bàn hết hạn (DEFAULT_SESSION_LIFETIME = 4 giờ).
-3. Khách mở điện thoại để trả tiền → 410 GONE, "Phiên đã hết hạn. Vui lòng quét lại QR."
-4. Khách quét lại → phiên CŨ đã Expired nên hệ thống mở phiên MỚI.
-5. Phiên mới: giỏ rỗng, không đơn nào, hoá đơn 0đ.
-6. Toàn bộ món đã ăn nằm ở phiên cũ, đã Expired.
+
+Bàn còn nợ thì **được gia hạn**, không bị đóng. `conNoTien` là **tham số bắt buộc**, không có giá
+trị mặc định — javadoc ghi rõ lý do: *"để không ai gọi được hàm này mà chưa trả lời câu hỏi đó."*
+
+Hệ quả cần nhớ khi đọc dữ liệu: `expiresAt` của bàn quá giờ **bị đẩy tới liên tục**, nên nó không
+còn trả lời được "quá giờ từ bao giờ". Câu đó chỉ `overdueSince` trả lời được. Và vì phiên vẫn
+`Open`, `isExpired` của một bàn còn nợ **luôn là `false`** — mọi bộ lọc "bàn quá giờ" phải đọc
+`overdueSince`, không đọc `isExpired`.
+
+**Phía người dùng** cũng đã có, đúng như đề xuất cũ đòi: `AdminCommandCenter` hiện thẻ *"Bàn quá giờ
+chưa thu"* kèm số bàn và tổng tiền chưa thu, có link thẳng sang `/counter?tab=overdue`, và
+`CounterOverduePanel` là nơi quầy xử lý.
+
+### M. Quầy không đóng được phiên bàn — ĐÃ ĐÓNG
+
+`POST /api/table-sessions/{id}/close` nay khai:
+
+```java
+@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
 ```
 
-Vì sao không ai thấy:
+`CounterStaff` đã có mặt. `Staff` được **giữ lại có chủ ý** — ghi chú tại chỗ giải thích: nó không
+còn được cấp mới, nhưng tài khoản cũ vẫn đăng nhập được, và gỡ quyền của họ trong cùng lần sửa là
+khoá một nhóm người ra ngoài mà không ai yêu cầu.
 
-- **Không có hoá đơn nào được tạo.** Hoá đơn chỉ sinh ra khi khách bấm thanh toán
-  (`requestPayment`), mà đường đó đòi `session.isActiveAt(now)` — phiên hết hạn thì gọi không được.
-- **Danh sách "chờ thu" của quầy chỉ đọc hoá đơn `Pending`.** Không có hoá đơn thì không có dòng nào.
-- **Trung tâm điều hành lọc thẳng phiên hết hạn ra**:
-  `sessions.filter(s => s.status === "Open" && !s.isExpired)`.
-- **Quầy không có đường nào tạo hoá đơn hộ khách.** `requestPayment` không có `@PreAuthorize`, nó
-  đòi **token phiên bàn của khách** — thứ quầy không cầm.
+### N. Đóng phiên bằng tay không kiểm đã trả tiền chưa — ĐÃ ĐÓNG
 
-Nghĩa là: món đã ăn, không ai được hỏi tiền, và **không màn hình nào hiện việc đó**.
+`closeSession(sessionId, force, reason)` gọi `kiemNoTruocKhiDong`, và nó làm đúng hai việc đề xuất
+cũ đòi:
 
-> **ĐỀ XUẤT L.** Hai việc, làm cùng nhau:
->
-> 1. **Không cho phiên hết hạn khi còn món chưa thanh toán.** `expireIfPast` phải kiểm: còn đơn nào
->    chưa vào hoá đơn đã tất toán thì **giữ `Open`** và đánh dấu `quaHan = true` thay vì chuyển
->    `Expired`. Bàn quá giờ vẫn là bàn còn nợ tiền, không phải bàn đã xong.
-> 2. **Quầy phải thấy và xử lý được.** Thêm mục "Bàn quá giờ, chưa thanh toán" ở màn quầy, và cho
->    quầy tạo yêu cầu thanh toán hộ (endpoint mới, `@PreAuthorize('CounterStaff','Admin')`, không
->    đòi token của khách).
->
-> Hạn 4 giờ vẫn giữ nguyên tác dụng ban đầu — dọn phiên của bàn khách đã đi mà không gọi món.
+```java
+if (!force) {
+    throw ApiException.conflict("TABLE_SESSION_HAS_UNPAID_ITEMS",
+            "Bàn còn món chưa thanh toán. Thu tiền trước, hoặc ép đóng kèm lý do.");
+}
+String lyDo = reason == null ? "" : reason.trim();
+if (lyDo.isEmpty()) {
+    throw ApiException.badRequest("TABLE_SESSION_CLOSE_REASON_REQUIRED",
+            "Ép đóng bàn còn nợ tiền phải kèm lý do.");
+}
+```
 
-### M. Nhân viên quầy KHÔNG đóng được phiên bàn
+Chặn mặc định, và ép đóng phải **kèm lý do không rỗng**. Có tình huống thật cần ép đóng — khách bỏ
+chạy, hoặc quán quyết định miễn — nhưng đó là một quyết định được ghi tên, không phải một lần bấm
+im lặng.
 
-`POST /api/table-sessions/{id}/close` khai `@PreAuthorize("hasAnyRole('Staff', 'Admin')")`.
+Việc kiểm dùng lại `TableSessionResumeState.conNoTien()`, **cùng nguồn** với nhánh gia hạn ở L. Một
+định nghĩa "còn nợ tiền" cho cả hai chỗ, nên chúng không thể lệch nhau — đúng cách chống mà §23 mô
+tả.
 
-`CounterStaff` **không có trong danh sách**. Vai duy nhất còn gán được mà làm việc ở quầy thì bị
-chặn, còn vai được phép (`Staff`) thì không tạo mới được nữa (§3).
+### O. Hoàn tiền không trừ lại điểm — ĐÃ ĐÓNG
 
-Đây là triệu chứng thứ hai của cùng một chuyện với ĐỀ XUẤT 1, nhưng nó tự nó là một lỗi phân quyền:
-người đóng bàn trong đời thật không đóng được bàn trong hệ thống.
+Cơ chế cũ: hoàn tiền không ghi gì vào sổ điểm, nên dòng `ACCRUE` vẫn nằm nguyên. Tác vụ hằng tháng
+tính lại `spend_12m` **từ sổ** nên nó không những không sửa mà còn xác nhận lại con số sai — khách
+có thể lên hạng bằng tiền chưa từng trả.
 
-> **ĐỀ XUẤT M.** Đổi thành `hasAnyRole('CounterStaff', 'Admin')`. Làm cùng lượt bỏ vai `Staff`.
+**Sửa bằng một dòng sổ đảo ngược**, `LoyaltyLedgerEntity`:
 
-### N. Đóng phiên bằng tay không kiểm đã trả tiền chưa
+```java
+id, memberId, -Math.abs(diemDaTich), "REFUND", soTienDaTich.abs().negate(), null, now
+```
 
-`closeSession` đặt `status = Closed` và xong. **Không kiểm** còn đơn chưa thanh toán, không kiểm
-hoá đơn đang `Pending`, không cảnh báo gì.
+Điểm âm, tiền âm, đúng bằng dòng `ACCRUE` nó đảo. Truy vấn xét hạng cộng **cả** `REFUND`:
 
-Một lần bấm nhầm ở màn sơ đồ bàn là một bàn đóng lại với tiền chưa thu — và vì đã `Closed`, khách
-quét QR sẽ mở phiên mới, giống hệt tình huống L.
+```sql
+where l.memberId = :memberId and l.reason in ('ACCRUE', 'REFUND') and l.createdAt >= :tu
+```
 
-> **ĐỀ XUẤT N.** Đóng phiên còn nợ tiền phải:
-> - **chặn mặc định**, báo `TABLE_SESSION_HAS_UNPAID_ITEMS` kèm số tiền;
-> - cho phép ép đóng bằng một cờ riêng (`force=true`) **kèm lý do bắt buộc**, và ghi lý do đó lại.
->
-> Có tình huống thật cần ép đóng — khách bỏ chạy, hoặc quán quyết định miễn. Nhưng đó phải là một
-> quyết định được ghi tên, không phải một lần bấm im lặng.
+Đây là điểm mấu chốt, và ghi chú trong repository nói thẳng: *"Dòng REFUND mang số tiền ÂM đúng
+bằng dòng ACCRUE nó đảo, nên phép cộng thẳng tự khử. Bỏ REFUND ra ngoài thì một hoá đơn đã hoàn vẫn
+tính vào hạng."* Không phải trừ tay cột nào — hạng **tự chữa** ở kỳ tính lại sau.
 
-### O. Hoàn tiền không trừ lại điểm đã cộng
+### Một chỗ không phải lỗi, nhưng đáng biết — VẪN CÒN
 
-Khách trả tiền → cộng điểm. Quầy hoàn tiền → `payment.refund(now)` và hết. **Điểm vẫn còn.**
+Món bị quầy huỷ **sau khi bếp đã nấu** thì không tính tiền khách — đúng. Nhưng vẫn **không có chỗ
+nào ghi lại phần hao hụt đó**: soát toàn bộ backend và frontend không thấy khái niệm nào phân biệt
+"huỷ trước khi nấu" với "huỷ sau khi nấu". Báo cáo gộp chung, nên quán không đo được mình mất bao
+nhiêu nguyên liệu vì huỷ muộn.
 
-Hệ thống đã có sẵn cơ chế đảo ngược (`LoyaltyLedgerEntity` với lý do `REVERSE`), nhưng nó chỉ dùng
-cho việc **hoàn ưu đãi khi huỷ đơn** — tức chiều tiêu điểm. Chiều **tích** điểm không có đường lùi.
+Đây là chỗ **duy nhất** trong mục này còn mở. Nó không phải rò tiền — tiền không sai — mà là một
+thứ không đo được. Đưa vào cùng đợt mở rộng báo cáo (quyết định D).
 
-Khoản rò nhỏ hơn L, nhưng nó là sai lệch sổ sách. Cơ chế chính xác: hoàn tiền **không ghi gì vào
-sổ điểm**, nên dòng `ACCRUE` của hoá đơn đó vẫn nằm nguyên. Tác vụ hằng tháng tính lại
-`spend_12m` **từ sổ**, nên nó không những không sửa mà còn **xác nhận lại** con số sai — khách có
-thể **lên hạng bằng tiền chưa từng trả**.
+### Cách giữ mục này khỏi lạc hậu lần nữa
 
-(Không phải qua `lifetime_spend` như tôi viết ở bản trước: cột đó chỉ dùng để báo cáo, không xét
-hạng — xem §12.1.)
+Không có cổng CI nào canh được mục này, vì nó nói về **nghiệp vụ** chứ không về cấu trúc mã — không
+có gì sinh ra nó được. Thứ thay thế là một quy ước: mỗi lỗ hổng ở đây phải trỏ tới **một tên hàm
+hoặc một mã lỗi có thật**. Tên sai thì `grep` ra rỗng ngay, và đó là tín hiệu rẻ nhất có thể có cho
+một mục không tự kiểm được.
 
-> **ĐỀ XUẤT O.** Khi hoàn tiền, ghi một dòng sổ đảo ngược đúng số điểm và đúng số tiền của hoá đơn
-> đó. Vì tác vụ hằng tháng tính lại `spend_12m` từ sổ, một dòng đảo là đủ để hạng **tự chữa** ở kỳ
-> sau — không cần sửa tay cột nào.
->
-> Lưu ý: **không** để việc trừ điểm làm hỏng lệnh hoàn tiền — cùng nguyên tắc mà mã đã áp cho chiều
-> cộng ("khách đã trả tiền không được thấy lỗi vì một dòng điểm không ghi được"). Ghi nhật ký và
-> xử tay nếu trừ thất bại.
-
-### Một chỗ không phải lỗi, nhưng đáng biết
-
-Món bị quầy huỷ **sau khi bếp đã nấu** thì không tính tiền khách — đúng. Nhưng cũng **không có chỗ
-nào ghi lại phần hao hụt đó**. Báo cáo không phân biệt "huỷ trước khi nấu" với "huỷ sau khi nấu",
-nên quán không đo được mình mất bao nhiêu nguyên liệu vì huỷ muộn. Đưa vào cùng đợt mở rộng báo cáo
-(quyết định D).
 
 ## 23. Bốn lỗi đã xảy ra, một hình dạng
 
