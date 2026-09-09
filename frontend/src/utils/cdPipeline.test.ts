@@ -144,3 +144,90 @@ describe("cd.yml tự động hoá", () => {
     }
   });
 });
+
+describe("kéo ảnh từ registry", () => {
+  /**
+   * LÙI LẠI PHẢI LÙI CẢ `.env`, KHÔNG CHỈ MÃ.
+   *
+   * Từ khi `.env` mang TÊN ẢNH, lùi mã mà giữ `.env` mới là chạy ảnh MỚI với mã CŨ — tức không lùi
+   * gì cả. Tệ hơn ở nhánh `--build`: nó dựng lại mã cũ rồi GẮN NHÃN bằng tag của bản mới, nên một
+   * lần `pull` về sau có thể bỏ qua vì tag đó đã có sẵn trên máy.
+   *
+   * Không phép kiểm nào cũ bắt được: rollback vẫn thoát 0, health-check vẫn xanh, và máy chủ vẫn
+   * phục vụ — chỉ là phục vụ sai thứ.
+   */
+  it("deploy giữ .env cũ lại trước khi ghi đè", () => {
+    const sh = deployScript();
+
+    expect(sh, "gửi thẳng vào .env là mất bản cũ trước khi kịp giữ").toContain(".env.new");
+    expect(sh, "không giữ .env.previous — lùi lại sẽ dùng tên ảnh MỚI với mã CŨ").toMatch(
+      /cp \.env \.env\.previous/,
+    );
+  });
+
+  it("rollback khôi phục .env cũ", () => {
+    const sh = doc("deploy/scripts/rollback-vps.sh");
+
+    expect(sh, "rollback không lùi .env — mã cũ sẽ chạy bằng ảnh mới").toMatch(
+      /mv \.env\.previous \.env/,
+    );
+    const viTriEnv = sh.indexOf("mv .env.previous .env");
+    const viTriNguon = sh.indexOf(". ./.env");
+    expect(
+      viTriEnv,
+      "lùi .env phải TRƯỚC khi đọc nó, nếu không script vẫn nạp giá trị mới",
+    ).toBeLessThan(viTriNguon);
+  });
+
+  /**
+   * ẢNH FRONTEND PHẢI TÁCH THEO MÔI TRƯỜNG.
+   *
+   * Vite nướng `VITE_API_BASE_URL` vào bundle lúc build. Một tag frontend dùng chung cho cả hai
+   * môi trường nghĩa là ảnh nào lên sau sẽ ghi đè ảnh kia, và khách của môi trường này gọi vào API
+   * của môi trường kia — thầm lặng, vì trang vẫn tải được.
+   *
+   * Ảnh `api` thì NGƯỢC LẠI: Java đọc cấu hình lúc chạy, nên dùng chung là đúng và tiết kiệm.
+   */
+  it("tag frontend mang tên môi trường, tag api thì không cần", () => {
+    const wf = cdWorkflow();
+    const dongFe = /echo "frontend=([^"]+)"/.exec(wf)?.[1] ?? "";
+    const dongApi = /echo "api=([^"]+)"/.exec(wf)?.[1] ?? "";
+
+    expect(dongFe, "không đọc được cách đặt tên ảnh frontend").not.toBe("");
+    expect(dongFe, "tag frontend không mang môi trường — hai môi trường sẽ ghi đè nhau").toContain(
+      "MOI_TRUONG",
+    );
+    expect(dongApi, "không đọc được cách đặt tên ảnh api").not.toBe("");
+    expect(dongApi, "tag phải neo vào commit, nếu không `latest` che mất bản đang chạy").toContain(
+      "GITHUB_SHA",
+    );
+  });
+
+  /**
+   * Bỏ sót một `--build-arg` là bundle rơi về mặc định GHI CỨNG trong `frontend/Dockerfile` — một
+   * địa chỉ production. Staging sẽ gọi thẳng vào API thật mà không báo gì.
+   */
+  it("dựng frontend truyền đủ bộ URL công khai", () => {
+    const wf = cdWorkflow();
+    for (const ten of [
+      "VITE_API_BASE_URL",
+      "VITE_ORDER_HUB_URL",
+      "VITE_ORDERING_BASE_URL",
+      "VITE_MARKETING_BASE_URL",
+    ]) {
+      expect(wf, `thiếu --build-arg ${ten} — bundle rơi về mặc định của Dockerfile`).toContain(
+        `--build-arg ${ten}=`,
+      );
+    }
+  });
+
+  /** Thiếu tên ảnh thì phải quay về dựng tại chỗ: chạy tay và chạy local không có registry. */
+  it("vẫn dựng được trên máy chủ khi không có tên ảnh", () => {
+    const sh = deployScript();
+
+    expect(sh, "không còn đường dự phòng `--build`").toContain('che_do_anh="build"');
+    expect(sh, "không kiểm tên ảnh trước khi chọn chế độ").toMatch(
+      /-n "\$\{BACKEND_JAVA_IMAGE:-\}"/,
+    );
+  });
+});
