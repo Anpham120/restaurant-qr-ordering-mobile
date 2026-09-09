@@ -165,7 +165,12 @@ export type ReportWaste = {
   huyKhiDangNau: number;
   huyTruocKhiNau: number;
   khongRoNguonGoc: number;
+  /** Theo GIÁ BÁN — "doanh thu đáng lẽ có". */
   giaTriHuyKhiDangNau: number;
+  /** Theo GIÁ VỐN — "tiền nguyên liệu đã mất". Chỉ cộng món ĐÃ nhập giá vốn. */
+  giaVonHuyKhiDangNau: number;
+  /** Số món huỷ lúc đang nấu mà chưa có giá vốn để cộng. Phải hiện cạnh con số trên. */
+  monChuaCoGiaVon: number;
 };
 
 export type ReportSummaryResponse = { from: string; to: string; totalOrders: number; paidOrders: number; grossRevenue: number; totalDiscount: number; netRevenue: number; topItems: TopMenuItemReport[]; dailyRevenue: DailyRevenueReport[]; waste: ReportWaste };

@@ -55,7 +55,7 @@ class MenuItemPrepMinutesTest {
 	private static MenuItemRequest yeuCau(Integer prepMinutes) {
 		return new MenuItemRequest(
 				"cat_pho", "Phở bò", "", new BigDecimal("65000"), null, true,
-				List.of("method:simmered"), prepMinutes);
+				List.of("method:simmered"), prepMinutes, null);
 	}
 
 	@Test

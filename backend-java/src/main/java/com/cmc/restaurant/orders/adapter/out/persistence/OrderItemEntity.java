@@ -37,6 +37,10 @@ public class OrderItemEntity {
 	@Column(name = "unit_price", nullable = false)
 	private BigDecimal unitPrice;
 
+	/** Giá vốn CHỤP LẠI lúc đặt món. NULL = món chưa được nhập giá vốn lúc đó. Xem V34. */
+	@Column(name = "unit_cost", precision = 18, scale = 2)
+	private BigDecimal unitCost;
+
 	@Column(nullable = false)
 	private int quantity;
 
@@ -63,12 +67,15 @@ public class OrderItemEntity {
 	}
 
 	public OrderItemEntity(String id, String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity,
-			OffsetDateTime now) {
+			OffsetDateTime now, BigDecimal unitCost) {
 		this.id = id;
 		this.menuItemId = menuItemId;
 		this.menuItemName = menuItemName;
 		this.unitPrice = unitPrice;
 		this.quantity = quantity;
+		// CHỤP LẠI, không tra cứu về sau. Cùng lý do với `unitPrice`: sửa giá vốn một món hôm nay
+		// không được viết lại con số hao hụt của tháng trước.
+		this.unitCost = unitCost;
 		this.status = OrderItemStatus.Pending;
 		this.createdAt = now;
 		this.updatedAt = now;
@@ -126,6 +133,10 @@ public class OrderItemEntity {
 
 	public void setReadyAt(OffsetDateTime readyAt) {
 		this.readyAt = readyAt;
+	}
+
+	public BigDecimal getUnitCost() {
+		return unitCost;
 	}
 
 	public OrderItemStatus getCancelledFromStatus() {
