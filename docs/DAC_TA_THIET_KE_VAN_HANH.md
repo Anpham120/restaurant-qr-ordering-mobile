@@ -20,7 +20,7 @@ Ba mặt: **bếp**, **quầy thu ngân**, **quản trị**. Không đụng mặ
 
 | # | Đo được | Con số | Vì sao là vấn đề |
 |---|---|---|---|
-| 1 | Chế độ tối | **0** lần `prefers-color-scheme` hoặc `data-theme` trong cả `operations.css` lẫn `tokens.css` | Dòng đầu `operations.css` tự nhận là *"dark-mode aware"*. Không có. Bếp là chỗ sáng chói, quầy chạy 12 tiếng |
+| 1 | Chế độ tối | **0** lần `prefers-color-scheme` hoặc `data-theme` trong cả `operations.css` lẫn `tokens.css` | Dòng đầu `operations.css` tự nhận là *"dark-mode aware"*. Không có. Bếp là chỗ sáng chói, quầy chạy 12 tiếng. **Đã xây rồi gỡ bỏ sau khi đo — §3.3** |
 | 2 | Cỡ chữ | **23 giá trị khác nhau**, trộn `px` và `rem` | Không có thang. Ba cỡ dùng nhiều nhất: 12px (14 lần), 13px (11 lần), 11px (8 lần) |
 | 3 | Vùng chạm | `.ops-btn` ≈ **34px** cao, `.ops-btn--sm` ≈ **26px**, dùng **65 lần** (28 trong `pages/`, 37 trong `components/`) | Chuẩn cảm ứng là 44×44. `min-height: 44px` chỉ tồn tại cho nút thẻ bếp và **chỉ dưới `max-width: 768px`** |
 | 4 | Điểm ngắt | **4** giá trị rời rạc — 760, 768, 900, 1100 — qua 5 khối `@media` | Không phải thang. Máy POS/tablet ở 1024px rơi vào vùng "desktop" và nhận cỡ chữ, cỡ nút của desktop |
@@ -107,22 +107,31 @@ cần nút 26px thì khu vực đó bố cục sai, không phải nút sai.
 
 Khoảng cách tối thiểu giữa hai vùng chạm: **8px**.
 
-### 3.3 Chế độ tối — bắt buộc, không phải tuỳ chọn
+### 3.3 Chế độ tối — ĐÃ XÂY, ĐÃ ĐO, ĐÃ GỠ BỎ
 
-Ba trạng thái theo đúng cách trình duyệt báo:
+> **Mục này giữ lại làm hồ sơ quyết định. Đừng làm theo nó.** Bản đầu của đặc tả ghi chế độ tối là
+> *"bắt buộc, không phải tuỳ chọn"*, với lý do hợp lý: bếp màn dựng đứng phòng chói, quầy chạy 12
+> tiếng. Nó đã được xây đủ ba trạng thái, chạy được, rồi bị gỡ bỏ sau khi đo.
 
-```css
-:root { /* bảng sáng đầy đủ */ }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { /* chỉ định nghĩa lại token */ }
-}
-:root[data-theme="dark"] { /* để nút chuyển thắng cả hai chiều */ }
-```
+Lý do gỡ **không phải** "làm chưa xong". Đây là ba phép đo trên chính bảng màu đã dựng:
 
-Không màu nào được định nghĩa **chỉ** bên trong khối `@media` hay `[data-theme]` — đó là lỗi làm
-trang hiện chữ của chủ đề này trên nền của chủ đề kia.
+| Đo | Con số | Vì sao nó gây mỏi mắt |
+|---|---|---|
+| Năm mặt nền tối cách nhau | **1.02 – 1.12:1** | Dưới ngưỡng phân biệt của mắt. Thẻ, nền, vùng chìm nhoè thành một mảng — ranh giới biến mất, và đó là cảm giác "rối" |
+| Chữ chính trên thẻ | **14.1:1** | Đạt WCAG rất dư, nhưng ở nền tối thì chữ gần trắng gây *halation* — tự phát sáng nhoè viền. Vùng dễ chịu là 10–12:1 |
+| Sắc trạng thái | **10 sắc, bão hoà TB 72%**; 6 cặp cách nhau <30° | Bão hoà cao trên nền tối gây quang sai. `info` 213° và `cancelled` 215° cách **2°** — hai ý nghĩa khác nhau mà mắt đọc thành một |
 
-Bếp mặc định **tối** (màn hình dựng đứng, phòng chói, nền tối giảm loá). Quầy và admin theo hệ điều hành.
+Điều đáng nhớ nhất: **mọi cặp màu đều đạt 4.5:1, mà người dùng vẫn báo mỏi hơn khi không có chế độ
+tối.** Tỷ lệ tương phản đo *đọc được*; nó không đo *nhìn cả ca có chịu nổi không*. Đặc tả cũ đặt
+tiêu chí nghiệm thu là "đọc được, không chỗ nào chữ trùng nền" — tiêu chí đó đã đạt, và vẫn hỏng.
+
+Hiện tại: **một bảng màu sáng duy nhất cho toàn hệ thống, kể cả bảng bếp.** Một phép kiểm quét mọi
+tệp `css`/`ts`/`tsx` của frontend chặn `prefers-color-scheme` và `data-theme` quay lại. Cổng quét
+cả kho chứ không riêng tệp token — bản trước chỉ canh `ops-tokens.css` nên đã bỏ lọt khi khối tối
+mọc sang `operations.css`, `floor-map.css` và `counter-hub.css`.
+
+Muốn dựng lại chế độ tối thì xoá phép kiểm đó một cách công khai, kèm bảng màu đã đo — với bậc nền
+tách nhau ≥1.25:1, chữ chính 10–12:1, và không quá 5 sắc trạng thái.
 
 ### 3.4 Điểm ngắt — 3 bậc theo thiết bị thật
 
@@ -219,9 +228,9 @@ Mỗi đợt là một PR, có phép kiểm riêng, không đợt nào phá đ�
 
 | Đợt | Việc | Xong khi |
 |---|---|---|
-| **1** | `ops-tokens.css`: thang chữ, vùng chạm, điểm ngắt, chế độ tối. Chưa đụng màn nào | Phép kiểm: không token màu nào chỉ tồn tại trong khối `@media`/`[data-theme]` |
+| **1** | `ops-tokens.css`: thang chữ, vùng chạm, điểm ngắt, chế độ tối (SAU ĐÓ GỠ BỎ — §3.3). Chưa đụng màn nào | Phép kiểm: không token màu nào chỉ tồn tại trong khối `@media`/`[data-theme]` |
 | **2** | Xoá `ops-btn--sm` (28 chỗ), áp vùng chạm 44/56px | Phép kiểm: không quy tắc CSS nào cho nút có chiều cao tính ra < 44px |
-| **3** | Bếp: chủ đề tối, thẻ món, ngưỡng phút, 2 cột ở bậc `pos`, dọn 12 `style={{}}` | Phép kiểm: `KitchenRealtimePage` không còn `style={{`; ngưỡng phút có test đơn vị |
+| **3** | Bếp: chủ đề tối (SAU ĐÓ GỠ BỎ — §3.3), thẻ món, ngưỡng phút, 2 cột ở bậc `pos`, dọn 12 `style={{}}` | Phép kiểm: `KitchenRealtimePage` không còn `style={{`; ngưỡng phút có test đơn vị |
 | **4** | Quầy: số việc chờ trên nhãn tab, bàn phím số bậc `pos`, thứ bậc số tiền, sàn chạm cho thanh điều hướng dưới | Phép kiểm: không vùng bấm nào ở quầy dưới 44px; tiền thối và tiền thiếu cùng cỡ |
 | **5** | Admin: bảng số liệu ở trang chủ, gộp điều hướng 3 nhóm, tabular-nums toàn bảng | Phép kiểm: mọi cột tiền trong `ops-table` có `tabular-nums` |
 | **6** | Dọn `style={{}}` còn lại (26 chỗ ngoài bếp) | `style={{` trên 7 màn vận hành bằng 0 |
@@ -247,7 +256,9 @@ Không đo bằng "trông đẹp hơn". Đo bằng:
 1. `grep -c "font-size" ops-tokens.css` ra **6 bậc**, và không quy tắc nào trong `operations.css`
    khai `font-size` bằng giá trị rời
 2. Không nút nào tính ra dưới 44px ở bất kỳ điểm ngắt nào
-3. Chuyển hệ điều hành sang chế độ tối: cả ba mặt đọc được, không chỗ nào chữ trùng nền
+3. ~~Chuyển hệ điều hành sang chế độ tối: cả ba mặt đọc được, không chỗ nào chữ trùng nền~~
+   → **Thay bằng:** chuyển hệ điều hành sang chế độ tối thì cả ba mặt **vẫn hiện bảng màu sáng**,
+   không đổi gì. Tiêu chí cũ đã ĐẠT mà giao diện vẫn hỏng — xem §3.3
 4. Ở bề ngang 1024px, cỡ chữ và vùng chạm **không nhỏ hơn** ở 375px
 5. `style={{` trên 7 màn vận hành bằng **0** (25 chỗ ở mặt khách hàng KHÔNG thuộc đợt này)
 6. Toàn bộ suite hiện tại vẫn xanh — đặc tả này không đổi hành vi nào
