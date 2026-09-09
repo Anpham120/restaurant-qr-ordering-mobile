@@ -16,6 +16,8 @@ export type MenuItem = {
    * gọi, chứ không nhận lỗi sau khi đã gửi bếp.
    */
   remainingQuantity: number | null;
+  /** Phút bếp khai thêm RIÊNG cho món này, đã trừ hết hạn. 0 = không có. */
+  delayMinutes: number;
 };
 
 export type MenuCart = Record<string, number>;

@@ -119,6 +119,25 @@ export async function fetchKitchenMenuItems(): Promise<AdminMenuItem[]> {
 }
 
 // Kitchen-level toggle (also usable by Staff/Admin)
+/**
+ * Bếp khai độ trễ RIÊNG cho một món. `delayMinutes: 0` là xoá.
+ *
+ * Cùng đường `/kitchen/menu-items` với công tắc bật/tắt — bếp đã mở đúng bảng đó mỗi khi một món
+ * gặp vấn đề, nên không có màn hình nào mới phải học.
+ *
+ * Khác `setKitchenDelay` (độ trễ của CẢ bếp) và CỘNG DỒN với nó.
+ */
+export async function khaiDoTreMon(
+  itemId: string,
+  delayMinutes: number,
+  keepMinutes?: number,
+): Promise<AdminMenuItem> {
+  return api.request<AdminMenuItem>(
+    `/kitchen/menu-items/${encodeURIComponent(itemId)}/delay`,
+    { method: "PATCH", body: JSON.stringify({ delayMinutes, keepMinutes: keepMinutes ?? null }) },
+  );
+}
+
 export async function toggleMenuItemAvailability(
   itemId: string,
   isAvailable: boolean,

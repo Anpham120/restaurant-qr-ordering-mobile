@@ -2316,3 +2316,20 @@
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
+
+/* Nút độ trễ RIÊNG của một món, đứng cạnh công tắc "hết món" trên màn bếp.
+   Cùng chiều cao 44px với mọi thứ bấm được ở đây — quầy có cảm ứng, bếp dùng tablet. */
+.kitchen-mon-delay {
+  min-width: 76px;
+  padding: 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Có độ trễ thì phải NHÌN RA NGAY, không chỉ đọc được số.
+   Màu cảnh báo cộng viền dày: bếp bị chói làm mất phân biệt màu, nên màu một mình là mã hoá một
+   tầng. Người đứng bếp phải thấy món nào đang bị cộng phút mà không cần đọc từng dòng. */
+.kitchen-mon-delay--on {
+  border-color: var(--ops-warn);
+  color: var(--ops-warn);
+  font-weight: 700;
+}

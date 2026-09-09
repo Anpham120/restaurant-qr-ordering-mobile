@@ -67,3 +67,22 @@ export function docSoPhut(thoNhap: string): KetQuaDoc {
 export function chiGiuChuSo(tho: string): string {
   return tho.replace(/\D/g, "");
 }
+
+/** Mỗi lần bấm cộng thêm bấy nhiêu phút cho độ trễ RIÊNG của một món. */
+export const BUOC_DO_TRE_MON = 5;
+
+/**
+ * Con số kế tiếp khi bếp bấm nút độ trễ của một món: cộng dồn, tới trần thì VÒNG VỀ 0.
+ *
+ * MỘT NÚT LÀM HAI VIỆC, không phải một nút cộng cộng thêm một nút xoá.
+ *
+ * Bếp đang cầm dao, đeo găng, tay ướt. Gõ số vào ô là thao tác sai với hoàn cảnh, và một nút "xoá"
+ * riêng là một nút nữa để bấm nhầm giữa lúc đông khách. Bấm quá thì bấm tiếp cho vòng lại — không
+ * ai phải đi tìm cách hoàn tác.
+ *
+ * Trần dùng lại `TRAN_PHUT` của độ trễ chung: hai chỗ khai cùng một giới hạn là hai chỗ sẽ lệch.
+ */
+export function phutDoTreTiepTheo(hienTai: number): number {
+  if (hienTai >= TRAN_PHUT) return 0;
+  return Math.min(TRAN_PHUT, hienTai + BUOC_DO_TRE_MON);
+}

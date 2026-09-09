@@ -25,6 +25,19 @@ public interface TableSessionRepository extends JpaRepository<TableSessionEntity
 	 * code, because that is what the STOMP destination carries. */
 	List<TableSessionEntity> findByTableCodeAndStatus(String tableCode, TableSessionStatus status);
 
+	/**
+	 * Phiên ĐANG MỞ và ĐÃ quá hạn, không lọc theo bàn.
+	 *
+	 * <p>Đây là truy vấn duy nhất trong hệ thống nhìn thấy được bàn mà KHÔNG AI CHẠM VÀO. Mọi
+	 * đường khác đều đi từ một bàn cụ thể — mở phiên, khách mở app, quầy bấm — nên bàn khách đã bỏ
+	 * đi hẳn không nằm trên đường nào cả.
+	 *
+	 * <p>Tập kết quả nhỏ theo bản chất: nó chỉ chứa phiên đã quá hạn mà chưa được xử lý.
+	 */
+	@Query("select s from TableSessionEntity s where s.status = :trangThai and s.expiresAt <= :now")
+	List<TableSessionEntity> timPhienQuaHan(
+			@Param("trangThai") TableSessionStatus trangThai, @Param("now") OffsetDateTime now);
+
 	// --- quản trị phiên bàn (#91) ---------------------------------------------------------------
 
 	/** Bàn này còn phiên đang mở THẬT SỰ không — chưa đóng và chưa hết hạn. */

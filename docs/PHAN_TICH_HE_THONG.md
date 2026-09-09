@@ -223,9 +223,31 @@ sequenceDiagram
 
 ## 8. Máy trạng thái — hai cái quan trọng nhất
 
-**Phiên bàn.** Điều đáng nhớ: phiên còn nợ tiền thì **KHÔNG bị đóng khi hết hạn** — nó được **gia
-hạn** và đánh dấu `overdueSince`. Nên `isExpired` của một bàn còn nợ luôn là `false`, và mọi bộ lọc
-"bàn quá giờ" phải đọc `overdueSince`, không đọc `isExpired`.
+**Phiên bàn.** Hạn 4 giờ sinh ra để dọn **bàn không nợ** — khách ngồi xuống, quét QR, rồi đi mà
+không gọi gì. Khi hạn tới, hệ thống hỏi đúng một câu: *bàn này còn nợ tiền không?*
+
+| Trả lời | Việc xảy ra |
+|---|---|
+| **Không nợ** | Phiên `Expired`. Giỏ chưa gửi **không** tính là nợ — chưa món nào được làm, chưa ai nợ ai |
+| **Còn nợ** | **KHÔNG đóng.** Ghi `overdueSince` (mốc gốc, đúng một lần), đẩy hạn thêm 1 giờ, giữ `Open` |
+
+Nhánh thứ hai tồn tại vì đóng phiên khi còn nợ là **mất tiền im lặng**: khách quét lại QR sẽ mở
+phiên mới, giỏ rỗng, hoá đơn 0đ, và món đã ăn nằm ở phiên cũ đã `Expired`. Không hoá đơn nào được
+tạo nên không màn hình nào hiện.
+
+Hai hệ quả khi đọc dữ liệu: `isExpired` của bàn còn nợ **luôn `false`**, và `expiresAt` bị đẩy tới
+liên tục nên nó không còn trả lời được *"quá giờ từ bao giờ"*. Chỉ `overdueSince` trả lời được.
+
+Và một đòi hỏi vận hành: **quầy phải chốt bàn trước khi xếp khách mới.** Quét QR một bàn đang có
+phiên mở sẽ **dùng lại phiên đó** (`findActiveSession`), nên khách sau ngồi vào một bàn chưa chốt
+sẽ thấy món của người trước.
+
+**Đánh dấu quá giờ chạy hai lớp, có chủ ý.** `QuetPhienQuaHanJob` quét mỗi 5 phút và ghi
+`overdueSince` xuống cơ sở dữ liệu; `TableSession.mocQuaGio` vẫn suy ra khi đọc. Giữ cả hai vì lớp
+thứ hai là lưới an toàn: tác vụ chết, bị tắt, hay chưa kịp chạy thì màn quầy vẫn đúng. Trước khi có
+tác vụ, `expireIfPast` chỉ chạy khi **có ai chạm vào phiên** — nên bàn khách đã bỏ đi hẳn không bao
+giờ được đánh dấu, đúng cái bàn cần chú ý nhất. Đo thật lúc đó: **3 phiên quá hạn, 0 phiên có
+`overdue_since`**.
 
 ```mermaid
 stateDiagram-v2

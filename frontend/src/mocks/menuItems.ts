@@ -24,6 +24,7 @@ export const menuItems: MenuItem[] = [
     tags: ["fresh", "light", "signature"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-002",
@@ -36,6 +37,7 @@ export const menuItems: MenuItem[] = [
     tags: ["fresh", "seafood"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-003",
@@ -48,6 +50,7 @@ export const menuItems: MenuItem[] = [
     tags: ["crispy", "classic"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-004",
@@ -60,6 +63,7 @@ export const menuItems: MenuItem[] = [
     tags: ["crispy", "popular"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-005",
@@ -72,6 +76,7 @@ export const menuItems: MenuItem[] = [
     tags: ["signature", "beef"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-006",
@@ -84,6 +89,7 @@ export const menuItems: MenuItem[] = [
     tags: ["beef", "premium"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-007",
@@ -96,6 +102,7 @@ export const menuItems: MenuItem[] = [
     tags: ["signature", "fish"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-008",
@@ -108,6 +115,7 @@ export const menuItems: MenuItem[] = [
     tags: ["seafood", "share"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-009",
@@ -120,6 +128,7 @@ export const menuItems: MenuItem[] = [
     tags: ["spicy", "seafood", "share"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-010",
@@ -132,6 +141,7 @@ export const menuItems: MenuItem[] = [
     tags: ["sweet", "cool"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-011",
@@ -144,6 +154,7 @@ export const menuItems: MenuItem[] = [
     tags: ["drink", "fresh"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
   {
     id: "mi-012",
@@ -156,6 +167,7 @@ export const menuItems: MenuItem[] = [
     tags: ["drink", "coffee"],
     prepMinutes: null,
     remainingQuantity: null,
+    delayMinutes: 0,
   },
 ];
 
