@@ -1,0 +1,42 @@
+# DỮ LIỆU MẪU CHO BÁO CÁO HAO HỤT
+#
+# Chỉ chạy khi có người bấm, chỉ trên staging. Nó tạo đơn giả và huỷ món giả — làm thế trên dữ liệu
+# thật là làm bẩn sổ sách của quán, nên script tự từ chối nếu môi trường là production.
+#
+# Đi qua API THẬT chứ không chèn SQL: thứ cần chứng minh là ĐƯỜNG ĐI (đặt món có chụp giá vốn
+# không, huỷ món có ghi trạng thái cũ không, báo cáo có cộng đúng không), và chỉ gọi API mới trả
+# lời được.
+name: Dữ liệu mẫu hao hụt
+
+on:
+  workflow_dispatch:
+    inputs:
+      moi_truong:
+        description: "Môi trường (production bị script từ chối)"
+        type: choice
+        options: [staging]
+        default: staging
+
+concurrency:
+  # Dùng chung khoá với `cd.yml`: chạy chen vào giữa một lượt triển khai là gọi API của một hệ
+  # thống đang khởi động lại.
+  group: deploy-${{ inputs.moi_truong }}
+  cancel-in-progress: false
+
+jobs:
+  tao-du-lieu:
+    name: Tạo dữ liệu mẫu ${{ inputs.moi_truong }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.moi_truong }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Chạy du-lieu-mau-hao-hut.sh
+        env:
+          DEPLOY_ENV: ${{ inputs.moi_truong }}
+          API_BASE_URL: ${{ vars.PUBLIC_API_BASE_URL }}
+          ADMIN_EMAIL: ${{ vars.ADMIN_BOOTSTRAP_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_BOOTSTRAP_PASSWORD }}
+        run: |
+          chmod +x deploy/scripts/du-lieu-mau-hao-hut.sh
+          deploy/scripts/du-lieu-mau-hao-hut.sh
