@@ -188,11 +188,52 @@ export function getNextKitchenBoardColumn(status: OrderStatus): KitchenBoardColu
   return kitchenBoardColumns[currentIndex + 1] ?? null;
 }
 
+/**
+ * Kế hoạch để đưa một thẻ tới ĐÚNG cột được thả vào — không phải cột kế tiếp.
+ *
+ * VÌ SAO CHO NHẢY CÓC: máy trạng thái của MÓN cho phép, và nó cho phép có lý do. Javadoc của
+ * `OrderItem.canTransitionTo` nói thẳng: *"skips such as Pending -> Ready are allowed because a
+ * fast kitchen legitimately finishes a dish without anyone marking it as started."* Bếp làm nhanh
+ * thì món xong mà chưa ai kịp bấm "đang nấu" — bắt họ bấm hai lần để ghi lại một việc đã xong là
+ * bắt họ nói dối hệ thống cho đủ bước.
+ *
+ * Bản trước chỉ nhận cột KẾ TIẾP (`getNextKitchenBoardColumn(status) === targetColumn`), nên giao
+ * diện chặt hơn miền — nó cấm đúng thứ miền cố ý mở.
+ *
+ * `served` VẪN CHỈ ĐI TỪ `ready`, và đó không phải bỏ sót: bước đó là chuyển trạng thái của ĐƠN,
+ * mà `Order.canTransitionTo` chỉ cho `Ready -> Served`. Muốn nhảy thẳng tới `served` thì phải chạy
+ * hai lệnh nối nhau, và một lệnh hỏng giữa chừng để đơn nằm ở trạng thái không ai chọn. Không đáng
+ * đổi lấy một cú kéo.
+ */
+export function getKitchenBoardPlanForColumn(
+  status: OrderStatus,
+  targetColumn: KitchenBoardColumn,
+): KitchenBoardAdvancePlan | null {
+  const currentColumn = getKitchenBoardColumn(status);
+  if (!currentColumn) return null;
+
+  const from = kitchenBoardColumns.indexOf(currentColumn);
+  const to = kitchenBoardColumns.indexOf(targetColumn);
+  // Chỉ đi TỚI. Kéo ngược là hạ trạng thái, và miền từ chối mọi bước lùi.
+  if (to <= from) return null;
+
+  if (targetColumn === "preparing") {
+    return { kind: "items", eligibleItemStatuses: ["Pending"], nextItemStatus: "Preparing" };
+  }
+  if (targetColumn === "ready") {
+    return { kind: "items", eligibleItemStatuses: ["Pending", "Preparing"], nextItemStatus: "Ready" };
+  }
+  if (targetColumn === "served") {
+    return currentColumn === "ready" ? { kind: "order", nextOrderStatus: "Served" } : null;
+  }
+  return null;
+}
+
 export function canDropKitchenOrder(
   status: OrderStatus,
   targetColumn: KitchenBoardColumn,
 ): boolean {
-  return getNextKitchenBoardColumn(status) === targetColumn;
+  return getKitchenBoardPlanForColumn(status, targetColumn) !== null;
 }
 
 /**
