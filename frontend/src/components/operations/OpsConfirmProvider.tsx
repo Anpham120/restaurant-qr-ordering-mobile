@@ -123,6 +123,18 @@ export function OpsConfirmProvider({ children }: { children: ReactNode }) {
             <div className="ops-modal-header">
               <h2 id="ops-confirm-title">{yeuCau.title}</h2>
             </div>
+
+            {/*
+              DÙNG LẠI `ops-modal-body` / `ops-modal-footer`, KHÔNG TỰ ĐẶT PADDING.
+
+              Hộp này trước đây thả nội dung thẳng vào `.ops-modal` — mà lớp đó KHÔNG có padding,
+              nó chỉ bo góc. Header thì tự mang padding riêng, nên nhìn qua vẫn cân; phần thân và
+              hàng nút thì dính sát mép, và nút đầu tiên bị góc bo 16px cắt mất một góc.
+
+              Hai lớp có padding đã tồn tại sẵn và modal chi tiết đơn đang dùng chúng. Đặt padding
+              riêng cho hộp này là dựng bản thứ hai của cùng một thứ, rồi chờ chúng lệch nhau.
+            */}
+            <div className="ops-modal-body">
             {yeuCau.message ? <p className="ops-confirm-message">{yeuCau.message}</p> : null}
 
             {yeuCau.requireText ? (
@@ -162,7 +174,9 @@ export function OpsConfirmProvider({ children }: { children: ReactNode }) {
               </div>
             ) : null}
 
-            <div className="ops-form-actions">
+            </div>
+
+            <div className="ops-modal-footer">
               <button
                 autoFocus={!yeuCau.requireText}
                 className={`ops-btn ${yeuCau.danger ? "ops-btn--danger" : "ops-btn--primary"}`}
