@@ -10,18 +10,39 @@
 /* --------------------------------------------------------------------------
    Hero rút gọn cho trang thanh toán
    -------------------------------------------------------------------------- */
+/*
+  BO GÓC BẰNG CÁC THẺ BÊN DƯỚI.
+
+  `.cmc-hero` khai `border-radius: 0` vì nó sinh ra cho banner tràn viền của trang thực đơn — ở đó
+  cạnh vuông là đúng, khối chạm hai mép màn hình. Trang giỏ hàng thì KHÔNG tràn viền: hero nằm
+  trong cùng cột với các thẻ 24px bên dưới, nên cạnh vuông biến nó thành khối duy nhất không theo
+  luật của trang.
+*/
 .cmc-checkout-hero {
   display: block;
   min-height: unset;
   padding: clamp(28px, 5vw, 56px) clamp(20px, 5vw, 64px);
+  border-radius: 24px;
 }
 
+/*
+  BA HỌ CHỮ TRONG MỘT KHỐI LÀ MỘT HỌ QUÁ NHIỀU.
+
+  Nhãn này trước đây dùng `--font-script` ("Dancing Script") — chữ viết tay đặt ngay trên một tiêu
+  đề serif, trên một đoạn thân sans. Không cái nào dẫn tới cái nào, và nó là thứ duy nhất trên toàn
+  màn hình dùng kiểu chữ đó.
+
+  Trang này ĐÃ có ngôn ngữ riêng cho nhãn phụ — `.cmc-section-title > div > small`: chữ nhỏ, in
+  hoa, giãn chữ. "PHIÊN ĐANG MỞ", "LẦN GỌI MÓN TIẾP THEO" đều nói bằng giọng đó. Dùng lại giọng có
+  sẵn thì hero thôi lạc, và số họ chữ trong khối xuống còn hai.
+*/
 .cmc-checkout-hero .cmc-kicker {
-  font-family: var(--font-script);
-  font-size: clamp(18px, 2.5vw, 24px);
-  font-weight: 600;
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--vian-gold-light);
-  margin: 0 0 8px;
 }
 
 .cmc-checkout-hero h2 {
@@ -661,6 +682,9 @@
 @media (max-width: 480px) {
   .cmc-checkout-hero {
     padding: 22px 16px 26px;
+    /* Các thẻ dưới hạ xuống 18px ở bậc này — hero đi theo, nếu không nó lại lệch luật một lần nữa
+       nhưng chỉ trên điện thoại, tức đúng nơi ít ai mở ra soi. */
+    border-radius: 18px;
   }
 
   .cmc-checkout-layout {
