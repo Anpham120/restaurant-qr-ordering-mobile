@@ -407,7 +407,7 @@ Một tài liệu thiết kế chỉ liệt kê thứ chạy được thì khôn
 | **Ảnh được dựng trên VPS, không kéo từ registry** | Thứ CI kiểm và thứ chạy trên máy chủ là hai lần build khác nhau. Đẩy image lên GHCR là việc còn nợ |
 | **Không có tự động tạo release/tag** | 3 tag, 0 GitHub release. Không có gì ghi lại bản nào đã lên |
 | **Mặt khách hàng chưa qua đợt thiết kế lại** | 23 chỗ đặt style rời — nhưng **cả 23 nằm trong một tệp duy nhất**, `CustomerHomePage.tsx`. Mọi trang khách khác sạch. Đây là một lần sửa có phạm vi rõ, không phải một đợt quét |
-| **Lỗ hổng nghiệp vụ đang mở** | Xem §22 của `THIET_KE_NGHIEP_VU.md` — đã soát theo tình huống thật, không phải theo danh sách suy đoán |
+| **Huỷ món SAU khi bếp đã nấu không ghi hao hụt** | Tiền không sai — khách không bị tính. Nhưng báo cáo gộp chung "huỷ trước khi nấu" với "huỷ sau khi nấu", nên quán không đo được mất bao nhiêu nguyên liệu vì huỷ muộn. Đây là lỗ hổng nghiệp vụ **duy nhất còn mở** — bốn cái còn lại ở §22 của `THIET_KE_NGHIEP_VU.md` đều đã đóng |
 
 ## Một quyết định đã đảo: hệ thống chỉ có MỘT bảng màu sáng
 

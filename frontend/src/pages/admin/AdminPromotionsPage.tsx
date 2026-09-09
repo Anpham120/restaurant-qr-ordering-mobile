@@ -258,8 +258,13 @@ export function AdminPromotionsPage() {
                   {promotion.isActive ? "Hoạt động" : "Tắt"}
                 </span>
               </td>
-              {/* Người đặt mã phải thấy nó SẮP hết, không phải phát hiện khi khách phàn nàn. */}
-              <td data-money>
+              {/* Người đặt mã phải thấy nó SẮP hết, không phải phát hiện khi khách phàn nàn.
+
+                  KHÔNG `data-money`: cột này là tỉ lệ lượt dùng ("3/10"), không phải tiền. Trước
+                  đây ô có `data-money` mà tiêu đề thì không, nên tiêu đề canh trái còn ô canh phải
+                  — lệch nhau ngay trong một cột. `data-money` cũng đặt `nowrap`, vô nghĩa với
+                  nhánh chữ "không giới hạn". */}
+              <td>
                 {promotion.usageLimit == null
                   ? <span className="ops-muted">không giới hạn</span>
                   : `${promotion.usedCount ?? 0}/${promotion.usageLimit}`}
@@ -272,8 +277,10 @@ export function AdminPromotionsPage() {
               </td>
             </tr>
           ))}
+          {/* colSpan phải bằng SỐ CỘT thật (8). Để 7 thì dòng trống chỉ trải 7 cột và chừa một ô
+              rỗng lệch bên phải. `opsTableAudit.test.ts` canh con số này khớp số `<th>`. */}
           {promotions.length === 0 ? (
-            <tr><td colSpan={7}><div className="ops-empty">Chưa có khuyến mãi</div></td></tr>
+            <tr><td colSpan={8}><div className="ops-empty">Chưa có khuyến mãi</div></td></tr>
           ) : null}
         </tbody>
       </table>
