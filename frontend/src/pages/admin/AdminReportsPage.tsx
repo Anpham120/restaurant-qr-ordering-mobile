@@ -236,16 +236,19 @@ export function AdminReportsPage() {
             </div>
             {/* Hao hụt: món bị huỷ TRONG LÚC bếp đang nấu — nguyên liệu đã mất.
                 Đặt cạnh doanh thu vì nó là mặt kia của cùng một khoảng thời gian.
-                Giá trị tính theo GIÁ BÁN, không phải giá vốn: hệ thống không lưu giá vốn. */}
+
+                Con số CHÍNH là giá vốn ("tiền nguyên liệu đã mất"), không phải giá bán. Nhưng phải
+                nói ngay bên cạnh có bao nhiêu món CHƯA nhập giá vốn — nếu không, người đọc tưởng
+                đã thấy toàn bộ thiệt hại trong khi con số đang thấp hơn sự thật. */}
             <div className="ops-stat-card">
               <div className="ops-stat-label">Huỷ khi đang nấu</div>
               <div className="ops-stat-value ops-stat-value--trio">
-                {formatVnd(report.waste.giaTriHuyKhiDangNau)}
+                {formatVnd(report.waste.giaVonHuyKhiDangNau)}
               </div>
               <div className="ops-stat-detail">
-                {report.waste.huyKhiDangNau} món · {report.waste.huyTruocKhiNau} huỷ trước khi nấu
-                {report.waste.khongRoNguonGoc > 0
-                  ? ` · ${report.waste.khongRoNguonGoc} không rõ`
+                {report.waste.huyKhiDangNau} món · giá bán {formatVnd(report.waste.giaTriHuyKhiDangNau)}
+                {report.waste.monChuaCoGiaVon > 0
+                  ? ` · ${report.waste.monChuaCoGiaVon} món CHƯA có giá vốn nên chưa tính vào`
                   : ""}
               </div>
             </div>

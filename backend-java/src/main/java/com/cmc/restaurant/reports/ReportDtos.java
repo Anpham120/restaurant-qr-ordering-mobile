@@ -30,13 +30,22 @@ public final class ReportDtos {
 	 *       số. Nhóm này sẽ tự teo đi theo thời gian.
 	 * </ul>
 	 *
-	 * <p>{@code giaTriHuyKhiDangNau} tính theo GIÁ BÁN, không phải giá vốn — hệ thống không lưu giá
-	 * vốn. Nên nó là "doanh thu đáng lẽ có", không phải "tiền nguyên liệu đã mất". Con số thứ hai
-	 * mới là cái quán muốn, và muốn có nó thì phải nhập giá vốn từng món trước đã.
+	 * <p>HAI CON SỐ TIỀN, đo hai thứ khác nhau:
+	 *
+	 * <ul>
+	 *   <li>{@code giaTriHuyKhiDangNau} — theo GIÁ BÁN. "Doanh thu đáng lẽ có".
+	 *   <li>{@code giaVonHuyKhiDangNau} — theo GIÁ VỐN. "Tiền nguyên liệu đã mất". Đây mới là con
+	 *       số quán cần, nhưng nó chỉ cộng những món ĐÃ ĐƯỢC NHẬP giá vốn.
+	 * </ul>
+	 *
+	 * <p>{@code monChuaCoGiaVon} là số món bị huỷ lúc đang nấu mà KHÔNG có giá vốn để cộng. Phải
+	 * hiện con số này cạnh {@code giaVonHuyKhiDangNau}, nếu không người đọc sẽ tưởng đã thấy toàn
+	 * bộ thiệt hại. Cộng 0 cho những món đó là báo cáo hao hụt THẤP hơn sự thật — và sai theo hướng
+	 * làm người ta yên tâm là hướng sai nguy hiểm nhất.
 	 */
 	public record WasteResponse(
 			int huyKhiDangNau, int huyTruocKhiNau, int khongRoNguonGoc,
-			BigDecimal giaTriHuyKhiDangNau) {
+			BigDecimal giaTriHuyKhiDangNau, BigDecimal giaVonHuyKhiDangNau, int monChuaCoGiaVon) {
 	}
 
 	public record SummaryResponse(

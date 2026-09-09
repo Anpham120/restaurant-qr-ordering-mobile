@@ -29,6 +29,15 @@ public class MenuItemEntity {
 	@Column(nullable = false, precision = 18, scale = 2)
 	private BigDecimal price;
 
+	/**
+	 * Giá vốn. NULL nghĩa là CHƯA NHẬP, không phải bằng 0 — xem V34.
+	 *
+	 * <p>Nullable có chủ ý: bắt buộc nhập sẽ khoá mọi thao tác sửa món cho tới khi ai đó ngồi điền
+	 * 91 con số, và một con số điền vội cho qua còn tệ hơn một ô để trống.
+	 */
+	@Column(name = "cost_price", precision = 18, scale = 2)
+	private BigDecimal costPrice;
+
 	@Column(name = "image_url")
 	private String imageUrl;
 
@@ -111,6 +120,14 @@ public class MenuItemEntity {
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public BigDecimal getCostPrice() {
+		return costPrice;
+	}
+
+	public void setCostPrice(BigDecimal costPrice) {
+		this.costPrice = costPrice;
 	}
 
 	public String getImageUrl() {

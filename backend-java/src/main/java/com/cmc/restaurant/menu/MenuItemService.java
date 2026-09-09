@@ -36,6 +36,7 @@ public class MenuItemService {
 				normalizeTags(request.tags()),
 				OffsetDateTime.now());
 		item.setPrepMinutes(request.prepMinutes());
+		item.setCostPrice(request.costPrice());
 
 		return menuItemRepository.save(item);
 	}
@@ -59,6 +60,11 @@ public class MenuItemService {
 		if (request.prepMinutes() != null) {
 			item.setPrepMinutes(request.prepMinutes());
 		}
+		// Cùng luật, cùng lý do: một lần sửa TÊN món bằng client cũ không được thổi bay giá vốn,
+		// vì báo cáo hao hụt sẽ tụt xuống mà không ai biết vì sao.
+		if (request.costPrice() != null) {
+			item.setCostPrice(request.costPrice());
+		}
 		item.setUpdatedAt(OffsetDateTime.now());
 
 		return menuItemRepository.save(item);
@@ -114,6 +120,15 @@ public class MenuItemService {
 			throw ApiException.badRequest(
 					"MENU_ITEM_PREP_MINUTES_INVALID",
 					"Prep minutes must be between 1 and " + MAX_PREP_MINUTES + ".");
+		}
+
+		// Giá vốn ÂM là lỗi gõ. Bằng 0 thì HỢP LỆ — có món lấy nguyên liệu từ nguồn khác.
+		//
+		// KHÔNG chặn giá vốn cao hơn giá bán: quán bán lỗ một món để kéo khách là chuyện thật, và
+		// chặn nó là để phần mềm cãi nghiệp vụ. Chặn LỖI GÕ, không chặn quyết định kinh doanh.
+		if (request.costPrice() != null && request.costPrice().compareTo(BigDecimal.ZERO) < 0) {
+			throw ApiException.badRequest(
+					"MENU_ITEM_COST_PRICE_INVALID", "Menu item cost price must not be negative.");
 		}
 	}
 
