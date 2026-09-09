@@ -268,15 +268,15 @@ export function CustomerHomePage() {
       <TestimonialsSection />
 
       {/* 7. CTA banner */}
-      <section className="landing-section" style={{ background: "linear-gradient(135deg, #5a3a30 0%, #6e453b 60%, #8B6F5E 100%)", color: "#fff", textAlign: "center" }} data-reveal>
-        <p className="landing-eyebrow" style={{ color: "rgba(221,197,165,0.8)" }}>{t("Sẵn sàng thưởng thức?")}</p>
-        <h2 style={{ fontSize: "clamp(28px, 3.5vw, 48px)", margin: "0 auto", maxWidth: 600, color: "#fff" }}>
+      <section className="landing-section landing-section--cta" data-reveal>
+        <p className="landing-eyebrow">{t("Sẵn sàng thưởng thức?")}</p>
+        <h2 className="landing-cta-title">
           {t("Đặt món ngay tại bàn của bạn")}
         </h2>
-        <p style={{ maxWidth: 500, margin: "var(--space-4) auto 0", color: "rgba(237,228,213,0.85)", lineHeight: "var(--leading-relaxed)" }}>
+        <p className="landing-cta-sub">
           {t("Quét mã QR trên bàn để bắt đầu phiên đặt món. Bếp nhận đơn ngay, phục vụ nhanh chóng.")}
         </p>
-        <div style={{ marginTop: "var(--space-6)", display: "flex", justifyContent: "center", gap: "var(--space-4)", flexWrap: "wrap" }}>
+        <div className="landing-cta-actions">
           <button className="landing-button light" type="button" onClick={() => showQrNotice()}>
             {t("Quét QR để đặt món")}
           </button>
@@ -288,15 +288,8 @@ export function CustomerHomePage() {
 
       {/* Scan notice toast */}
       {scanNotice ? (
-        <div className="landing-toast" role="status" style={{
-          position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)",
-          zIndex: 80, padding: "var(--space-3) var(--space-5)",
-          background: "var(--vian-brown-dark)", color: "#fff",
-          borderRadius: "var(--radius-pill)", boxShadow: "var(--elevation-3)",
-          fontSize: "var(--text-sm)", fontWeight: 600, whiteSpace: "nowrap",
-          animation: "toast-in var(--duration-slow) var(--ease-emphasized) both",
-        }}>
-           <Smartphone size={16} style={{ display: "inline", verticalAlign: "-2px" }} /> {scanNotice}
+        <div className="landing-toast" role="status">
+           <Smartphone size={16} className="landing-inline-icon" /> {scanNotice}
         </div>
       ) : null}
     </div>
@@ -429,8 +422,11 @@ function SpaceSection() {
   return (
     <section className="landing-space-vian" id="khong-gian" aria-labelledby="space-title">
       <div className="landing-space-vian-bg" aria-hidden="true" />
-      <div className="landing-vian-section-title" data-reveal style={{ border: "none", padding: "0 0 clamp(30px, 4vw, 50px)", background: "transparent" }}>
-        <h2 id="space-title" style={{ color: "#fff" }}>{t("Không gian nhà hàng")}</h2>
+      <div
+        className="landing-vian-section-title landing-vian-section-title--flush landing-vian-section-title--on-dark"
+        data-reveal
+      >
+        <h2 id="space-title">{t("Không gian nhà hàng")}</h2>
       </div>
       <div className="landing-space-gallery" data-reveal>
         {photos.map((p, idx) => (
@@ -439,8 +435,8 @@ function SpaceSection() {
           </div>
         ))}
       </div>
-      <div style={{ position: "relative", display: "flex", justifyContent: "center", marginTop: "clamp(24px, 3vw, 40px)" }} data-reveal>
-        <a className="landing-button" href="/album" style={{ background: "var(--vian-brown)", color: "#fff", letterSpacing: "1.2px" }}>
+      <div className="landing-album-cta" data-reveal>
+        <a className="landing-button landing-button--brown" href="/album">
           {t("Xem thêm")}
         </a>
       </div>
@@ -454,7 +450,7 @@ function CuisineSection({ items }: { items: CustomerMenuResponse["items"] }) {
 
   return (
     <section className="landing-cuisine-vian" id="am-thuc" aria-labelledby="cuisine-title">
-      <div className="landing-vian-section-title" data-reveal style={{ border: "none", padding: "0 0 clamp(30px, 4vw, 50px)" }}>
+      <div className="landing-vian-section-title landing-vian-section-title--flush" data-reveal>
         <h2 id="cuisine-title">{t("Ẩm thực")}</h2>
       </div>
       <div className="landing-cuisine-grid" data-reveal>
@@ -482,7 +478,7 @@ function MediaSection() {
     <section className="landing-section" aria-labelledby="media-title">
       <div className="landing-media-banner" data-reveal>
         <div className="landing-media-content">
-          <p className="landing-eyebrow" style={{ color: "var(--color-warning)" }}>{t("Truyền thông đánh giá")}</p>
+          <p className="landing-eyebrow landing-eyebrow--warning">{t("Truyền thông đánh giá")}</p>
           <h2 id="media-title">{t("Hanoi Food Review & Báo chí nói về chúng tôi")}</h2>
           <p>
             “{t("Một nơi để tìm về đúng nghĩa của mâm cơm Việt, những món ngon mộc mạc của bà của mẹ nhưng được bày biện tinh tế theo đẳng cấp 5 sao.")}”
@@ -550,31 +546,31 @@ function FooterSection() {
         <div>
           <h4>CMC Restaurant</h4>
           <p>{t("Nhà hàng cơm Việt ngon tròn vị, kết hợp ẩm thực gia đình mộc mạc với trải nghiệm phục vụ hiện đại.")}</p>
-          <p style={{ fontSize: "var(--text-xs)", color: "var(--color-warning)", marginTop: "var(--space-2)" }}>
+          <p className="landing-footer-note">
             {t("* Nhà hàng có chỗ để xe ô tô miễn phí")}
           </p>
         </div>
         <div>
           <h4>{t("Cơ sở nhà hàng")}</h4>
-          <p style={{ marginBottom: "var(--space-2)", fontSize: "var(--text-sm)" }}>
+          <p className="landing-footer-branch">
             <strong>{t("Cơ sở 1:")}</strong> {t("145 Hoàng Cầu, Q. Đống Đa, Hà Nội")}<br />
-            Hotline: <a href="tel:0904816145" style={{ color: "inherit", textDecoration: "none" }}>0904 816 145</a>
+            Hotline: <a href="tel:0904816145" className="landing-footer-tel">0904 816 145</a>
           </p>
-          <p style={{ fontSize: "var(--text-sm)" }}>
+          <p className="landing-footer-branch--last">
             <strong>{t("Cơ sở 2:")}</strong> {t("37 Quang Trung, Q. Hoàn Kiếm, Hà Nội")}<br />
-            Hotline: <a href="tel:0867100337" style={{ color: "inherit", textDecoration: "none" }}>0867 100 337</a>
+            Hotline: <a href="tel:0867100337" className="landing-footer-tel">0867 100 337</a>
           </p>
         </div>
         <div>
           <h4>{t("Giờ mở cửa")}</h4>
           <p><strong>{t("Sáng:")}</strong> 10:00 - 14:00</p>
           <p><strong>{t("Chiều:")}</strong> 18:00 - 22:00</p>
-          <p style={{ fontSize: "var(--text-xs)", opacity: 0.8 }}>{t("Tất cả các ngày trong tuần")}</p>
+          <p className="landing-footer-hours-note">{t("Tất cả các ngày trong tuần")}</p>
         </div>
         <div>
           <h4>{t("Liên hệ")}</h4>
-          <p><Mail size={14} style={{ display: "inline", verticalAlign: "-2px" }} /> <a href="mailto:info@cmcrestaurant.vn" style={{ color: "inherit" }}>info@cmcrestaurant.vn</a></p>
-          <p><Globe size={14} style={{ display: "inline", verticalAlign: "-2px" }} /> <a href="https://cmcrestaurant.vn" style={{ color: "inherit" }}>cmcrestaurant.vn</a></p>
+          <p><Mail size={14} className="landing-inline-icon" /> <a href="mailto:info@cmcrestaurant.vn" className="landing-footer-link">info@cmcrestaurant.vn</a></p>
+          <p><Globe size={14} className="landing-inline-icon" /> <a href="https://cmcrestaurant.vn" className="landing-footer-link">cmcrestaurant.vn</a></p>
         </div>
       </div>
       <div className="landing-footer-map">

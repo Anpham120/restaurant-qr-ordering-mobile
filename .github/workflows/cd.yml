@@ -109,8 +109,17 @@ jobs:
     name: Triển khai ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
     needs: kiem-truoc
     runs-on: ubuntu-latest
-    # Bắt buộc có người duyệt, và giữ bí mật riêng cho từng môi trường. Đặt "required reviewers"
-    # cho environment `production` trong Settings → Environments.
+
+    # `contents: write` để tạo tag và release ở bước cuối. Đặt Ở JOB chứ không ở đầu tệp: job
+    # `kiem-truoc` chỉ đọc mã, không có lý do gì để nó ghi được vào kho.
+    permissions:
+      contents: write
+
+    # Giữ bí mật và biến riêng cho từng môi trường.
+    #
+    # Chốt "required reviewers" của environment `production` ĐÃ ĐƯỢC GỠ ngày 09/09/2026 — đẩy vào
+    # `main` nay tự triển khai, không dừng chờ ai bấm. Ràng buộc còn lại là `branch_policy`: chỉ
+    # nhánh được bảo vệ mới triển khai vào production được. Bỏ chốt NGƯỜI, không bỏ chốt NHÁNH.
     environment: ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
     steps:
       - uses: actions/checkout@v7
@@ -216,3 +225,52 @@ jobs:
         run: |
           echo "::error::Triển khai ${{ inputs.moi_truong || (github.ref == 'refs/heads/main' && 'production' || 'staging') }} HỎNG. Máy chủ đã được lùi về bản trước."
           exit 1
+
+      # GHI LẠI THỨ ĐÃ THẬT SỰ LÊN PRODUCTION.
+      #
+      # Kho có 3 tag và 0 release, nên không có gì trả lời được câu "bản nào đang chạy, lên lúc
+      # nào". Lùi lại thì về `repo.previous` — tức "bản ngay trước", không phải "bản đã biết là
+      # tốt". Đó là hai thứ khác nhau vào đúng lúc cần phân biệt.
+      #
+      # ĐẶT SAU HEALTH-CHECK, KHÔNG PHẢI KHI MERGE. Tag lúc merge là ghi lại thứ ĐỊNH lên; tag ở
+      # đây là ghi lại thứ ĐÃ lên và đã trả lời được `/api/health`. Một lượt deploy hỏng rồi tự lùi
+      # sẽ KHÔNG sinh tag, và đó là điều đúng — không có gì mới đang chạy để mà ghi.
+      #
+      # `success()` là bắt buộc: không có nó, bước này vẫn chạy sau khi các bước trên hỏng.
+      - name: Ghi release cho bản vừa lên production
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_BOT_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+
+          # `actions/checkout` clone NÔNG (fetch-depth 1) — không tag nào, không lịch sử nào. Bản
+          # đầu của bước này gọi thẳng `git log` và `git tag --list` trên đó: cả hai trả rỗng, và
+          # ghi chú release sẽ TRỐNG mà bước vẫn xanh. Hỏng im lặng, đúng loại khó thấy nhất.
+          git fetch --tags --quiet origin || true
+          git fetch --deepen=50 --quiet origin || true
+
+          # `run_number` tăng đều và không bao giờ lặp, nên tag không thể trùng kể cả khi hai lượt
+          # deploy cùng ngày. Ngày đứng trước để tag tự sắp đúng thứ tự thời gian.
+          tag="v$(date -u +%Y.%m.%d).${{ github.run_number }}"
+
+          truoc="$(git tag --list 'v*' --sort=-creatordate | head -1 || true)"
+          if [ -n "$truoc" ]; then
+            pham_vi="${truoc}..HEAD"
+            echo "So với tag trước: ${truoc}"
+          else
+            pham_vi="HEAD~20..HEAD"
+            echo "Chưa có tag nào — lấy 20 commit gần nhất."
+          fi
+
+          {
+            printf 'Đã triển khai lên production và `/api/health` đã trả lời.\n\n'
+            printf '## Thay đổi\n\n'
+            git log --no-merges --pretty='- %s (%h)' "$pham_vi" 2>/dev/null || printf '- (không đọc được lịch sử)\n'
+            printf '\nCommit: `%s`\n' "${{ github.sha }}"
+          } > ghi-chu-release.md
+
+          git tag "$tag" "${{ github.sha }}"
+          git push origin "$tag"
+          gh release create "$tag" --title "$tag" --notes-file ghi-chu-release.md
+          echo "Đã tạo release ${tag}"

@@ -2896,3 +2896,139 @@
     max-width: 420px;
   }
 }
+
+/* ======================================================================
+   Lớp thay cho `style={{}}` của CustomerHomePage
+
+   ĐÂY LÀ LỚP MỚI, KHÔNG PHẢI LUẬT ĐÈ. Không luật nào dưới đây ghi đè một luật ở
+   trên — chúng hoặc là lớp chưa từng tồn tại, hoặc là modifier `--x` của một lớp
+   có sẵn. Nối thêm luật đè vào cuối tệp là chuyện khác và kho này đã dính hai lần.
+
+   `.landing-toast` ĐƯỢC DÙNG TRONG JSX NHƯNG CHƯA TỪNG KHAI Ở ĐÂY. Toàn bộ hình
+   thức của nó nằm trong style rời, nên gỡ style mà không tạo lớp là biến toast
+   thành một div trần.
+   ====================================================================== */
+
+/* ---- Dải kêu gọi đặt món --------------------------------------------- */
+.landing-section--cta {
+  background: linear-gradient(135deg, #5a3a30 0%, #6e453b 60%, #8b6f5e 100%);
+  color: #fff;
+  text-align: center;
+}
+
+.landing-section--cta .landing-eyebrow {
+  color: rgba(221, 197, 165, 0.8);
+}
+
+.landing-cta-title {
+  margin: 0 auto;
+  max-width: 600px;
+  font-size: clamp(28px, 3.5vw, 48px);
+  color: #fff;
+}
+
+.landing-cta-sub {
+  margin: var(--space-4) auto 0;
+  max-width: 500px;
+  color: rgba(237, 228, 213, 0.85);
+  line-height: var(--leading-relaxed);
+}
+
+.landing-cta-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+/* ---- Thông báo quét QR ----------------------------------------------- */
+.landing-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  padding: var(--space-3) var(--space-5);
+  background: var(--vian-brown-dark);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--elevation-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  animation: toast-in var(--duration-slow) var(--ease-emphasized) both;
+}
+
+/* Biểu tượng đứng cùng dòng với chữ. */
+.landing-inline-icon {
+  display: inline;
+  vertical-align: -2px;
+}
+
+/* ---- Tiêu đề mục: hai biến thể KHÁC NHAU THẬT ------------------------
+   Lớp gốc có `background: var(--vian-cream)`. Mục "Không gian" nằm trên ảnh nền
+   tối nên phải bỏ nền đi; mục "Ẩm thực" thì GIỮ nền kem. Gộp hai cái này vào một
+   modifier là làm mất nền kem của mục Ẩm thực. */
+.landing-vian-section-title--flush {
+  border: none;
+  padding: 0 0 clamp(30px, 4vw, 50px);
+}
+
+.landing-vian-section-title--on-dark {
+  background: transparent;
+}
+
+.landing-vian-section-title--on-dark h2 {
+  color: #fff;
+}
+
+/* ---- Nút xem thêm ảnh ------------------------------------------------- */
+.landing-album-cta {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(24px, 3vw, 40px);
+}
+
+.landing-button--brown {
+  background: var(--vian-brown);
+  color: #fff;
+  letter-spacing: 1.2px;
+}
+
+.landing-eyebrow--warning {
+  color: var(--color-warning);
+}
+
+/* ---- Chân trang ------------------------------------------------------- */
+.landing-footer-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-warning);
+}
+
+.landing-footer-branch {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.landing-footer-branch--last {
+  font-size: var(--text-sm);
+}
+
+.landing-footer-hours-note {
+  font-size: var(--text-xs);
+  opacity: 0.8;
+}
+
+/* Hai lớp, không phải một: số điện thoại BỎ gạch chân, còn email và website thì
+   KHÔNG bỏ. Gộp lại là âm thầm đổi hình thức của hai đường dẫn. */
+.landing-footer-link {
+  color: inherit;
+}
+
+.landing-footer-tel {
+  color: inherit;
+  text-decoration: none;
+}
