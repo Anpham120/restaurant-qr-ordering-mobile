@@ -96,15 +96,14 @@ describe("backtick trong chuỗi nháy kép của bash", () => {
    */
   it("không workflow nào có backtick bị thực thi ngoài ý muốn", () => {
     const pham: string[] = [];
-    for (const ten of [
-      "auto-merge.yml",
-      "cd.yml",
-      "ci.yml",
-      "ci-java.yml",
-      "ci-mobile.yml",
-      "security.yml",
-      "dependency-review.yml",
-    ]) {
+    // ĐỌC THƯ MỤC, KHÔNG GÕ DANH SÁCH.
+    //
+    // Bản trước liệt kê bảy tên bằng tay. Một workflow mới thêm vào kho là một workflow nằm ngoài
+    // cổng, và không có gì báo — cùng đúng hình dạng lỗi mà phép kiểm ngay bên dưới đã ghi lại:
+    // cổng chỉ quét chỗ người viết nhớ tới thì nó canh trí nhớ, không canh lớp lỗi. Danh sách gõ
+    // tay lạc hậu ÂM THẦM; đọc thư mục thì không thể.
+    const thuMucWf = fileURLToPath(new URL(".github/workflows/", repoRoot));
+    for (const ten of readdirSync(thuMucWf).filter((f) => f.endsWith(".yml") || f.endsWith(".yaml"))) {
       const yml = doc(`.github/workflows/${ten}`);
       let trongRun = false;
       let thut = -1;
