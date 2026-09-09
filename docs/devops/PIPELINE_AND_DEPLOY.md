@@ -243,6 +243,39 @@ minh rollback nổ khi chính script triển khai hỏng, bao gồm cả khi mig
 **Quay lui mã không quay lui cơ sở dữ liệu.** Một migration đã chạy thì vẫn ở đó. Nên mỗi thay đổi
 lược đồ phải nghĩ trước đường lùi — thêm cột thì lùi được, xoá cột thì không.
 
+## 6.1 Ảnh Docker — CI dựng, máy chủ kéo
+
+Trước đây máy chủ tự `docker compose up -d --build`. Thứ CI kiểm và thứ khách hàng dùng là **hai
+lần build khác nhau**, trên hai máy khác nhau, vào hai thời điểm khác nhau. "CI xanh" không nói gì
+chắc chắn về nhị phân đang phục vụ.
+
+Nay job `dung-anh` dựng và đẩy lên `ghcr.io`, rồi `deploy-vps.sh` kéo về.
+
+| Ảnh | Tag | Dùng chung hai môi trường? |
+|---|---|---|
+| `cmc-restaurant-api` | `<sha>` | **Có.** Java đọc cấu hình lúc chạy |
+| `cmc-restaurant-frontend` | `<môi trường>-<sha>` | **Không.** Vite nướng URL vào bundle lúc build |
+
+Sự bất đối xứng đó không phải tuỳ tiện. `frontend/Dockerfile` nhận `ARG VITE_API_BASE_URL` và
+những URL khác, rồi Vite gói chúng thẳng vào JavaScript. Một tag frontend dùng chung nghĩa là ảnh
+nào đẩy sau ghi đè ảnh kia, và khách của môi trường này gọi vào API của môi trường kia — **im
+lặng**, vì trang vẫn tải bình thường.
+
+Bỏ sót một `--build-arg` cũng hỏng im lặng theo cách khác: bundle rơi về giá trị mặc định **ghi
+cứng** trong Dockerfile, vốn là địa chỉ production. `cdPipeline.test.ts` canh cả hai chỗ này.
+
+**`.env` nay mang tên ảnh, nên lùi lại phải lùi cả nó.** Lùi mã mà giữ `.env` mới là chạy ảnh MỚI
+với mã CŨ — tức không lùi gì cả. Vì vậy `deploy-vps.sh` gửi cấu hình sang `.env.new` và giữ bản cũ
+thành `.env.previous`, đi cùng cặp với `repo.previous`; `rollback-vps.sh` khôi phục nó **trước khi**
+đọc. Không phép kiểm nào cũ bắt được lỗi này: rollback vẫn thoát 0, health-check vẫn xanh, máy chủ
+vẫn phục vụ — chỉ là phục vụ sai thứ.
+
+**Đường dựng-tại-chỗ vẫn còn sống.** Thiếu tên ảnh thì `deploy-vps.sh` quay về `--build` như trước.
+Chạy tay và chạy local không có registry.
+
+Lợi thêm, không nhỏ: `--build` trên VPS là vài phút im lặng, và chính khoảng im lặng đó đã làm đứt
+SSH ngày 08/08 (xem `lib-ssh.sh`). `pull` in tiến độ đều nên kết nối không bị coi là chết.
+
 ## 7. Sao lưu và khôi phục
 
 `backup-postgres.sh` ghi bản kết xuất vào `/opt/cmc-restaurant/<môi trường>/backups`, đặt tên theo
