@@ -98,3 +98,61 @@ export function locTheoCa<T extends { id: string }>(
     return cua.length === 0 || cua.includes(ca);
   });
 }
+
+/**
+ * Giờ hiện tại THEO ĐỒNG HỒ CỦA QUÁN, dạng "HH:MM".
+ *
+ * Không dùng giờ máy người xem. Quản lý mở màn hình từ máy đặt sai múi giờ, hay từ điện thoại đang
+ * roaming, sẽ thấy cảnh báo về một ca không hề đang mở. Ca phục vụ là giờ treo tường của quán, nên
+ * phải hỏi đúng múi giờ đó — cùng múi giờ mà máy chủ dùng.
+ *
+ * `hourCycle: "h23"` là bắt buộc. Với `hour12: false`, một số môi trường trả về "24:00" cho nửa
+ * đêm thay vì "00:00", và "24:00" thì lớn hơn mọi giờ bắt đầu nên mọi ca qua đêm sẽ trông như đang
+ * mở. Vẫn chuẩn hoá thêm một lần cho chắc.
+ */
+export function gioQuanHienTai(luc: Date = new Date()): string {
+  const tho = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(luc);
+  return tho.startsWith("24") ? `00${tho.slice(2)}` : tho;
+}
+
+/**
+ * Những ca đang mở vào lúc `gio`.
+ *
+ * Cùng luật với máy chủ: đầu ca tính vào, cuối ca không, và ca kết thúc sớm hơn giờ bắt đầu là ca
+ * bọc qua nửa đêm. Phép so thẳng `tu <= t && t < den` trả về SAI cho MỌI thời điểm với ca qua đêm,
+ * nên ca đó sẽ im lặng không bao giờ được coi là đang mở.
+ */
+export function caDangMo<T extends { startTime: string; endTime: string }>(
+  ca: T[],
+  gio: string,
+): T[] {
+  return ca.filter((c) => {
+    const tu = gioNgan(c.startTime);
+    const den = gioNgan(c.endTime);
+    return tu < den ? gio >= tu && gio < den : gio >= tu || gio < den;
+  });
+}
+
+/**
+ * Món của một ca đang HẾT SUẤT, tức đang bị ẩn khỏi thực đơn khách.
+ *
+ * Đây là thứ đáng cảnh báo, không phải "chưa ai nhập số suất": nó là một HẬU QUẢ nhìn thấy được
+ * (khách không thấy món), tự biến mất khi có người nhập lại, và suy ra được từ dữ liệu đang có nên
+ * không cần bảng nào ghi lại "ca này đã nhập chưa".
+ *
+ * `remainingQuantity === 0` chứ không phải giá trị falsy: `null` là KHÔNG đếm suất, món bán thoải
+ * mái, hoàn toàn bình thường. Gộp hai cái lại thì cảnh báo sẽ kêu về gần hết thực đơn.
+ *
+ * Món đã tắt công tắc KHÔNG tính: đó là quyết định có chủ ý của người, không phải sự cố.
+ */
+export function monHetSuatTrongCa<
+  T extends { id: string; isAvailable: boolean; remainingQuantity: number | null },
+>(mon: T[], ganCa: Record<string, string[]>, caId: string): T[] {
+  return locTheoCa(mon, ganCa, caId)
+    .filter((m) => m.isAvailable && m.remainingQuantity === 0);
+}

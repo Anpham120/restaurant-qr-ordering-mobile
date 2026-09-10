@@ -5,7 +5,8 @@ import {
   fetchAdminMenuItems, fetchCaPhucVu, fetchGanCaTheoMon, luuThucDonHomNay, type CaPhucVu,
 } from "../../services/adminMenuService";
 import {
-  caKhacNhau, gioNgan, locTheoCa, tinhThayDoi, type LocCa, type NhapChuanBi,
+  caDangMo, caKhacNhau, gioNgan, gioQuanHienTai, locTheoCa, monHetSuatTrongCa, tinhThayDoi,
+  type LocCa, type NhapChuanBi,
 } from "./chuanBiThucDon";
 import { useOpsConfirm } from "../operations/OpsConfirmProvider";
 import "../operations/operations.css";
@@ -36,6 +37,12 @@ export function ChuanBiThucDonPanel() {
   const [thongBao, setThongBao] = useState("");
   const [tim, setTim] = useState("");
   const [locCa, setLocCa] = useState<LocCa>(null);
+
+  /**
+   * Chốt một lần lúc mở màn hình. Đọc đồng hồ trong lúc vẽ sẽ làm cảnh báo nhảy giữa chừng khi
+   * một ca vừa đóng — người đang gõ dở bỗng thấy nội dung đổi dưới tay mình.
+   */
+  const [gioMoMan] = useState(() => gioQuanHienTai());
 
   const tai = useCallback(async () => {
     try {
@@ -74,6 +81,21 @@ export function ChuanBiThucDonPanel() {
     const q = tim.trim().toLowerCase();
     return q ? theoCa.filter((m) => m.name.toLowerCase().includes(q)) : theoCa;
   }, [mon, tim, caBanDau, locCa]);
+
+  /**
+   * CẢNH BÁO MÓN ĐANG ẨN KHỎI THỰC ĐƠN KHÁCH.
+   *
+   * Số suất không tự nạp lại khi sang ca mới, có chủ ý: số suất làm được phụ thuộc nguyên liệu
+   * nhập sáng hôm đó, và một con số cấu hình sẵn thì không biết hôm nay giao thiếu.
+   *
+   * Đổi lại, món bán hết mẻ trưa sẽ vẫn khoá tới tối nếu không ai nhập lại. Dải này nói ra điều
+   * đó, và nó suy từ dữ liệu đang có — không có bảng nào ghi "ca này đã nhập chưa".
+   */
+  const canhBao = useMemo(() => {
+    return caDangMo(ca, gioMoMan)
+      .map((c) => ({ ca: c, mon: monHetSuatTrongCa(mon, caBanDau, c.id) }))
+      .filter((x) => x.mon.length > 0);
+  }, [ca, gioMoMan, mon, caBanDau]);
 
   /**
    * Chỉ gửi những món THẬT SỰ đổi.
@@ -135,6 +157,16 @@ export function ChuanBiThucDonPanel() {
     <div>
       {loi ? <div className="ops-notice ops-notice--danger">{loi}</div> : null}
       {thongBao ? <div className="ops-notice ops-notice--info">{thongBao}</div> : null}
+
+      {canhBao.map(({ ca: c, mon: het }) => (
+        <div className="ops-notice ops-notice--warning" key={c.id}>
+          Ca <strong>{c.name}</strong> ({gioNgan(c.startTime)}–{gioNgan(c.endTime)}) đang mở, nhưng
+          {" "}<strong>{het.length} món</strong> của ca đã hết suất nên không hiện cho khách:
+          {" "}{het.slice(0, 5).map((m) => m.name).join(", ")}
+          {het.length > 5 ? ` và ${het.length - 5} món nữa` : ""}.
+          {" "}Nhập lại số suất ở bảng dưới để mở lại.
+        </div>
+      ))}
 
       <div className="ops-stats">
         <div className="ops-stat-card">
