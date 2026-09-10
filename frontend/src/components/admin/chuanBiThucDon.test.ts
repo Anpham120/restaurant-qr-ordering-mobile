@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  caKhacNhau, docSoSuat, gioNgan, locTheoCa, tinhThayDoi, type NhapChuanBi,
+  caDangMo, caKhacNhau, docSoSuat, gioNgan, gioQuanHienTai, locTheoCa, monHetSuatTrongCa,
+  tinhThayDoi, type NhapChuanBi,
 } from "./chuanBiThucDon";
 import type { AdminMenuItem } from "../../types";
 
@@ -168,5 +169,83 @@ describe("lọc bảng Hôm nay theo ca", () => {
 
   it("ca chưa có món nào gán vẫn hiện món bán cả ngày", () => {
     expect(locTheoCa(ds, gan, "sp_trua").map((m) => m.id)).toEqual(["m_nuoc"]);
+  });
+});
+
+describe("giờ theo đồng hồ của quán", () => {
+  /**
+   * Không dùng giờ máy người xem. Quản lý mở màn hình từ máy đặt sai múi giờ sẽ thấy cảnh báo về
+   * một ca không hề đang mở, rồi nhập số suất cho sai ca.
+   */
+  it("đổi sang giờ Việt Nam, không phải giờ máy", () => {
+    expect(gioQuanHienTai(new Date("2026-03-02T11:30:00Z"))).toBe("18:30");
+    expect(gioQuanHienTai(new Date("2026-03-02T03:00:00Z"))).toBe("10:00");
+  });
+
+  /**
+   * BẪY: với `hour12: false`, một số môi trường trả về "24:00" cho nửa đêm thay vì "00:00". Chuỗi
+   * "24:00" lớn hơn mọi giờ bắt đầu, nên MỌI ca qua đêm sẽ trông như đang mở suốt.
+   */
+  it("nửa đêm là 00:00, KHÔNG phải 24:00", () => {
+    expect(gioQuanHienTai(new Date("2026-03-02T17:00:00Z"))).toBe("00:00");
+  });
+});
+
+describe("ca nào đang mở", () => {
+  const ds = [
+    { startTime: "10:00:00", endTime: "14:00:00" },
+    { startTime: "18:00:00", endTime: "22:00:00" },
+  ];
+
+  it("chỉ ca chứa giờ đó", () => {
+    expect(caDangMo(ds, "12:00")).toHaveLength(1);
+    expect(caDangMo(ds, "12:00")[0].startTime).toBe("10:00:00");
+    expect(caDangMo(ds, "16:00")).toHaveLength(0);
+  });
+
+  it("đầu ca tính vào, cuối ca không", () => {
+    expect(caDangMo(ds, "10:00")).toHaveLength(1);
+    expect(caDangMo(ds, "14:00")).toHaveLength(0);
+  });
+
+  /** Phép so thẳng trả về sai cho MỌI thời điểm với ca qua đêm, nên ca đó không bao giờ mở. */
+  it("CA QUA ĐÊM mở cả trước lẫn sau nửa đêm", () => {
+    const dem = [{ startTime: "18:00:00", endTime: "02:00:00" }];
+    expect(caDangMo(dem, "23:00")).toHaveLength(1);
+    expect(caDangMo(dem, "01:00")).toHaveLength(1);
+    expect(caDangMo(dem, "03:00")).toHaveLength(0);
+    expect(caDangMo(dem, "15:00")).toHaveLength(0);
+  });
+});
+
+describe("món hết suất trong ca đang mở", () => {
+  const m = (id: string, isAvailable: boolean, remainingQuantity: number | null) =>
+    ({ id, isAvailable, remainingQuantity });
+
+  it("bắt món đã về 0", () => {
+    const ds = [m("m_lau", true, 0), m("m_com", true, 5)];
+    const kq = monHetSuatTrongCa(ds, { m_lau: ["sp_toi"], m_com: ["sp_toi"] }, "sp_toi");
+
+    expect(kq.map((x) => x.id)).toEqual(["m_lau"]);
+  });
+
+  /**
+   * `null` là KHÔNG đếm suất — món bán thoải mái, hoàn toàn bình thường. Gộp nó với 0 thì cảnh báo
+   * sẽ kêu về gần hết thực đơn, và một cảnh báo lúc nào cũng kêu là một cảnh báo không ai đọc.
+   */
+  it("null KHÔNG phải hết suất", () => {
+    const ds = [m("m_nuoc", true, null)];
+    expect(monHetSuatTrongCa(ds, {}, "sp_toi")).toEqual([]);
+  });
+
+  /** Món đã tắt công tắc là quyết định có chủ ý của người, không phải sự cố cần nhắc. */
+  it("món đã tắt không tính là sự cố", () => {
+    const ds = [m("m_lau", false, 0)];
+    expect(monHetSuatTrongCa(ds, { m_lau: ["sp_toi"] }, "sp_toi")).toEqual([]);
+  });
+
+  it("món bán cả ngày hết suất cũng được nhắc", () => {
+    const ds = [m("m_nuoc", true, 0)];
+    expect(monHetSuatTrongCa(ds, {}, "sp_toi").map((x) => x.id)).toEqual(["m_nuoc"]);
   });
 });
