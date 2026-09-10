@@ -4,7 +4,6 @@ import com.cmc.restaurant.menu.MenuDtos.MenuCategoryResponse;
 import com.cmc.restaurant.menu.MenuDtos.MenuItemResponse;
 import com.cmc.restaurant.menu.MenuDtos.MenuResponse;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,15 +13,6 @@ import org.springframework.stereotype.Service;
 /** Mirrors the {@code GET /api/menu} handler in {@code MenuEndpoints.cs} (.NET). */
 @Service
 public class MenuQueryService {
-
-	/**
-	 * Ca phục vụ là GIỜ TREO TƯỜNG CỦA QUÁN, không phải giờ máy chủ.
-	 *
-	 * <p>Máy chủ chạy UTC. Đọc {@code LocalTime.now()} thẳng thì ca trưa 10:00-14:00 sẽ mở lúc 5 giờ
-	 * chiều giờ Việt Nam — thực đơn sai bảy tiếng, mỗi ngày, và không có lỗi nào được ném ra. Cùng
-	 * múi giờ mà {@code XetLaiHangJob} đã dùng.
-	 */
-	private static final ZoneId MUI_GIO_QUAN = ZoneId.of("Asia/Ho_Chi_Minh");
 
 	private final CategoryRepository categoryRepository;
 	private final MenuItemRepository menuItemRepository;
@@ -40,7 +30,7 @@ public class MenuQueryService {
 	}
 
 	public MenuResponse getPublicMenu() {
-		return layThucDon(LocalTime.now(MUI_GIO_QUAN));
+		return layThucDon(LocalTime.now(LichPhucVu.MUI_GIO_QUAN));
 	}
 
 	/** Nhận thời điểm làm tham số để kiểm được ca phục vụ mà không phải chờ tới đúng 18:00. */
