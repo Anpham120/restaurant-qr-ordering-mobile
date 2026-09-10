@@ -364,34 +364,38 @@ export function KitchenRealtimePage() {
               <span className="ops-toggle-label">
                 {item.name}
                 {!item.isAvailable ? <span className="ops-badge ops-badge--cancelled kitchen-menu-flag">Hết</span> : null}
-              {/* Nút GIẢM chỉ hiện khi đang có độ trễ. Ở trạng thái thường hàng vẫn đúng một nút
-                  như cũ, nên không thêm chỗ bấm nhầm nào vào lúc bình thường. */}
-              {(item.delayMinutes ?? 0) > 0 ? (
-                <button
-                  className="ops-btn ops-btn--ghost kitchen-mon-delay-bot"
-                  disabled={togglingId === item.id}
-                  onClick={() => handleKhaiDoTre(item, phutDoTreTruoc(item.delayMinutes ?? 0))}
-                  type="button"
-                  aria-label={`Giảm 5 phút độ trễ của ${item.name}`}
-                  title={`Giảm 5 phút. Về 0 là xoá độ trễ của "${item.name}".`}
-                >
-                  −
-                </button>
-              ) : null}
               </span>
-              {/* Độ trễ RIÊNG của món, đặt ngay cạnh công tắc "hết món".
+
+              {/* ĐỘ TRỄ RIÊNG CỦA MÓN, đặt ngay cạnh công tắc "hết món".
                   Bếp đã mở đúng bảng này mỗi khi một món gặp vấn đề — hỏng lò, hết nguyên liệu
                   phải đi mua. Thêm nút ở chỗ họ đã đứng sẵn thì không có khái niệm nào mới.
-                  Bấm cộng dồn 5 phút mỗi lần; bấm tiếp khi đã tới trần thì vòng về 0 (xoá). */}
-              <button
-                className={`ops-btn ops-btn--ghost kitchen-mon-delay${(item.delayMinutes ?? 0) > 0 ? " kitchen-mon-delay--on" : ""}`}
-                disabled={togglingId === item.id}
-                onClick={() => handleKhaiDoTre(item, phutDoTreTiepTheo(item.delayMinutes ?? 0))}
-                type="button"
-                title={`Độ trễ riêng của "${item.name}". Bấm để cộng 5 phút, tới 60 thì về 0.`}
-              >
-                {(item.delayMinutes ?? 0) > 0 ? `+${item.delayMinutes}p` : "+ phút"}
-              </button>
+
+                  Hai nút gói trong MỘT cụm có viền chung, không phải hai nút rời. Rời nhau thì
+                  dấu trừ trông như một thao tác khác hẳn và mắt phải đi tìm xem nó thuộc về đâu;
+                  gói lại thì cả cụm đọc một lần là hiểu: đây là con số, đây là cách chỉnh nó. */}
+              <span className={`kitchen-mon-delay-cum${(item.delayMinutes ?? 0) > 0 ? " kitchen-mon-delay-cum--on" : ""}`}>
+                {(item.delayMinutes ?? 0) > 0 ? (
+                  <button
+                    className="kitchen-mon-delay-bot"
+                    disabled={togglingId === item.id}
+                    onClick={() => handleKhaiDoTre(item, phutDoTreTruoc(item.delayMinutes ?? 0))}
+                    type="button"
+                    aria-label={`Giảm 5 phút độ trễ của ${item.name}`}
+                    title={`Giảm 5 phút. Về 0 là xoá độ trễ của "${item.name}".`}
+                  >
+                    −
+                  </button>
+                ) : null}
+                <button
+                  className="kitchen-mon-delay"
+                  disabled={togglingId === item.id}
+                  onClick={() => handleKhaiDoTre(item, phutDoTreTiepTheo(item.delayMinutes ?? 0))}
+                  type="button"
+                  title={`Độ trễ riêng của "${item.name}". Bấm để cộng 5 phút, tới 60 thì về 0.`}
+                >
+                  {(item.delayMinutes ?? 0) > 0 ? `+${item.delayMinutes}p` : "+ phút"}
+                </button>
+              </span>
               <button
                 className={`ops-toggle-switch ${item.isAvailable ? "ops-toggle-switch--on" : ""}`}
                 disabled={togglingId === item.id}

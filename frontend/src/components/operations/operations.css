@@ -2330,19 +2330,65 @@
 
 /* Nút độ trễ RIÊNG của một món, đứng cạnh công tắc "hết món" trên màn bếp.
    Cùng chiều cao 44px với mọi thứ bấm được ở đây — quầy có cảm ứng, bếp dùng tablet. */
+/* CỤM ĐỘ TRỄ: dấu trừ và con số nằm trong MỘT viền chung, không phải hai nút rời.
+   Rời nhau thì dấu trừ trông như một thao tác khác hẳn và mắt phải đi tìm xem nó thuộc về đâu. */
+.kitchen-mon-delay-cum {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--ops-border, #e2e8f0);
+  border-radius: 8px;
+}
+
+.kitchen-mon-delay-cum > button {
+  border: none;
+  background: transparent;
+  color: var(--ops-text-muted, #64748b);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kitchen-mon-delay-cum > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Con số là thao tác CHÍNH nên rộng hơn hẳn. Bề rộng cố định để nhãn đổi giữa "+ phút" và
+   "+60p" mà nút không co giãn, kéo theo cả hàng nhảy. */
 .kitchen-mon-delay {
   min-width: 76px;
+  min-height: var(--ops-touch, 44px);
   padding: 0 10px;
   font-variant-numeric: tabular-nums;
+}
+
+/* Dấu trừ hẹp hơn và có vách ngăn, để nó đọc là phần phụ của cụm chứ không phải nút ngang hàng. */
+.kitchen-mon-delay-bot {
+  min-width: 34px;
+  min-height: var(--ops-touch, 44px);
+  padding: 0;
+  border-right: 1px solid var(--ops-border, #e2e8f0) !important;
+  font-size: 15px;
 }
 
 /* Có độ trễ thì phải NHÌN RA NGAY, không chỉ đọc được số.
    Màu cảnh báo cộng viền dày: bếp bị chói làm mất phân biệt màu, nên màu một mình là mã hoá một
    tầng. Người đứng bếp phải thấy món nào đang bị cộng phút mà không cần đọc từng dòng. */
-.kitchen-mon-delay--on {
+.kitchen-mon-delay-cum--on {
   border-color: var(--ops-warn);
+  border-width: 2px;
+}
+
+.kitchen-mon-delay-cum--on > button {
   color: var(--ops-warn);
   font-weight: 700;
+}
+
+.kitchen-mon-delay-cum--on .kitchen-mon-delay-bot {
+  border-right-color: var(--ops-warn) !important;
 }
 
 /* Ô số suất trong bảng "Chuẩn bị thực đơn hôm nay".
@@ -2408,14 +2454,4 @@
   color: var(--ops-text-muted, #64748b);
   font-size: var(--ops-text-sm);
   font-weight: 600;
-}
-
-/* Nút giảm độ trễ của món. Vuông và hẹp hơn nút cộng để hai nút không trông như một cặp ngang
-   hàng — nút cộng là thao tác chính, nút này chỉ để sửa khi bấm quá tay. */
-.kitchen-mon-delay-bot {
-  min-width: 36px;
-  padding: 0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
 }
