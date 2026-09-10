@@ -1,5 +1,6 @@
 import { AdminCategoryManager } from "../../components/admin/AdminCategoryManager";
 import { AdminMenuManager } from "../../components/admin/AdminMenuManager";
+import { CaPhucVuPanel } from "../../components/admin/CaPhucVuPanel";
 import { ChuanBiThucDonPanel } from "../../components/admin/ChuanBiThucDonPanel";
 import { OpsHubShell } from "../../components/operations/OpsHubShell";
 import { useOpsHubTab } from "../../components/operations/OpsHubTabs";
@@ -11,6 +12,8 @@ const MENU_TABS = [
   { id: "today", label: "Hôm nay" },
   { id: "items", label: "Món" },
   { id: "categories", label: "Danh mục" },
+  // Khai ca là việc cấu hình một lần, nên đứng cuối — không phải việc mỗi ngày.
+  { id: "periods", label: "Ca phục vụ" },
 ];
 
 export function MenuHubPage() {
@@ -26,6 +29,7 @@ export function MenuHubPage() {
       {activeTab === "today" ? <ChuanBiThucDonPanel /> : null}
       {activeTab === "items" ? <AdminMenuManager embedded /> : null}
       {activeTab === "categories" ? <AdminCategoryManager embedded /> : null}
+      {activeTab === "periods" ? <CaPhucVuPanel /> : null}
     </OpsHubShell>
   );
 }

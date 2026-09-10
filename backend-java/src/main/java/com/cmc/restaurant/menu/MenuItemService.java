@@ -4,7 +4,11 @@ import com.cmc.restaurant.menu.MenuDtos.MenuItemRequest;
 import com.cmc.restaurant.shared.ApiException;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +22,17 @@ public class MenuItemService {
 	private final MenuItemRepository menuItemRepository;
 	private final CategoryRepository categoryRepository;
 
-	public MenuItemService(MenuItemRepository menuItemRepository, CategoryRepository categoryRepository) {
+	private final MenuItemServingPeriodRepository ganCaRepository;
+	private final ServingPeriodRepository servingPeriodRepository;
+
+	public MenuItemService(
+			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository,
+			MenuItemServingPeriodRepository ganCaRepository,
+			ServingPeriodRepository servingPeriodRepository) {
 		this.menuItemRepository = menuItemRepository;
 		this.categoryRepository = categoryRepository;
+		this.ganCaRepository = ganCaRepository;
+		this.servingPeriodRepository = servingPeriodRepository;
 	}
 
 	public MenuItemEntity create(MenuItemRequest request) {
@@ -239,6 +251,9 @@ public class MenuItemService {
 
 		OffsetDateTime now = OffsetDateTime.now();
 		int daSua = 0;
+		Set<String> caCoThat = servingPeriodRepository.findAll().stream()
+				.map(ServingPeriodEntity::getId)
+				.collect(Collectors.toSet());
 
 		for (MenuDtos.ChuanBiMonRequest yeuCau : dong) {
 			if (yeuCau.remainingQuantity() != null && yeuCau.remainingQuantity() < 0) {
@@ -259,6 +274,9 @@ public class MenuItemService {
 				mon.setRemainingQuantity(yeuCau.remainingQuantity());
 				coDoi = true;
 			}
+			if (ganCa(yeuCau, caCoThat)) {
+				coDoi = true;
+			}
 			if (coDoi) {
 				mon.setUpdatedAt(now);
 				menuItemRepository.save(mon);
@@ -266,5 +284,42 @@ public class MenuItemService {
 			}
 		}
 		return daSua;
+	}
+
+	/**
+	 * Gán món vào các ca phục vụ. Trả về {@code true} nếu có thay đổi thật.
+	 *
+	 * <p>{@code null} là GIỮ NGUYÊN. Danh sách RỖNG là "bán cả ngày" — đó là một lệnh, khác hẳn
+	 * với việc không gửi trường này.
+	 *
+	 * <p><b>Ca lạ bị TỪ CHỐI, không bỏ qua.</b> Một id ca không có thật sẽ không khớp ca nào đang
+	 * mở, nên món đó biến mất khỏi thực đơn khách — im lặng, không lỗi, và không ai phát hiện cho
+	 * tới lúc khách hỏi. Thà hỏng ngay tại lượt lưu.
+	 */
+	private boolean ganCa(MenuDtos.ChuanBiMonRequest yeuCau, Set<String> caCoThat) {
+		if (yeuCau.servingPeriodIds() == null) {
+			return false;
+		}
+		Set<String> moi = new HashSet<>(yeuCau.servingPeriodIds());
+		for (String caId : moi) {
+			if (!caCoThat.contains(caId)) {
+				throw ApiException.badRequest(
+						"SERVING_PERIOD_NOT_FOUND", "Không thấy ca phục vụ " + caId + ".");
+			}
+		}
+
+		Set<String> cu = ganCaRepository.findByMenuItemId(yeuCau.menuItemId()).stream()
+				.map(MenuItemServingPeriodEntity::getServingPeriodId)
+				.collect(Collectors.toSet());
+		if (cu.equals(moi)) {
+			return false;
+		}
+
+		ganCaRepository.deleteByMenuItemId(yeuCau.menuItemId());
+		for (String caId : moi) {
+			ganCaRepository.save(new MenuItemServingPeriodEntity(
+					UUID.randomUUID().toString(), yeuCau.menuItemId(), caId));
+		}
+		return true;
 	}
 }

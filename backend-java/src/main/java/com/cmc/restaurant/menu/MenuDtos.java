@@ -1,6 +1,7 @@
 package com.cmc.restaurant.menu;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -86,8 +87,25 @@ public final class MenuDtos {
 	 *
 	 * @param isAvailable        hôm nay quán CÓ bán món này không — quyết định của người
 	 * @param remainingQuantity  nguyên liệu nhập hôm nay làm được mấy suất; {@code null} = không đếm
+	 * @param servingPeriodIds   các ca bán món này; danh sách RỖNG = bán cả ngày, {@code null} = giữ nguyên
 	 */
-	public record ChuanBiMonRequest(String menuItemId, Boolean isAvailable, Integer remainingQuantity) {
+	public record ChuanBiMonRequest(
+			String menuItemId, Boolean isAvailable, Integer remainingQuantity,
+			List<String> servingPeriodIds) {
+	}
+
+	/**
+	 * Ca phục vụ do quán tự khai.
+	 *
+	 * <p>{@code startTime} LỚN HƠN {@code endTime} là hợp lệ và nghĩa là ca bọc qua nửa đêm —
+	 * "Lẩu đêm 18:00-02:00".
+	 */
+	public record ServingPeriodRequest(
+			String name, LocalTime startTime, LocalTime endTime, Integer displayOrder) {
+	}
+
+	public record ServingPeriodResponse(
+			String id, String name, LocalTime startTime, LocalTime endTime, int displayOrder) {
 	}
 
 	/**

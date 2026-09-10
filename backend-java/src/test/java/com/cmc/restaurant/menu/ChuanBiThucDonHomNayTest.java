@@ -11,9 +11,11 @@ import static org.mockito.Mockito.when;
 import com.cmc.restaurant.menu.MenuDtos.ChuanBiMonRequest;
 import com.cmc.restaurant.shared.ApiException;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,13 +31,28 @@ import org.junit.jupiter.api.Test;
 class ChuanBiThucDonHomNayTest {
 
 	private MenuItemRepository monAn;
+	private MenuItemServingPeriodRepository ganCa;
+	private ServingPeriodRepository caRepo;
 	private MenuItemService service;
 
 	@BeforeEach
 	void setUp() {
 		monAn = mock(MenuItemRepository.class);
-		service = new MenuItemService(monAn, mock(CategoryRepository.class));
+		ganCa = mock(MenuItemServingPeriodRepository.class);
+		caRepo = mock(ServingPeriodRepository.class);
+		service = new MenuItemService(monAn, mock(CategoryRepository.class), ganCa, caRepo);
 		when(monAn.save(any(MenuItemEntity.class))).thenAnswer(call -> call.getArgument(0));
+		when(ganCa.findByMenuItemId(any())).thenReturn(List.of());
+		when(caRepo.findAll()).thenReturn(List.of(
+				new ServingPeriodEntity("sp_trua", "Trưa", LocalTime.parse("10:00"),
+						LocalTime.parse("14:00"), 1, OffsetDateTime.now()),
+				new ServingPeriodEntity("sp_toi", "Tối", LocalTime.parse("18:00"),
+						LocalTime.parse("22:00"), 2, OffsetDateTime.now())));
+	}
+
+	/** Không đụng tới ca phục vụ — `null` ở trường đó nghĩa là giữ nguyên. */
+	private static ChuanBiMonRequest dong(String id, Boolean ban, Integer soSuat) {
+		return new ChuanBiMonRequest(id, ban, soSuat, null);
 	}
 
 	private MenuItemEntity mon(String id, boolean banHomNay, Integer soSuat) {
@@ -54,8 +71,8 @@ class ChuanBiThucDonHomNayTest {
 		MenuItemEntity com = mon("m_com", true, null);
 
 		int daSua = service.chuanBiThucDonHomNay(List.of(
-				new ChuanBiMonRequest("m_pho", true, 40),
-				new ChuanBiMonRequest("m_com", false, null)));
+				dong("m_pho", true, 40),
+				dong("m_com", false, null)));
 
 		assertThat(daSua).isEqualTo(2);
 		assertThat(pho.isAvailable()).isTrue();
@@ -82,7 +99,7 @@ class ChuanBiThucDonHomNayTest {
 		// cuối. Không cần đụng tới công tắc để đạt điều đó.
 		MenuItemEntity pho = mon("m_pho", true, 5);
 
-		service.chuanBiThucDonHomNay(List.of(new ChuanBiMonRequest("m_pho", true, 0)));
+		service.chuanBiThucDonHomNay(List.of(dong("m_pho", true, 0)));
 
 		assertThat(pho.getRemainingQuantity()).isZero();
 		assertThat(pho.isAvailable()).as("công tắc là quyết định của người, không phải phép đếm").isTrue();
@@ -96,7 +113,7 @@ class ChuanBiThucDonHomNayTest {
 		// vì nó bật/tắt một món.
 		MenuItemEntity pho = mon("m_pho", true, 40);
 
-		service.chuanBiThucDonHomNay(List.of(new ChuanBiMonRequest("m_pho", false, null)));
+		service.chuanBiThucDonHomNay(List.of(dong("m_pho", false, null)));
 
 		assertThat(pho.isAvailable()).isFalse();
 		assertThat(pho.getRemainingQuantity()).as("số suất phải còn nguyên").isEqualTo(40);
@@ -110,7 +127,7 @@ class ChuanBiThucDonHomNayTest {
 		// lại toàn bộ giữa giờ đông khách.
 		mon("m_pho", true, 40);
 
-		int daSua = service.chuanBiThucDonHomNay(List.of(new ChuanBiMonRequest("m_pho", true, 40)));
+		int daSua = service.chuanBiThucDonHomNay(List.of(dong("m_pho", true, 40)));
 
 		assertThat(daSua).isZero();
 		verify(monAn, never()).save(any(MenuItemEntity.class));
@@ -122,7 +139,7 @@ class ChuanBiThucDonHomNayTest {
 		mon("m_pho", true, 40);
 
 		assertThatThrownBy(() -> service.chuanBiThucDonHomNay(
-				List.of(new ChuanBiMonRequest("m_pho", true, -1))))
+				List.of(dong("m_pho", true, -1))))
 				.isInstanceOf(ApiException.class)
 				.hasMessageContaining("âm");
 	}
@@ -137,8 +154,8 @@ class ChuanBiThucDonHomNayTest {
 		when(monAn.findById("m_khong_co")).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> service.chuanBiThucDonHomNay(List.of(
-				new ChuanBiMonRequest("m_pho", true, 40),
-				new ChuanBiMonRequest("m_khong_co", true, 10))))
+				dong("m_pho", true, 40),
+				dong("m_khong_co", true, 10))))
 				.isInstanceOf(ApiException.class);
 	}
 
@@ -148,4 +165,67 @@ class ChuanBiThucDonHomNayTest {
 		assertThatThrownBy(() -> service.chuanBiThucDonHomNay(List.of()))
 				.isInstanceOf(ApiException.class);
 	}
+
+	@Test
+	@DisplayName("gán món vào ca: phở buổi sáng, cơm buổi trưa")
+	void ganMonVaoCa() {
+		mon("m_pho", true, null);
+
+		int daSua = service.chuanBiThucDonHomNay(
+				List.of(new ChuanBiMonRequest("m_pho", true, null, List.of("sp_trua"))));
+
+		assertThat(daSua).isEqualTo(1);
+		ArgumentCaptor<MenuItemServingPeriodEntity> ghi =
+				ArgumentCaptor.forClass(MenuItemServingPeriodEntity.class);
+		verify(ganCa).save(ghi.capture());
+		assertThat(ghi.getValue().getServingPeriodId()).isEqualTo("sp_trua");
+		assertThat(ghi.getValue().getMenuItemId()).isEqualTo("m_pho");
+	}
+
+	@Test
+	@DisplayName("CA LẠ BỊ TỪ CHỐI, không âm thầm ghi vào")
+	void caLaBiTuChoi() {
+		// Nếu cho qua, món giữ một id ca không khớp ca nào đang mở, nên nó biến mất khỏi thực đơn
+		// khách — im lặng, không lỗi, và không ai phát hiện cho tới lúc khách gọi điện hỏi. Thà
+		// hỏng ngay tại lượt lưu, nơi người bấm còn đang nhìn màn hình.
+		mon("m_pho", true, null);
+
+		assertThatThrownBy(() -> service.chuanBiThucDonHomNay(
+				List.of(new ChuanBiMonRequest("m_pho", true, null, List.of("sp_khong_co")))))
+				.isInstanceOf(ApiException.class);
+
+		verify(ganCa, never()).save(any(MenuItemServingPeriodEntity.class));
+	}
+
+	@Test
+	@DisplayName("danh sách ca RỖNG là một lệnh: trả món về bán cả ngày")
+	void rongLaBanCaNgay() {
+		// Khác hẳn giá trị null, vốn nghĩa là giữ nguyên. Thiếu phân biệt này thì người dùng bỏ hết
+		// ca của một món, bấm Lưu, và không có gì xảy ra.
+		mon("m_pho", true, null);
+		when(ganCa.findByMenuItemId("m_pho")).thenReturn(
+				List.of(new MenuItemServingPeriodEntity("x", "m_pho", "sp_trua")));
+
+		int daSua = service.chuanBiThucDonHomNay(
+				List.of(new ChuanBiMonRequest("m_pho", true, null, List.of())));
+
+		assertThat(daSua).isEqualTo(1);
+		verify(ganCa).deleteByMenuItemId("m_pho");
+		verify(ganCa, never()).save(any(MenuItemServingPeriodEntity.class));
+	}
+
+	@Test
+	@DisplayName("ca không đổi thì KHÔNG ghi lại")
+	void caKhongDoiThiKhongGhi() {
+		mon("m_pho", true, null);
+		when(ganCa.findByMenuItemId("m_pho")).thenReturn(
+				List.of(new MenuItemServingPeriodEntity("x", "m_pho", "sp_trua")));
+
+		int daSua = service.chuanBiThucDonHomNay(
+				List.of(new ChuanBiMonRequest("m_pho", true, null, List.of("sp_trua"))));
+
+		assertThat(daSua).isZero();
+		verify(ganCa, never()).deleteByMenuItemId(any());
+	}
+
 }

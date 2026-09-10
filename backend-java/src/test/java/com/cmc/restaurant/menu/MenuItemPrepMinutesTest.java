@@ -35,7 +35,9 @@ class MenuItemPrepMinutesTest {
 	void setUp() {
 		monAn = mock(MenuItemRepository.class);
 		danhMuc = mock(CategoryRepository.class);
-		service = new MenuItemService(monAn, danhMuc);
+		service = new MenuItemService(
+				monAn, danhMuc, mock(MenuItemServingPeriodRepository.class),
+				mock(ServingPeriodRepository.class));
 
 		CategoryEntity category = mock(CategoryEntity.class);
 		when(category.isActive()).thenReturn(true);

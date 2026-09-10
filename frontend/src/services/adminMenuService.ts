@@ -122,10 +122,58 @@ export type ChuanBiMon = {
   menuItemId: string;
   isAvailable: boolean;
   remainingQuantity: number | null;
+  /** Các ca bán món này. Mảng RỖNG = bán cả ngày. `null` = giữ nguyên, không đụng tới. */
+  servingPeriodIds: string[] | null;
 };
 
+/** Ca phục vụ do quán tự khai. Giờ ở dạng `HH:mm:ss` như máy chủ trả về. */
+export type CaPhucVu = {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  displayOrder: number;
+};
+
+export async function fetchCaPhucVu(): Promise<CaPhucVu[]> {
+  return api.request<CaPhucVu[]>("/admin/serving-periods");
+}
+
+export async function taoCaPhucVu(
+  ca: { name: string; startTime: string; endTime: string; displayOrder: number },
+): Promise<CaPhucVu> {
+  return api.request<CaPhucVu>("/admin/serving-periods", {
+    method: "POST",
+    body: JSON.stringify(ca),
+  });
+}
+
+export async function suaCaPhucVu(
+  id: string,
+  ca: { name: string; startTime: string; endTime: string; displayOrder: number },
+): Promise<CaPhucVu> {
+  return api.request<CaPhucVu>(`/admin/serving-periods/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(ca),
+  });
+}
+
+export async function xoaCaPhucVu(id: string): Promise<void> {
+  await api.request<void>(`/admin/serving-periods/${id}`, { method: "DELETE" });
+}
+
 /**
- * Lưu thực đơn hôm nay: bật/tắt món và số suất, MỘT lượt gọi cho cả danh sách.
+ * Món nào đang gán vào ca nào. Món VẮNG MẶT trong bản đồ này là món bán cả ngày.
+ *
+ * Endpoint riêng thay vì thêm trường vào danh sách món: chỉ bảng chuẩn bị thực đơn cần dữ liệu
+ * này, và mọi màn hình khác không phải tải thêm.
+ */
+export async function fetchGanCaTheoMon(): Promise<Record<string, string[]>> {
+  return api.request<Record<string, string[]>>("/admin/menu-items/serving-periods");
+}
+
+/**
+ * Lưu thực đơn hôm nay: bật/tắt món, số suất và ca phục vụ, MỘT lượt gọi cho cả danh sách.
  *
  * Một lượt chứ không phải 91 lượt: nửa chừng mất mạng mà 40 món đã lưu còn 51 món chưa thì thực
  * đơn hôm đó ở trạng thái không ai chọn, và người sửa không biết mình dừng ở đâu.

@@ -1,28 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Package, RefreshCw } from "lucide-react";
 import type { AdminMenuItem } from "../../types";
-import { fetchAdminMenuItems, luuThucDonHomNay } from "../../services/adminMenuService";
-import { tinhThayDoi, type NhapChuanBi } from "./chuanBiThucDon";
+import {
+  fetchAdminMenuItems, fetchCaPhucVu, fetchGanCaTheoMon, luuThucDonHomNay, type CaPhucVu,
+} from "../../services/adminMenuService";
+import { caKhacNhau, gioNgan, tinhThayDoi, type NhapChuanBi } from "./chuanBiThucDon";
 import { useOpsConfirm } from "../operations/OpsConfirmProvider";
 import "../operations/operations.css";
 
 /**
  * CHUẨN BỊ THỰC ĐƠN HÔM NAY — việc quản trị viên làm mỗi sáng trước giờ mở cửa.
  *
- * <p>Hai quyết định đi cùng nhau, cho từng món: hôm nay CÓ bán không, và nguyên liệu vừa nhập làm
- * được MẤY SUẤT.
+ * Ba quyết định đi cùng nhau, cho từng món: hôm nay CÓ bán không, nguyên liệu vừa nhập làm được
+ * MẤY SUẤT, và bán vào CA nào.
  *
- * <p><b>Vì sao là một bảng chứ không phải modal.</b> Sửa từng món qua hộp thoại là hình dạng đúng
- * cho việc đổi giá hay đổi mô tả — vài lần một năm, mỗi lần một món. Nó là hình dạng SAI cho một
- * việc chạm vào cả thực đơn mỗi ngày: 91 lần mở-gõ-lưu-đóng thì không ai làm, và đó chính là lý do
- * ô "số suất" nằm im từ lúc được thêm vào.
+ * Vì sao là một bảng chứ không phải modal: sửa từng món qua hộp thoại là hình dạng đúng cho việc
+ * đổi giá hay đổi mô tả — vài lần một năm, mỗi lần một món. Nó là hình dạng SAI cho một việc chạm
+ * vào cả thực đơn mỗi ngày: 91 lần mở-gõ-lưu-đóng thì không ai làm, và đó chính là lý do ô "số
+ * suất" nằm im từ lúc được thêm vào.
  *
- * <p><b>Ô nhập điền sẵn giá trị đang có.</b> Phần lớn buổi sáng giống hôm qua, nên người dùng chỉ
- * sửa những gì khác. Bắt gõ lại 91 con số mỗi ngày là cách chắc chắn để tính năng bị bỏ.
+ * Ô nhập điền sẵn giá trị đang có, vì phần lớn buổi sáng giống hôm qua nên người dùng chỉ sửa
+ * những gì khác. Bắt gõ lại 91 con số mỗi ngày là cách chắc chắn để tính năng bị bỏ.
  */
 export function ChuanBiThucDonPanel() {
   const confirm = useOpsConfirm();
   const [mon, setMon] = useState<AdminMenuItem[]>([]);
+  const [ca, setCa] = useState<CaPhucVu[]>([]);
+  const [caBanDau, setCaBanDau] = useState<Record<string, string[]>>({});
   const [nhap, setNhap] = useState<Record<string, NhapChuanBi>>({});
   const [dangTai, setDangTai] = useState(true);
   const [dangLuu, setDangLuu] = useState(false);
@@ -32,11 +36,19 @@ export function ChuanBiThucDonPanel() {
 
   const tai = useCallback(async () => {
     try {
-      const ds = await fetchAdminMenuItems();
+      const [ds, dsCa, gan] = await Promise.all([
+        fetchAdminMenuItems(), fetchCaPhucVu(), fetchGanCaTheoMon(),
+      ]);
       setMon(ds);
+      setCa(dsCa);
+      setCaBanDau(gan);
       setNhap(Object.fromEntries(ds.map((m) => [
         m.id,
-        { isAvailable: m.isAvailable, soSuat: m.remainingQuantity == null ? "" : String(m.remainingQuantity) },
+        {
+          isAvailable: m.isAvailable,
+          soSuat: m.remainingQuantity == null ? "" : String(m.remainingQuantity),
+          caIds: gan[m.id] ?? [],
+        },
       ])));
       setLoi("");
     } catch {
@@ -56,18 +68,32 @@ export function ChuanBiThucDonPanel() {
   /**
    * Chỉ gửi những món THẬT SỰ đổi.
    *
-   * Gửi cả 91 món thì máy chủ phải đọc và so từng cái, và bản ghi nào cũng bị chạm `updated_at` —
+   * Gửi cả 91 món thì máy chủ phải đọc và so từng cái, và bản ghi nào cũng bị chạm updated_at —
    * bảng bếp sẽ trông như cả thực đơn vừa thay đổi trong khi không có gì đổi.
    */
-  const thayDoi = useMemo(() => tinhThayDoi(mon, nhap), [mon, nhap]);
+  const thayDoi = useMemo(() => tinhThayDoi(mon, nhap, caBanDau), [mon, nhap, caBanDau]);
 
   const soTat = useMemo(() => Object.values(nhap).filter((n) => !n.isAvailable).length, [nhap]);
+  const soTheoCa = useMemo(
+    () => Object.values(nhap).filter((n) => n.caIds.length > 0).length,
+    [nhap],
+  );
+
+  function doiCa(monId: string, caId: string) {
+    setNhap((p) => {
+      const n = p[monId];
+      if (!n) return p;
+      const co = n.caIds.includes(caId);
+      const moi = co ? n.caIds.filter((x) => x !== caId) : [...n.caIds, caId];
+      return { ...p, [monId]: { ...n, caIds: moi } };
+    });
+  }
 
   async function luu() {
     if (thayDoi.length === 0) return;
     // Xác nhận vì đây là thao tác chạm vào CẢ thực đơn khách đang nhìn, không phải một món.
     const dong = await confirm({
-      title: `Áp dụng thực đơn hôm nay?`,
+      title: "Áp dụng thực đơn hôm nay?",
       message: `${thayDoi.length} món thay đổi. Khách sẽ thấy ngay sau khi lưu.`,
       confirmLabel: "Áp dụng",
     });
@@ -87,7 +113,12 @@ export function ChuanBiThucDonPanel() {
   }
 
   if (dangTai) {
-    return <div className="ops-empty"><div className="ops-empty-icon"><Package aria-hidden="true" /></div>Đang tải...</div>;
+    return (
+      <div className="ops-empty">
+        <div className="ops-empty-icon"><Package aria-hidden="true" /></div>
+        Đang tải...
+      </div>
+    );
   }
 
   return (
@@ -105,6 +136,11 @@ export function ChuanBiThucDonPanel() {
           <div className="ops-stat-label">Tạm tắt</div>
           <div className="ops-stat-value">{soTat}</div>
           <div className="ops-stat-detail">không hiện cho khách</div>
+        </div>
+        <div className="ops-stat-card">
+          <div className="ops-stat-label">Bán theo ca</div>
+          <div className="ops-stat-value">{soTheoCa}</div>
+          <div className="ops-stat-detail">còn lại bán cả ngày</div>
         </div>
         <div className="ops-stat-card">
           <div className="ops-stat-label">Đang chờ lưu</div>
@@ -143,12 +179,14 @@ export function ChuanBiThucDonPanel() {
             <th>Danh mục</th>
             <th>Bán hôm nay</th>
             <th>Số suất</th>
+            <th>Ca phục vụ</th>
           </tr>
         </thead>
         <tbody>
           {hienThi.map((m) => {
             const n = nhap[m.id];
             if (!n) return null;
+            const doiCaRoi = caKhacNhau(n.caIds, caBanDau[m.id] ?? []);
             return (
               <tr key={m.id}>
                 <td>{m.name}</td>
@@ -172,11 +210,38 @@ export function ChuanBiThucDonPanel() {
                     aria-label={`Số suất ${m.name}`}
                   />
                 </td>
+                <td>
+                  {ca.length === 0 ? (
+                    <span className="ops-note">Chưa khai ca nào</span>
+                  ) : (
+                    <div className="chuan-bi-ca">
+                      {ca.map((c) => {
+                        const chon = n.caIds.includes(c.id);
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={`chuan-bi-ca-chip ${chon ? "chuan-bi-ca-chip--chon" : ""}`}
+                            onClick={() => doiCa(m.id, c.id)}
+                            aria-pressed={chon}
+                            title={`${gioNgan(c.startTime)}–${gioNgan(c.endTime)}`}
+                          >
+                            {c.name}
+                          </button>
+                        );
+                      })}
+                      {/* Không chọn ca nào là một trạng thái CÓ NGHĨA, nên phải nói ra thành chữ.
+                          Một ô trống trông giống hệt "chưa cấu hình xong". */}
+                      {n.caIds.length === 0 ? <span className="ops-note">cả ngày</span> : null}
+                      {doiCaRoi ? <span className="chuan-bi-ca-doi">đã sửa</span> : null}
+                    </div>
+                  )}
+                </td>
               </tr>
             );
           })}
           {hienThi.length === 0 ? (
-            <tr><td colSpan={4}><div className="ops-empty">Không tìm thấy món nào.</div></td></tr>
+            <tr><td colSpan={5}><div className="ops-empty">Không tìm thấy món nào.</div></td></tr>
           ) : null}
         </tbody>
       </table>
@@ -186,6 +251,10 @@ export function ChuanBiThucDonPanel() {
         giới hạn suất hôm nay; về 0 thì món tự ẩn khỏi thực đơn khách, và công tắc bên trái
         <strong> không</strong> bị đụng tới. Hai thứ đó tách nhau có chủ ý: "bán hết mẻ" và "hôm nay
         không bán" là hai chuyện khác nhau, và báo cáo cần phân biệt được.
+      </p>
+      <p className="ops-form-hint">
+        Không chọn ca nào thì món <strong>bán cả ngày</strong>. Chọn ca là món chỉ hiện trong khung
+        giờ đó — sáng bán phở, trưa bán cơm, tối bán lẩu. Khai ca ở tab <strong>Ca phục vụ</strong>.
       </p>
     </div>
   );
