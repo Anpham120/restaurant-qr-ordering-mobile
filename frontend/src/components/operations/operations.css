@@ -664,13 +664,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Ba phần tử: tên món, các nút độ trễ, công tắc. Không có gap thì nút dính vào nhau. */
+  gap: 8px;
   padding: 10px 14px;
   background: var(--color-bg-subtle);
   border-radius: 8px;
   margin-bottom: 8px;
 }
 
+/* NHÃN CHIẾM HẾT PHẦN DƯ, để các nút bên phải thẳng hàng giữa các dòng.
+
+   Trước đây nhãn co theo tên món, mà hàng dùng `space-between` với ba phần tử, nên nút độ trễ bị
+   đẩy tới lui theo độ dài tên: mỗi dòng một chỗ khác nhau. Cho nhãn nuốt phần dư thì nút và công
+   tắc luôn dính vào mép phải, thẳng hàng dù tên món dài ngắn ra sao.
+
+   `min-width: 0` để tên dài vẫn cắt được thay vì phình ra đẩy nút khỏi hàng. */
 .ops-toggle-label {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 500;
 }
@@ -2397,4 +2408,14 @@
   color: var(--ops-text-muted, #64748b);
   font-size: var(--ops-text-sm);
   font-weight: 600;
+}
+
+/* Nút giảm độ trễ của món. Vuông và hẹp hơn nút cộng để hai nút không trông như một cặp ngang
+   hàng — nút cộng là thao tác chính, nút này chỉ để sửa khi bấm quá tay. */
+.kitchen-mon-delay-bot {
+  min-width: 36px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
 }
