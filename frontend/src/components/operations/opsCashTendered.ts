@@ -45,3 +45,21 @@ export function thieuTien(nhapVao: string | undefined, tong: number): boolean {
   if (dua === undefined) return false;
   return Math.floor(dua) < Math.floor(tong);
 }
+
+/**
+ * Hoá đơn này có được QUẦY xác nhận bằng tay không.
+ *
+ * CHỈ TIỀN MẶT. Hai phương thức khác nhau về bản chất chứ không chỉ khác tên: tiền mặt do thu ngân
+ * đếm nên chính họ là nguồn sự thật, còn VietQR do webhook ngân hàng đối soát.
+ *
+ * Bấm "đã thu" cho một hoá đơn VietQR là khẳng định tiền đã về trong khi chưa ai kiểm. Nó còn gây
+ * một hậu quả tinh vi hơn: hoá đơn rời trạng thái chờ, nên khi tiền về thật vài giây sau, webhook
+ * thấy hoá đơn không còn chờ và BỎ QUA. Đo trên máy chủ thật:
+ *
+ *   outcome=already_settled mã=INV-20260910-CA462E69 lý_do=Hoá đơn này đã được tất toán trước đó.
+ *
+ * Đường tự động chạy đúng, nhưng lúc nào cũng về đích sau người bấm nút.
+ */
+export function quayDuocXacNhanTay(method: string): boolean {
+  return method === "COD";
+}
