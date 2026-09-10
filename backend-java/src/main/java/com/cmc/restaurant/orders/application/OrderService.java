@@ -1,7 +1,10 @@
 package com.cmc.restaurant.orders.application;
 
+import com.cmc.restaurant.menu.LichPhucVu;
 import com.cmc.restaurant.menu.MenuItemEntity;
 import com.cmc.restaurant.menu.MenuItemRepository;
+import com.cmc.restaurant.menu.MenuItemServingPeriodRepository;
+import com.cmc.restaurant.menu.ServingPeriodRepository;
 import com.cmc.restaurant.shared.ActorContext;
 import com.cmc.restaurant.orders.adapter.out.persistence.OrderEntity;
 import com.cmc.restaurant.orders.adapter.out.persistence.OrderItemEntity;
@@ -27,6 +30,7 @@ import com.cmc.restaurant.tables.TableSessionRepository;
 import com.cmc.restaurant.tables.TableSessionStatus;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.EnumSet;
@@ -58,6 +62,8 @@ public class OrderService {
 	private final OrderStatusHistoryRepository orderStatusHistoryRepository;
 	private final PaymentRepository paymentRepository;
 	private final MenuItemRepository menuItemRepository;
+	private final ServingPeriodRepository caRepository;
+	private final MenuItemServingPeriodRepository ganCaRepository;
 	private final RestaurantTableRepository tableRepository;
 	private final TableSessionRepository tableSessionRepository;
 	private final OrderItemEstimationService estimationService;
@@ -72,6 +78,8 @@ public class OrderService {
 			OrderRepository orderRepository, OrderItemRepository orderItemRepository,
 			OrderStatusHistoryRepository orderStatusHistoryRepository, PaymentRepository paymentRepository,
 			MenuItemRepository menuItemRepository, RestaurantTableRepository tableRepository,
+			ServingPeriodRepository caRepository,
+			MenuItemServingPeriodRepository ganCaRepository,
 			TableSessionRepository tableSessionRepository,
 			OrderItemEstimationService estimationService, OrderRealtimeNotifier realtimeNotifier,
 			OrderPersistenceAdapter persistence, com.cmc.restaurant.cart.CartService cartService,
@@ -87,6 +95,8 @@ public class OrderService {
 		this.orderStatusHistoryRepository = orderStatusHistoryRepository;
 		this.paymentRepository = paymentRepository;
 		this.menuItemRepository = menuItemRepository;
+		this.caRepository = caRepository;
+		this.ganCaRepository = ganCaRepository;
 		this.tableRepository = tableRepository;
 		this.tableSessionRepository = tableSessionRepository;
 		this.estimationService = estimationService;
@@ -138,6 +148,21 @@ public class OrderService {
 				generateAccessToken(), idempotencyKey, requestFingerprint,
 				normalizeOptional(request.customerPhoneNumber()), now);
 
+		// CA PHỤC VỤ CŨNG PHẢI CHẶN Ở ĐÂY, không chỉ lọc lúc hiển thị.
+		//
+		// Bộ lọc trong MenuQueryService làm món biến khỏi thực đơn khi hết ca, nhưng ai mở trang từ
+		// trước, hoặc còn món trong giỏ, vẫn gửi đơn được: chọn món cơm lúc 13:55, bấm đặt lúc
+		// 14:05, ca trưa đã đóng mà đơn vẫn vào và bếp vẫn nhận.
+		//
+		// Đây là quy tắc hiển thị DUY NHẤT từng thiếu bản kiểm lúc ghi đơn. Hai quy tắc kia đều đã
+		// có: tắt món trả `MENU_ITEM_UNAVAILABLE`, hết suất trả `MENU_ITEM_OUT_OF_STOCK`.
+		//
+		// Dựng MỘT lần cho cả đơn, không dựng lại từng món: mọi món trong một đơn được đặt cùng một
+		// thời điểm, và hai lần đọc đồng hồ giữa vòng lặp có thể rơi vào hai ca khác nhau.
+		LichPhucVu lich = LichPhucVu.tai(
+				caRepository.findAll(), ganCaRepository.findAll(),
+				LocalTime.now(LichPhucVu.MUI_GIO_QUAN));
+
 		BigDecimal subtotal = BigDecimal.ZERO;
 		for (OrderDtos.CreateOrderItemRequest requestItem : request.items()) {
 			MenuItemEntity menuItem = menuItemRepository.findById(requestItem.menuItemId().trim())
@@ -153,6 +178,13 @@ public class OrderService {
 				throw ApiException.conflict(
 						"MENU_ITEM_UNAVAILABLE",
 						"Món \"" + menuItem.getName() + "\" đã hết. Vui lòng chọn món khác.");
+			}
+
+			if (!lich.dangTrongCa(menuItem.getId())) {
+				throw ApiException.conflict(
+						"MENU_ITEM_OUTSIDE_SERVING_PERIOD",
+						"Món \"" + menuItem.getName() + "\" chỉ phục vụ trong ca "
+								+ lich.moTaCa(menuItem.getId()) + ".");
 			}
 
 			// TRỪ TỒN KHO TRƯỚC KHI THÊM VÀO ĐƠN, và trừ bằng MỘT câu lệnh có điều kiện.
