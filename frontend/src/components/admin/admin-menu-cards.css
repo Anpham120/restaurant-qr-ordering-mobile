@@ -40,11 +40,22 @@
 
 .amm-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  /* `min(250px, 100%)` chứ không phải `250px` trần.
+     Trên khung hẹp hơn 250px, một cột cứng 250px làm cả lưới rộng hơn khung và trang trôi ngang. */
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
   gap: 18px;
 }
 
 .amm-card {
+  /* PHẢI CÓ `min-width: 0`.
+
+     Ô lưới mặc định là `min-width: auto`, nghĩa là nó KHÔNG co nhỏ hơn bề rộng tối thiểu của nội
+     dung bên trong. Hàng chân thẻ có giá, công tắc, nút Sửa và nút Xoá xếp ngang, nên bề rộng tối
+     thiểu của nó lớn hơn 250px — và thẻ tự nong cột ra, tràn khỏi khung, cắt mất nhãn CÒN MÓN bên
+     phải cùng nút Xoá.
+
+     Đây là bẫy kinh điển của CSS grid: lỗi hiện ra ở chỗ khác hẳn chỗ khai sai. */
+  min-width: 0;
   display: grid;
   grid-template-rows: auto 1fr auto;
   border-radius: var(--radius-lg, 16px);
@@ -164,6 +175,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Xuống hàng khi không đủ chỗ, thay vì đẩy nút Xoá ra ngoài thẻ. */
+  flex-wrap: wrap;
   gap: 10px;
   padding: 12px 16px;
   border-top: 1px solid var(--color-border-light, #e8f1f8);
