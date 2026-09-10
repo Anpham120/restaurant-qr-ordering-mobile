@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  caKhacNhau, docSoSuat, gioNgan, tinhThayDoi, tinhThayDoiSuatCa, type NhapChuanBi,
+  caKhacNhau, docSoSuat, gioNgan, locTheoCa, tinhThayDoi, type NhapChuanBi,
 } from "./chuanBiThucDon";
 import type { AdminMenuItem } from "../../types";
 
@@ -146,43 +146,27 @@ describe("hiển thị giờ", () => {
   });
 });
 
-describe("số suất dự kiến theo ca", () => {
+describe("lọc bảng Hôm nay theo ca", () => {
+  const ds = [{ id: "m_pho" }, { id: "m_lau" }, { id: "m_nuoc" }];
+  const gan = { m_pho: ["sp_sang"], m_lau: ["sp_toi"] };
+
+  it("không lọc thì hiện cả thực đơn", () => {
+    expect(locTheoCa(ds, gan, null)).toHaveLength(3);
+  });
+
   /**
-   * CÙNG BẪY `Number("") === 0`, NHƯNG HẬU QUẢ KHÁC.
+   * MÓN BÁN CẢ NGÀY PHẢI HIỆN TRONG MỌI CA.
    *
-   * Ở đây chuỗi rỗng nghĩa là "ca này không quản số suất cho món đó". Đọc nhầm thành 0 sẽ làm mọi
-   * món chưa cấu hình bị đặt về 0 suất mỗi khi ca mở — cả ca đó không bán được gì, và không có lỗi
-   * nào được ném ra.
+   * Món không gán ca nào được bán trong mọi ca. Loại nó ra khỏi danh sách "món của ca tối" là nói
+   * sai với người đang nhập: họ sẽ tưởng món đó không bán buổi tối và bỏ qua không nhập số suất,
+   * rồi tối đó món hết mà không ai biết vì sao.
    */
-  it("ô trống = không quản, KHÔNG phải 0 suất", () => {
-    expect(tinhThayDoiSuatCa({ m1: "" }, {})).toEqual([]);
-    expect(tinhThayDoiSuatCa({ m1: "0" }, {})).toEqual([
-      { menuItemId: "m1", plannedQuantity: 0 },
-    ]);
+  it("món bán cả ngày hiện trong mọi ca", () => {
+    expect(locTheoCa(ds, gan, "sp_toi").map((m) => m.id)).toEqual(["m_lau", "m_nuoc"]);
+    expect(locTheoCa(ds, gan, "sp_sang").map((m) => m.id)).toEqual(["m_pho", "m_nuoc"]);
   });
 
-  it("không đổi thì không gửi", () => {
-    expect(tinhThayDoiSuatCa({ m1: "25" }, { m1: 25 })).toEqual([]);
-  });
-
-  it("đổi số thì gửi số mới", () => {
-    expect(tinhThayDoiSuatCa({ m1: "30" }, { m1: 25 })).toEqual([
-      { menuItemId: "m1", plannedQuantity: 30 },
-    ]);
-  });
-
-  /** Xoá ô là một lệnh: bỏ món khỏi diện quản số suất của ca này. */
-  it("xoá ô đang có số là một thay đổi, gửi null", () => {
-    expect(tinhThayDoiSuatCa({ m1: "" }, { m1: 25 })).toEqual([
-      { menuItemId: "m1", plannedQuantity: null },
-    ]);
-  });
-
-  /** 0 và "chưa cấu hình" phải phân biệt được, nếu không hai lệnh khác nhau thành một. */
-  it("phân biệt 0 với chưa cấu hình", () => {
-    expect(tinhThayDoiSuatCa({ m1: "0" }, { m1: 0 })).toEqual([]);
-    expect(tinhThayDoiSuatCa({ m1: "" }, { m1: 0 })).toEqual([
-      { menuItemId: "m1", plannedQuantity: null },
-    ]);
+  it("ca chưa có món nào gán vẫn hiện món bán cả ngày", () => {
+    expect(locTheoCa(ds, gan, "sp_trua").map((m) => m.id)).toEqual(["m_nuoc"]);
   });
 });

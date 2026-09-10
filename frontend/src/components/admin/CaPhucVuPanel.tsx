@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Clock, Plus, Trash2 } from "lucide-react";
-import type { AdminMenuItem } from "../../types";
 import {
-  fetchAdminMenuItems, fetchGanCaTheoMon, fetchSuatTheoCa,
   fetchCaPhucVu, suaCaPhucVu, taoCaPhucVu, xoaCaPhucVu, type CaPhucVu,
 } from "../../services/adminMenuService";
 import { gioNgan } from "./chuanBiThucDon";
-import { SuatTheoCaBang } from "./SuatTheoCaBang";
 import { useOpsConfirm } from "../operations/OpsConfirmProvider";
 import "../operations/operations.css";
 
@@ -25,20 +22,10 @@ export function CaPhucVuPanel() {
   const [moi, setMoi] = useState<Nhap>({ name: "", startTime: "06:00", endTime: "10:00" });
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState("");
-  const [mon, setMon] = useState<AdminMenuItem[]>([]);
-  const [ganCa, setGanCa] = useState<Record<string, string[]>>({});
-  const [suat, setSuat] = useState<Record<string, number>>({});
 
   const tai = useCallback(async () => {
     try {
-      const [ds, dsMon, gan, dsSuat] = await Promise.all([
-        fetchCaPhucVu(), fetchAdminMenuItems(), fetchGanCaTheoMon(), fetchSuatTheoCa(),
-      ]);
-      setMon(dsMon);
-      setGanCa(gan);
-      setSuat(Object.fromEntries(
-        dsSuat.map((s) => [`${s.servingPeriodId}|${s.menuItemId}`, s.plannedQuantity]),
-      ));
+      const ds = await fetchCaPhucVu();
       setCa(ds);
       setNhap(Object.fromEntries(ds.map((c) => [
         c.id,
@@ -208,15 +195,6 @@ export function CaPhucVuPanel() {
           </tr>
         </tbody>
       </table>
-
-      <h3 className="ops-section-title">Số suất dự kiến mỗi ca</h3>
-      <SuatTheoCaBang
-        ca={ca}
-        mon={mon}
-        ganCa={ganCa}
-        dangLuu={suat}
-        onLuuXong={() => { void tai(); }}
-      />
 
       <p className="ops-form-hint">
         Ca kết thúc <strong>sớm hơn</strong> giờ bắt đầu nghĩa là ca bọc qua nửa đêm, ví dụ lẩu đêm

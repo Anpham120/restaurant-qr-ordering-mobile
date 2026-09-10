@@ -4,8 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 
@@ -77,24 +75,6 @@ public class ServingPeriodEntity {
 		}
 		// Bọc qua nửa đêm: từ giờ bắt đầu tới hết ngày, HOẶC từ đầu ngày hôm sau tới giờ kết thúc.
 		return !luc.isBefore(startTime) || luc.isBefore(endTime);
-	}
-
-	/**
-	 * NGÀY PHỤC VỤ của ca này tại thời điểm {@code luc} — ngày ca BẮT ĐẦU, không phải ngày trên lịch.
-	 *
-	 * <p>Ca lẩu đêm 18:00-02:00 mở tối thứ Hai và đóng lúc 2 giờ sáng thứ Ba. Suốt khoảng đó nó là
-	 * MỘT ca, một mẻ nguyên liệu, một lần nạp suất. Lúc 00:30 thứ Ba, ngày phục vụ vẫn là thứ Hai.
-	 *
-	 * <p><b>Vì sao không dùng thẳng ngày trên lịch.</b> Sổ ghi đã nạp khoá theo (ca, ngày phục vụ).
-	 * Nếu ngày đổi lúc nửa đêm thì sổ không có dòng nào cho ngày mới, và tác vụ nạp lại số suất GIỮA
-	 * CA — 0 giờ sáng, quán đang đông, phần đã bán bị xoá sạch và quán bán vượt số suất.
-	 *
-	 * <p>Chỉ có nghĩa khi ca đang mở. Gọi lúc ca đóng thì con số trả về không dùng vào việc gì.
-	 */
-	public LocalDate ngayPhucVu(LocalDateTime luc) {
-		boolean quaDem = startTime.isAfter(endTime);
-		boolean dangOPhanSauNuaDem = quaDem && luc.toLocalTime().isBefore(endTime);
-		return dangOPhanSauNuaDem ? luc.toLocalDate().minusDays(1) : luc.toLocalDate();
 	}
 
 	public String getId() {
