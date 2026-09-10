@@ -2341,3 +2341,44 @@
   max-width: 150px;
   font-variant-numeric: tabular-nums;
 }
+
+/* Ô nhập giờ trong bảng "Ca phục vụ". Nội dung là HH:MM cố định, không cần rộng như ô tên. */
+.chuan-bi-gio {
+  max-width: 130px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Các chip chọn ca trong bảng "Chuẩn bị thực đơn hôm nay". */
+.chuan-bi-ca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chuan-bi-ca-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--ops-border, #e2e8f0);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ops-text-muted, #64748b);
+  font-size: var(--ops-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Chip được chọn phải khác chip không chọn bằng NHIỀU HƠN màu chữ: nền đặc và viền cùng màu. Chỉ
+   đổi mỗi màu thì người phân biệt màu kém nhìn cả hàng chip như nhau, mà đây là chỗ quyết định
+   món có hiện cho khách hay không. */
+.chuan-bi-ca-chip--chon {
+  background: var(--ops-accent, #2563eb);
+  border-color: var(--ops-accent, #2563eb);
+  color: #fff;
+}
+
+.chuan-bi-ca-doi {
+  color: var(--ops-warn, #b45309);
+  font-size: var(--ops-text-xs);
+  font-weight: 700;
+}

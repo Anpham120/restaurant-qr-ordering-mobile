@@ -32,11 +32,14 @@ public class AdminMenuItemController {
 	/** Qua CỔNG ứng dụng, không chọc thẳng vào repository của module orders — cùng lối mà
 	 * {@code AdminTableController} đã dùng, và là thứ ArchUnit đang canh. */
 	private final com.cmc.restaurant.orders.application.OrderLookup orderLookup;
+	private final MenuItemServingPeriodRepository ganCaRepository;
 
 	public AdminMenuItemController(
 			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository,
 			MenuItemService menuItemService,
-			com.cmc.restaurant.orders.application.OrderLookup orderLookup) {
+			com.cmc.restaurant.orders.application.OrderLookup orderLookup,
+			MenuItemServingPeriodRepository ganCaRepository) {
+		this.ganCaRepository = ganCaRepository;
 		this.menuItemRepository = menuItemRepository;
 		this.categoryRepository = categoryRepository;
 		this.menuItemService = menuItemService;
@@ -130,6 +133,25 @@ public class AdminMenuItemController {
 	 * SAI cho một việc chạm vào cả thực đơn mỗi ngày, và đó là lý do tính năng số suất nằm im: cách
 	 * duy nhất để dùng nó tốn 91 lần mở-gõ-lưu-đóng.
 	 */
+	/**
+	 * Món nào đang gán vào ca nào: {@code {"m_pho": ["sp_sang"], ...}}.
+	 *
+	 * <p>Endpoint riêng thay vì thêm trường vào {@code AdminMenuItemResponse}. Bảng chuẩn bị thực
+	 * đơn là chỗ DUY NHẤT cần dữ liệu này; nhét vào DTO chung thì mọi màn hình khác đều phải tải
+	 * thêm, và hàm ánh xạ tĩnh {@code toAdminResponse} sẽ phải nhận thêm một tham số mà gần như mọi
+	 * chỗ gọi truyền rỗng. Cùng lối mà {@code /pending-quantities} ngay trên đã dùng.
+	 *
+	 * <p>Món KHÔNG có mặt trong bản đồ này là món bán CẢ NGÀY.
+	 */
+	@GetMapping("/serving-periods")
+	public Map<String, List<String>> ganCaTheoMon() {
+		return ganCaRepository.findAll().stream()
+				.collect(Collectors.groupingBy(
+						MenuItemServingPeriodEntity::getMenuItemId,
+						Collectors.mapping(
+								MenuItemServingPeriodEntity::getServingPeriodId, Collectors.toList())));
+	}
+
 	@PutMapping("/chuan-bi-hom-nay")
 	public Map<String, Integer> chuanBiHomNay(
 			@RequestBody(required = false) MenuDtos.ChuanBiThucDonRequest request) {

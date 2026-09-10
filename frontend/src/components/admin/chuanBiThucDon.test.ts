@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { docSoSuat, tinhThayDoi, type NhapChuanBi } from "./chuanBiThucDon";
+import { caKhacNhau, docSoSuat, gioNgan, tinhThayDoi, type NhapChuanBi } from "./chuanBiThucDon";
 import type { AdminMenuItem } from "../../types";
 
 const mon = (id: string, isAvailable: boolean, remainingQuantity: number | null): AdminMenuItem =>
@@ -9,7 +9,8 @@ const mon = (id: string, isAvailable: boolean, remainingQuantity: number | null)
     costPrice: null,
   }) as AdminMenuItem;
 
-const nhap = (isAvailable: boolean, soSuat: string): NhapChuanBi => ({ isAvailable, soSuat });
+const nhap = (isAvailable: boolean, soSuat: string, caIds: string[] = []): NhapChuanBi =>
+  ({ isAvailable, soSuat, caIds });
 
 describe("đọc ô số suất", () => {
   /**
@@ -39,26 +40,47 @@ describe("đọc ô số suất", () => {
   });
 });
 
+describe("so sánh ca phục vụ", () => {
+  /**
+   * THỨ TỰ KHÔNG TÍNH LÀ THAY ĐỔI.
+   *
+   * Máy chủ gom phần gán ca từ một bảng nối và KHÔNG hứa thứ tự nào. So thẳng bằng chuỗi thì mỗi
+   * lần tải lại có thể báo "có thay đổi" trong khi không có gì đổi: nút Lưu lúc nào cũng sáng, và
+   * mỗi lần bấm lại ghi đè toàn bộ phần gán ca của cả thực đơn.
+   */
+  it("khác thứ tự KHÔNG phải là thay đổi", () => {
+    expect(caKhacNhau(["sp_toi", "sp_trua"], ["sp_trua", "sp_toi"])).toBe(false);
+  });
+
+  it("thêm, bớt, đổi ca đều là thay đổi", () => {
+    expect(caKhacNhau([], ["sp_trua"])).toBe(true);
+    expect(caKhacNhau(["sp_trua"], [])).toBe(true);
+    expect(caKhacNhau(["sp_trua"], ["sp_toi"])).toBe(true);
+  });
+});
+
 describe("chỉ gửi món thật sự đổi", () => {
   it("không đổi gì thì gửi danh sách rỗng", () => {
     const ds = [mon("m1", true, 10), mon("m2", false, null)];
     const n = { m1: nhap(true, "10"), m2: nhap(false, "") };
 
-    expect(tinhThayDoi(ds, n)).toEqual([]);
+    expect(tinhThayDoi(ds, n, {})).toEqual([]);
   });
 
   it("bắt được đổi công tắc", () => {
     const ds = [mon("m1", true, null)];
-    const kq = tinhThayDoi(ds, { m1: nhap(false, "") });
+    const kq = tinhThayDoi(ds, { m1: nhap(false, "") }, {});
 
-    expect(kq).toEqual([{ menuItemId: "m1", isAvailable: false, remainingQuantity: null }]);
+    expect(kq).toEqual([
+      { menuItemId: "m1", isAvailable: false, remainingQuantity: null, servingPeriodIds: [] },
+    ]);
   });
 
   it("bắt được đổi số suất", () => {
     const ds = [mon("m1", true, null)];
-    const kq = tinhThayDoi(ds, { m1: nhap(true, "20") });
+    const kq = tinhThayDoi(ds, { m1: nhap(true, "20") }, {});
 
-    expect(kq).toEqual([{ menuItemId: "m1", isAvailable: true, remainingQuantity: 20 }]);
+    expect(kq[0].remainingQuantity).toBe(20);
   });
 
   /**
@@ -67,15 +89,57 @@ describe("chỉ gửi món thật sự đổi", () => {
    */
   it("xoá ô số suất cũng là một thay đổi", () => {
     const ds = [mon("m1", true, 10)];
-    const kq = tinhThayDoi(ds, { m1: nhap(true, "") });
+    const kq = tinhThayDoi(ds, { m1: nhap(true, "") }, {});
 
-    expect(kq).toEqual([{ menuItemId: "m1", isAvailable: true, remainingQuantity: null }]);
+    expect(kq[0].remainingQuantity).toBeNull();
   });
 
   /** `null` và `0` phải phân biệt được ở đây, nếu không "hết suất" và "không đếm" thành một. */
   it("phân biệt null với 0", () => {
-    expect(tinhThayDoi([mon("m1", true, null)], { m1: nhap(true, "0") })).toHaveLength(1);
-    expect(tinhThayDoi([mon("m1", true, 0)], { m1: nhap(true, "") })).toHaveLength(1);
-    expect(tinhThayDoi([mon("m1", true, 0)], { m1: nhap(true, "0") })).toHaveLength(0);
+    expect(tinhThayDoi([mon("m1", true, null)], { m1: nhap(true, "0") }, {})).toHaveLength(1);
+    expect(tinhThayDoi([mon("m1", true, 0)], { m1: nhap(true, "") }, {})).toHaveLength(1);
+    expect(tinhThayDoi([mon("m1", true, 0)], { m1: nhap(true, "0") }, {})).toHaveLength(0);
+  });
+
+  it("bắt được đổi ca phục vụ", () => {
+    const ds = [mon("m1", true, null)];
+    const kq = tinhThayDoi(ds, { m1: nhap(true, "", ["sp_trua"]) }, {});
+
+    expect(kq).toEqual([
+      {
+        menuItemId: "m1", isAvailable: true, remainingQuantity: null,
+        servingPeriodIds: ["sp_trua"],
+      },
+    ]);
+  });
+
+  it("ca giống hệt, chỉ khác thứ tự, KHÔNG gửi đi", () => {
+    const ds = [mon("m1", true, null)];
+    const kq = tinhThayDoi(
+      ds,
+      { m1: nhap(true, "", ["sp_toi", "sp_trua"]) },
+      { m1: ["sp_trua", "sp_toi"] },
+    );
+
+    expect(kq).toEqual([]);
+  });
+
+  /**
+   * Bỏ hết ca của một món LÀ một thay đổi — nó trả món về "bán cả ngày". Máy chủ phân biệt mảng
+   * rỗng (một lệnh) với `null` (giữ nguyên), và chỗ này phải gửi mảng rỗng.
+   */
+  it("bỏ hết ca là một thay đổi, và gửi mảng rỗng", () => {
+    const ds = [mon("m1", true, null)];
+    const kq = tinhThayDoi(ds, { m1: nhap(true, "", []) }, { m1: ["sp_trua"] });
+
+    expect(kq).toHaveLength(1);
+    expect(kq[0].servingPeriodIds).toEqual([]);
+  });
+});
+
+describe("hiển thị giờ", () => {
+  it("bỏ phần giây máy chủ trả về", () => {
+    expect(gioNgan("10:00:00")).toBe("10:00");
+    expect(gioNgan("18:30")).toBe("18:30");
   });
 });

@@ -3,6 +3,8 @@ package com.cmc.restaurant.menu;
 import com.cmc.restaurant.menu.MenuDtos.MenuCategoryResponse;
 import com.cmc.restaurant.menu.MenuDtos.MenuItemResponse;
 import com.cmc.restaurant.menu.MenuDtos.MenuResponse;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,15 +15,36 @@ import org.springframework.stereotype.Service;
 @Service
 public class MenuQueryService {
 
+	/**
+	 * Ca phục vụ là GIỜ TREO TƯỜNG CỦA QUÁN, không phải giờ máy chủ.
+	 *
+	 * <p>Máy chủ chạy UTC. Đọc {@code LocalTime.now()} thẳng thì ca trưa 10:00-14:00 sẽ mở lúc 5 giờ
+	 * chiều giờ Việt Nam — thực đơn sai bảy tiếng, mỗi ngày, và không có lỗi nào được ném ra. Cùng
+	 * múi giờ mà {@code XetLaiHangJob} đã dùng.
+	 */
+	private static final ZoneId MUI_GIO_QUAN = ZoneId.of("Asia/Ho_Chi_Minh");
+
 	private final CategoryRepository categoryRepository;
 	private final MenuItemRepository menuItemRepository;
+	private final ServingPeriodRepository servingPeriodRepository;
+	private final MenuItemServingPeriodRepository ganCaRepository;
 
-	public MenuQueryService(CategoryRepository categoryRepository, MenuItemRepository menuItemRepository) {
+	public MenuQueryService(
+			CategoryRepository categoryRepository, MenuItemRepository menuItemRepository,
+			ServingPeriodRepository servingPeriodRepository,
+			MenuItemServingPeriodRepository ganCaRepository) {
 		this.categoryRepository = categoryRepository;
 		this.menuItemRepository = menuItemRepository;
+		this.servingPeriodRepository = servingPeriodRepository;
+		this.ganCaRepository = ganCaRepository;
 	}
 
 	public MenuResponse getPublicMenu() {
+		return layThucDon(LocalTime.now(MUI_GIO_QUAN));
+	}
+
+	/** Nhận thời điểm làm tham số để kiểm được ca phục vụ mà không phải chờ tới đúng 18:00. */
+	MenuResponse layThucDon(LocalTime luc) {
 		List<CategoryEntity> activeCategories = categoryRepository.findByActiveTrueOrderByDisplayOrderAscNameAsc();
 		Map<String, CategoryEntity> categoryLookup = new LinkedHashMap<>();
 		for (CategoryEntity category : activeCategories) {
@@ -40,8 +63,16 @@ public class MenuQueryService {
 		// vĩnh viễn khả năng nói "món này hết sớm" khác "món này hôm nay không phục vụ".
 		//
 		// `remainingQuantity == null` là KHÔNG đếm suất, luôn hiện. Không phải bằng 0.
+		// CA PHỤC VỤ: sáng bán phở, trưa bán cơm, tối bán lẩu.
+		//
+		// Món KHÔNG gán ca nào thì bán cả ngày — xem LichPhucVu. Nhờ luật đó, quán chưa khai ca nào
+		// thì lọc này không loại gì cả và thực đơn chạy y như trước khi có tính năng.
+		LichPhucVu lich = LichPhucVu.tai(
+				servingPeriodRepository.findAll(), ganCaRepository.findAll(), luc);
+
 		List<MenuItemResponse> sortedItems = availableItems.stream()
 				.filter(item -> item.getRemainingQuantity() == null || item.getRemainingQuantity() > 0)
+				.filter(item -> lich.dangTrongCa(item.getId()))
 				.sorted(Comparator
 						.<MenuItemEntity>comparingInt(item -> categoryLookup.get(item.getCategoryId()).getDisplayOrder())
 						.thenComparing(item -> item.getName().toLowerCase(java.util.Locale.ROOT)))
