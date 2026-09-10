@@ -14,7 +14,8 @@ import {
   replaceSessionInPath,
 } from "./sessionRecovery";
 
-export type OrderingSessionState = "loading" | "ready" | "missing" | "invalid" | "expired" | "error";
+export type OrderingSessionState =
+  | "loading" | "ready" | "missing" | "invalid" | "expired" | "settled" | "error";
 
 type OrderingSessionValue = {
   context: Required<CustomerOrderContext> | null;
@@ -56,6 +57,9 @@ async function validateCapability(
 
   if (validation.status === "open") {
     return "ready";
+  }
+  if (validation.status === "settled") {
+    return "settled";
   }
   if (validation.status === "expired") {
     return "expired";
@@ -113,6 +117,19 @@ export function OrderingSessionProvider({ children, sessionId }: { children: Rea
     }
 
     let nextState = await validateCapability(activeCapability);
+
+    // ĐÃ THANH TOÁN THÌ DỪNG Ở ĐÂY, KHÔNG MỞ PHIÊN MỚI.
+    //
+    // Đường "cứu" bên dưới tồn tại cho phiên hết hạn hay mất quyền: mở lại một phiên từ mã QR đã
+    // lưu là đúng việc cần làm khi khách vẫn đang ngồi ăn dở.
+    //
+    // Nhưng khách vừa trả tiền xong thì đó là việc SAI. Chỉ cần tab còn mở và trang tự làm mới là
+    // một hoá đơn mới được sinh ra, bàn trông như có người ngồi, và không ai bấm gì cả.
+    if (nextState === "settled") {
+      setContext(null);
+      setState("settled");
+      return;
+    }
     if (nextState !== "ready") {
       const qrToken = searchParams.get("qr") ?? activeCapability.qrToken ?? null;
       if (qrToken) {

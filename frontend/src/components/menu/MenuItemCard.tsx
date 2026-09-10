@@ -277,7 +277,29 @@ export function MenuItemCard({
               onClick={() => onAdd?.(item.id)}
               type="button"
             >
-              <span className="cmc-add-button-icon" aria-hidden="true">+</span>
+              {/*
+                DẤU CỘNG VẼ BẰNG SVG, KHÔNG PHẢI KÝ TỰ "+".
+
+                Ký tự `+` trong hầu hết phông chữ nằm trên TRỤC TOÁN HỌC — khoảng giữa chiều cao
+                chữ thường — chứ không nằm ở tâm hình học của dòng. `place-items: center` căn giữa
+                HỘP DÒNG, không căn giữa phần mực của glyph, nên dấu cộng luôn trông thấp hơn chữ
+                "Thêm" bên cạnh dù CSS đã đúng.
+
+                Nhích một hai pixel bằng `translateY` thì chữa được đúng một phông. Đổi phông, hay
+                phông không tải kịp và rơi về phông dự phòng, là lệch lại. SVG thì tâm nằm ở giữa
+                theo cấu tạo, không phụ thuộc phông nào.
+              */}
+              <svg
+                aria-hidden="true"
+                className="cmc-add-button-icon"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth={2.5}
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
               <span>{t("Thêm")}</span>
             </button>
           )}
