@@ -86,3 +86,22 @@ export function phutDoTreTiepTheo(hienTai: number): number {
   if (hienTai >= TRAN_PHUT) return 0;
   return Math.min(TRAN_PHUT, hienTai + BUOC_DO_TRE_MON);
 }
+
+/**
+ * Con số kế tiếp khi bếp bấm nút GIẢM độ trễ của một món: trừ dần, chạm 0 là hết.
+ *
+ * VÌ SAO THÊM NÚT NÀY dù bản trước cố ý chỉ có một nút.
+ *
+ * Lý lẽ cũ đúng: bếp đang cầm dao, đeo găng, tay ướt, nên mỗi nút thêm là một chỗ bấm nhầm giữa
+ * lúc đông khách. Cách hoàn tác của bản đó là bấm tiếp cho vòng về 0.
+ *
+ * Nhưng bước 5 phút với trần 60 làm phép vòng đó mất tới 12 lần bấm để quay lại chỗ cũ. Bấm nhầm
+ * một cái phải bấm thêm mười một cái nữa thì không còn là hoàn tác, và người ta sẽ bỏ mặc con số
+ * sai ở đó — tức ước lượng sai, đúng thứ tính năng này sinh ra để chống.
+ *
+ * Nút giảm CHỈ hiện khi độ trễ đang lớn hơn 0. Ở trạng thái thường, hàng vẫn đúng một nút như cũ,
+ * nên không thêm chỗ bấm nhầm nào vào lúc bình thường.
+ */
+export function phutDoTreTruoc(hienTai: number): number {
+  return Math.max(0, hienTai - BUOC_DO_TRE_MON);
+}
