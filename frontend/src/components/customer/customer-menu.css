@@ -588,14 +588,14 @@
   box-shadow: 0 4px 12px rgba(45, 80, 22, 0.25);
 }
 
+/* Dấu cộng là SVG chứ không phải ký tự, xem ghi chú trong MenuItemCard.
+   Không đặt font-size hay line-height ở đây nữa: SVG không dùng tới chúng, và để lại chỉ khiến
+   người sau tưởng kích thước icon phụ thuộc phông. */
 .cmc-add-button-icon {
-  display: grid;
+  display: block;
   width: 18px;
   height: 18px;
-  place-items: center;
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .cmc-add-button:hover:not(:disabled) {
