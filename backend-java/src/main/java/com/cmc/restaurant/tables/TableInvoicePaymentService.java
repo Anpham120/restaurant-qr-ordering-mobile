@@ -306,7 +306,7 @@ public class TableInvoicePaymentService {
 
 	/** Kết quả đối soát một khoản tiền về với một hoá đơn bàn. */
 	public enum KetQuaDoiSoat {
-		DA_XAC_NHAN, KHONG_THAY_HOA_DON, DA_TAT_TOAN, LECH_SO_TIEN
+		DA_XAC_NHAN, KHONG_THAY_HOA_DON, DA_TAT_TOAN, HOA_DON_DA_HUY, LECH_SO_TIEN
 	}
 
 	/** Không nhân viên nào bấm — tiền tự về. Cùng khuôn "System" mà đường đơn lẻ đang dùng. */
@@ -336,6 +336,14 @@ public class TableInvoicePaymentService {
 		TableInvoiceEntity invoice = invoiceRepository.findByInvoiceCode(maHoaDon).orElse(null);
 		if (invoice == null) {
 			return KetQuaDoiSoat.KHONG_THAY_HOA_DON;
+		}
+		// HOÁ ĐƠN ĐÃ HUỶ KHÁC HẲN HOÁ ĐƠN ĐÃ THU, dù cả hai đều không còn chờ.
+		//
+		// Gộp hai ca này làm log nói sai: tiền của khách về cho một hoá đơn đã huỷ, và máy ghi
+		// "đã được tất toán trước đó". Không ai đi tìm khoản tiền đó nữa. Đây là tiền thật không
+		// được ghi nhận, nên nó phải có tên riêng.
+		if ("Cancelled".equals(invoice.getStatus()) || "Refunded".equals(invoice.getStatus())) {
+			return KetQuaDoiSoat.HOA_DON_DA_HUY;
 		}
 		if (!"Pending".equals(invoice.getStatus())) {
 			// Thường là quầy đã bấm xác nhận tay trước. Bình thường, không phải lỗi.

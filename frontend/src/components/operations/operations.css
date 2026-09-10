@@ -2382,3 +2382,19 @@
   font-size: var(--ops-text-xs);
   font-weight: 700;
 }
+
+/* Hoá đơn VietQR ở màn quầy: không có nút xác nhận, chỉ hiện trạng thái chờ ngân hàng.
+   Cao bằng nút "Xác nhận thu" để hai loại hoá đơn không làm thẻ nhảy chiều cao khi xen kẽ nhau. */
+.pos-cho-nganhang {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px dashed var(--ops-border, #e2e8f0);
+  border-radius: 10px;
+  color: var(--ops-text-muted, #64748b);
+  font-size: var(--ops-text-sm);
+  font-weight: 600;
+}
