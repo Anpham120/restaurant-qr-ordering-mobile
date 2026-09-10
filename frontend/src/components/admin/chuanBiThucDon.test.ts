@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { caKhacNhau, docSoSuat, gioNgan, tinhThayDoi, type NhapChuanBi } from "./chuanBiThucDon";
+import {
+  caKhacNhau, docSoSuat, gioNgan, tinhThayDoi, tinhThayDoiSuatCa, type NhapChuanBi,
+} from "./chuanBiThucDon";
 import type { AdminMenuItem } from "../../types";
 
 const mon = (id: string, isAvailable: boolean, remainingQuantity: number | null): AdminMenuItem =>
@@ -141,5 +143,46 @@ describe("hiển thị giờ", () => {
   it("bỏ phần giây máy chủ trả về", () => {
     expect(gioNgan("10:00:00")).toBe("10:00");
     expect(gioNgan("18:30")).toBe("18:30");
+  });
+});
+
+describe("số suất dự kiến theo ca", () => {
+  /**
+   * CÙNG BẪY `Number("") === 0`, NHƯNG HẬU QUẢ KHÁC.
+   *
+   * Ở đây chuỗi rỗng nghĩa là "ca này không quản số suất cho món đó". Đọc nhầm thành 0 sẽ làm mọi
+   * món chưa cấu hình bị đặt về 0 suất mỗi khi ca mở — cả ca đó không bán được gì, và không có lỗi
+   * nào được ném ra.
+   */
+  it("ô trống = không quản, KHÔNG phải 0 suất", () => {
+    expect(tinhThayDoiSuatCa({ m1: "" }, {})).toEqual([]);
+    expect(tinhThayDoiSuatCa({ m1: "0" }, {})).toEqual([
+      { menuItemId: "m1", plannedQuantity: 0 },
+    ]);
+  });
+
+  it("không đổi thì không gửi", () => {
+    expect(tinhThayDoiSuatCa({ m1: "25" }, { m1: 25 })).toEqual([]);
+  });
+
+  it("đổi số thì gửi số mới", () => {
+    expect(tinhThayDoiSuatCa({ m1: "30" }, { m1: 25 })).toEqual([
+      { menuItemId: "m1", plannedQuantity: 30 },
+    ]);
+  });
+
+  /** Xoá ô là một lệnh: bỏ món khỏi diện quản số suất của ca này. */
+  it("xoá ô đang có số là một thay đổi, gửi null", () => {
+    expect(tinhThayDoiSuatCa({ m1: "" }, { m1: 25 })).toEqual([
+      { menuItemId: "m1", plannedQuantity: null },
+    ]);
+  });
+
+  /** 0 và "chưa cấu hình" phải phân biệt được, nếu không hai lệnh khác nhau thành một. */
+  it("phân biệt 0 với chưa cấu hình", () => {
+    expect(tinhThayDoiSuatCa({ m1: "0" }, { m1: 0 })).toEqual([]);
+    expect(tinhThayDoiSuatCa({ m1: "" }, { m1: 0 })).toEqual([
+      { menuItemId: "m1", plannedQuantity: null },
+    ]);
   });
 });
