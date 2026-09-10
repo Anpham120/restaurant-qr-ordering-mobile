@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * CA PHỤC VỤ — sáng bán phở, trưa bán cơm, tối bán lẩu.
+ * CA PHỤC VỤ — món chỉ hiện trong ca mà quản lý đã gán cho nó.
  *
  * <p>Mọi luật ở đây nhận thời điểm làm THAM SỐ chứ không đọc đồng hồ, nên ca qua đêm kiểm được
  * bằng test thường thay vì phải chờ tới 1 giờ sáng.

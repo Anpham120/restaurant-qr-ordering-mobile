@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Ca phục vụ do quán tự khai — sáng bán phở, trưa bán cơm, tối bán lẩu. Admin-only. */
+/** Ca phục vụ do quản lý tự đặt: mấy ca, mỗi ca mấy giờ tới mấy giờ. Admin-only. */
 @RestController
 @RequestMapping("/api/admin/serving-periods")
 @PreAuthorize("hasRole('Admin')")

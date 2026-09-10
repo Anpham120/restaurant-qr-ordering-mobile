@@ -10,10 +10,14 @@ import "../operations/operations.css";
 type Nhap = { name: string; startTime: string; endTime: string };
 
 /**
- * CA PHỤC VỤ — quán tự khai khung giờ của mình.
+ * CA PHỤC VỤ — QUẢN LÝ TỰ ĐẶT, hệ thống không mặc định gì.
  *
- * Không đóng cứng sáng/trưa/chiều/tối: quán này mở 10:00–14:00 và 18:00–22:00, nên hai trong bốn
- * khung cố định sẽ chết ngay từ đầu. Muốn bốn ca thì tạo bốn dòng, muốn hai ca thì hai dòng.
+ * Không đóng cứng sáng/trưa/chiều/tối. Quán mở mấy ca, mỗi ca mấy giờ tới mấy giờ, và món nào
+ * thuộc ca nào đều do người dùng quyết định. Muốn bốn ca thì tạo bốn dòng, muốn hai ca thì hai
+ * dòng, muốn không ca nào thì xoá hết và mọi món bán cả ngày như trước khi có tính năng này.
+ *
+ * Hai dòng có sẵn sau khi cài đặt chỉ là ĐIỂM BẮT ĐẦU theo giờ mở cửa đang ghi trong tài liệu.
+ * Chúng không kéo theo món nào, và sửa hay xoá được hết.
  */
 export function CaPhucVuPanel() {
   const confirm = useOpsConfirm();
@@ -96,6 +100,15 @@ export function CaPhucVuPanel() {
   return (
     <div>
       {loi ? <div className="ops-notice ops-notice--danger">{loi}</div> : null}
+
+      <p className="ops-form-hint">
+        Quán mở mấy ca và mỗi ca mấy giờ là do bạn đặt. Hai dòng có sẵn chỉ là điểm bắt đầu theo
+        giờ mở cửa hiện tại — sửa tên, sửa giờ hoặc xoá cả hai đều được.
+      </p>
+      <p className="ops-form-hint">
+        Ca chỉ có tác dụng với món bạn gán vào nó ở tab <strong>Hôm nay</strong>. Món không gán ca
+        nào thì bán cả ngày, nên tạo ca xong mà chưa gán gì thì thực đơn không đổi.
+      </p>
 
       <table className="ops-table">
         <thead>

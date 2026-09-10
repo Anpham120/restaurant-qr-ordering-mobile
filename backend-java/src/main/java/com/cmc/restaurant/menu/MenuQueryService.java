@@ -63,7 +63,7 @@ public class MenuQueryService {
 		// vĩnh viễn khả năng nói "món này hết sớm" khác "món này hôm nay không phục vụ".
 		//
 		// `remainingQuantity == null` là KHÔNG đếm suất, luôn hiện. Không phải bằng 0.
-		// CA PHỤC VỤ: sáng bán phở, trưa bán cơm, tối bán lẩu.
+		// CA PHỤC VỤ: món chỉ hiện trong ca mà quản lý đã gán cho nó.
 		//
 		// Món KHÔNG gán ca nào thì bán cả ngày — xem LichPhucVu. Nhờ luật đó, quán chưa khai ca nào
 		// thì lọc này không loại gì cả và thực đơn chạy y như trước khi có tính năng.

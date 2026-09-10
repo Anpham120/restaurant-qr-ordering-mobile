@@ -319,8 +319,12 @@ export function ChuanBiThucDonPanel() {
         không bán" là hai chuyện khác nhau, và báo cáo cần phân biệt được.
       </p>
       <p className="ops-form-hint">
-        Không chọn ca nào thì món <strong>bán cả ngày</strong>. Chọn ca là món chỉ hiện trong khung
-        giờ đó — sáng bán phở, trưa bán cơm, tối bán lẩu. Khai ca ở tab <strong>Ca phục vụ</strong>.
+        Không chọn ca nào thì món <strong>bán cả ngày</strong>. Chọn ca là món chỉ hiện trong
+        khung giờ của ca đó.
+      </p>
+      <p className="ops-form-hint">
+        Ca nào, mấy giờ tới mấy giờ, và món nào thuộc ca nào đều do bạn đặt ở tab
+        <strong> Ca phục vụ</strong>. Hệ thống không mặc định món nào bán buổi nào.
       </p>
       <p className="ops-form-hint">
         Số suất <strong>không tự nạp lại</strong> khi sang ca mới. Nguyên liệu nhập buổi nào thì

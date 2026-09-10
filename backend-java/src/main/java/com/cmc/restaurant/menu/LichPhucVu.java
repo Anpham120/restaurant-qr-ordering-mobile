@@ -8,7 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Món nào được bán vào lúc nào — sáng bán phở, trưa bán cơm, tối bán lẩu.
+ * Món nào được bán vào lúc nào, theo đúng ca mà QUẢN LÝ đã đặt. Không có buổi nào mặc định bán
+ * món gì; ví dụ "sáng phở, trưa cơm, tối lẩu" chỉ là một cách quán CÓ THỂ cấu hình.
  *
  * <p>Lớp thuần, không đụng cơ sở dữ liệu và không đọc đồng hồ. Thời điểm là tham số, nên mọi luật
  * ở đây kiểm được bằng test thường thay vì phải chờ tới đúng 18:00.
