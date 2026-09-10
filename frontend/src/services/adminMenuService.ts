@@ -158,6 +158,33 @@ export async function suaCaPhucVu(
   });
 }
 
+/** Số suất DỰ KIẾN của một món trong một ca — cái được chép sang khi ca mở. */
+export type SuatTheoCa = {
+  menuItemId: string;
+  servingPeriodId: string;
+  plannedQuantity: number;
+};
+
+export async function fetchSuatTheoCa(): Promise<SuatTheoCa[]> {
+  return api.request<SuatTheoCa[]>("/admin/serving-periods/stock");
+}
+
+/**
+ * Đặt số suất dự kiến cho CẢ MỘT CA, một lượt.
+ *
+ * `plannedQuantity: null` là XOÁ dòng cấu hình — ca này không quản số suất cho món đó, và tác vụ
+ * nạp lại sẽ không đụng tới nó. Khác hẳn 0, vốn là một lệnh có nghĩa: ca mở ra với 0 suất.
+ */
+export async function luuSuatTheoCa(
+  servingPeriodId: string,
+  items: { menuItemId: string; plannedQuantity: number | null }[],
+): Promise<{ soMonQuanSuat: number }> {
+  return api.request<{ soMonQuanSuat: number }>("/admin/serving-periods/stock", {
+    method: "PUT",
+    body: JSON.stringify({ servingPeriodId, items }),
+  });
+}
+
 export async function xoaCaPhucVu(id: string): Promise<void> {
   await api.request<void>(`/admin/serving-periods/${id}`, { method: "DELETE" });
 }

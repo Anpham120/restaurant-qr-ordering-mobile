@@ -104,6 +104,23 @@ public final class MenuDtos {
 			String name, LocalTime startTime, LocalTime endTime, Integer displayOrder) {
 	}
 
+	/**
+	 * Số suất DỰ KIẾN của một món trong một ca — cái được chép sang khi ca mở.
+	 *
+	 * @param plannedQuantity {@code null} = ca này KHÔNG quản số suất cho món đó, và dòng cấu hình
+	 *                        bị XOÁ. Khác hẳn 0, vốn nghĩa là ca mở ra với 0 suất.
+	 */
+	public record SuatTheoCaDong(String menuItemId, Integer plannedQuantity) {
+	}
+
+	/** Đặt số suất dự kiến cho CẢ MỘT CA, một lượt. */
+	public record SuatTheoCaRequest(String servingPeriodId, List<SuatTheoCaDong> items) {
+	}
+
+	public record SuatTheoCaResponse(
+			String menuItemId, String servingPeriodId, int plannedQuantity) {
+	}
+
 	public record ServingPeriodResponse(
 			String id, String name, LocalTime startTime, LocalTime endTime, int displayOrder) {
 	}

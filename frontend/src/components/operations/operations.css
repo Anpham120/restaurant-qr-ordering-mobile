@@ -2382,3 +2382,13 @@
   font-size: var(--ops-text-xs);
   font-weight: 700;
 }
+
+/* Tiêu đề ngăn cách hai phần trong cùng một tab. Dùng ở màn Ca phục vụ, giữa bảng khai giờ và
+   bảng số suất dự kiến — hai việc khác nhau, cần một đường ngắt rõ ràng. */
+.ops-section-title {
+  margin: 28px 0 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ops-border, #e2e8f0);
+  font-size: var(--ops-text-lg);
+  font-weight: 700;
+}

@@ -76,3 +76,31 @@ export function tinhThayDoi(
 export function gioNgan(gio: string): string {
   return gio.slice(0, 5);
 }
+
+/**
+ * So sánh số suất dự kiến đã nhập với số đang lưu, chỉ trả về những món THẬT SỰ đổi.
+ *
+ * Ba giá trị, ba nghĩa, và hai trong ba trông giống nhau khi đọc vội — cùng cái bẫy của ô số suất
+ * hằng ngày, nhưng ở đây hậu quả khác:
+ *
+ *   ""    -> null   ca này KHÔNG quản số suất cho món đó; tác vụ nạp lại bỏ qua nó
+ *   "0"   -> 0      ca mở ra với 0 suất, tức món không bán trong ca này
+ *   "25"  -> 25     ca mở ra với 25 suất
+ *
+ * `Number("")` trả về 0, nên chuỗi rỗng phải được kiểm TRƯỚC. Đọc nhầm ở đây làm mọi món chưa cấu
+ * hình bị đặt về 0 suất mỗi khi ca mở — cả ca đó không bán được gì, và không có lỗi nào.
+ */
+export function tinhThayDoiSuatCa(
+  nhap: Record<string, string>,
+  dangLuu: Record<string, number>,
+): { menuItemId: string; plannedQuantity: number | null }[] {
+  const ra: { menuItemId: string; plannedQuantity: number | null }[] = [];
+  for (const [menuItemId, tho] of Object.entries(nhap)) {
+    const moi = docSoSuat(tho);
+    const cu = menuItemId in dangLuu ? dangLuu[menuItemId] : null;
+    if (moi !== cu) {
+      ra.push({ menuItemId, plannedQuantity: moi });
+    }
+  }
+  return ra;
+}

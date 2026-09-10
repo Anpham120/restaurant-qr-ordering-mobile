@@ -58,4 +58,22 @@ public interface MenuItemRepository extends JpaRepository<MenuItemEntity, String
 			   and remaining_quantity is not null
 			""", nativeQuery = true)
 	int traTonKho(@Param("id") String menuItemId, @Param("soLuong") int soLuong);
+
+	/**
+	 * ĐẶT số suất về đúng con số dự kiến của ca vừa mở. Chỉ tác vụ nạp lại theo ca gọi hàm này.
+	 *
+	 * <p>ĐẶT chứ không CỘNG. Ca mới là mẻ nguyên liệu mới; cộng dồn phần thừa của ca trước sẽ làm
+	 * số suất phình dần qua từng ca cho tới lúc nó không còn nói lên điều gì.
+	 *
+	 * <p>Không có điều kiện nào ngoài id, vì đây là lệnh GHI ĐÈ có chủ ý. Thứ chặn nó chạy nhầm là
+	 * sổ ghi đã nạp khoá theo (ca, ngày phục vụ), không phải một điều kiện trong câu lệnh này.
+	 */
+	@Modifying
+	@Query(value = """
+			update menu_items
+			   set remaining_quantity = :soLuong,
+			       updated_at = now()
+			 where id = :id
+			""", nativeQuery = true)
+	int datTonKho(@Param("id") String menuItemId, @Param("soLuong") int soLuong);
 }
