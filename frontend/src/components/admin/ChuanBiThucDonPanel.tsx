@@ -4,7 +4,9 @@ import type { AdminMenuItem } from "../../types";
 import {
   fetchAdminMenuItems, fetchCaPhucVu, fetchGanCaTheoMon, luuThucDonHomNay, type CaPhucVu,
 } from "../../services/adminMenuService";
-import { caKhacNhau, gioNgan, tinhThayDoi, type NhapChuanBi } from "./chuanBiThucDon";
+import {
+  caKhacNhau, gioNgan, locTheoCa, tinhThayDoi, type LocCa, type NhapChuanBi,
+} from "./chuanBiThucDon";
 import { useOpsConfirm } from "../operations/OpsConfirmProvider";
 import "../operations/operations.css";
 
@@ -33,6 +35,7 @@ export function ChuanBiThucDonPanel() {
   const [loi, setLoi] = useState("");
   const [thongBao, setThongBao] = useState("");
   const [tim, setTim] = useState("");
+  const [locCa, setLocCa] = useState<LocCa>(null);
 
   const tai = useCallback(async () => {
     try {
@@ -60,10 +63,17 @@ export function ChuanBiThucDonPanel() {
 
   useEffect(() => { void tai(); }, [tai]);
 
+  /**
+   * Lọc theo ca để tìm nhanh món của ca sắp mở — trước giờ mở cửa buổi tối, người nhập chỉ quan
+   * tâm món buổi tối chứ không phải cả 91 dòng.
+   *
+   * Món bán cả ngày LUÔN nằm trong mọi ca; xem locTheoCa.
+   */
   const hienThi = useMemo(() => {
+    const theoCa = locTheoCa(mon, caBanDau, locCa);
     const q = tim.trim().toLowerCase();
-    return q ? mon.filter((m) => m.name.toLowerCase().includes(q)) : mon;
-  }, [mon, tim]);
+    return q ? theoCa.filter((m) => m.name.toLowerCase().includes(q)) : theoCa;
+  }, [mon, tim, caBanDau, locCa]);
 
   /**
    * Chỉ gửi những món THẬT SỰ đổi.
@@ -158,6 +168,30 @@ export function ChuanBiThucDonPanel() {
             onChange={(e) => setTim(e.target.value)}
           />
         </div>
+        {ca.length > 0 ? (
+          <div className="chuan-bi-ca">
+            <button
+              type="button"
+              className={`chuan-bi-ca-chip ${locCa === null ? "chuan-bi-ca-chip--chon" : ""}`}
+              onClick={() => setLocCa(null)}
+              aria-pressed={locCa === null}
+            >
+              Cả thực đơn
+            </button>
+            {ca.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`chuan-bi-ca-chip ${locCa === c.id ? "chuan-bi-ca-chip--chon" : ""}`}
+                onClick={() => setLocCa(c.id)}
+                aria-pressed={locCa === c.id}
+                title={`${gioNgan(c.startTime)}–${gioNgan(c.endTime)}`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <button className="ops-btn ops-btn--ghost" onClick={() => void tai()} type="button">
           <RefreshCw aria-hidden="true" size={15} /> Tải lại
         </button>
@@ -255,6 +289,11 @@ export function ChuanBiThucDonPanel() {
       <p className="ops-form-hint">
         Không chọn ca nào thì món <strong>bán cả ngày</strong>. Chọn ca là món chỉ hiện trong khung
         giờ đó — sáng bán phở, trưa bán cơm, tối bán lẩu. Khai ca ở tab <strong>Ca phục vụ</strong>.
+      </p>
+      <p className="ops-form-hint">
+        Số suất <strong>không tự nạp lại</strong> khi sang ca mới. Nguyên liệu nhập buổi nào thì
+        chỉ buổi đó biết, nên con số phải do người nhập. Lọc theo ca ở trên để tìm nhanh món của
+        ca sắp mở.
       </p>
     </div>
   );

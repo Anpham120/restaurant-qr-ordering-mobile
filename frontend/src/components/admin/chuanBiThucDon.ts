@@ -77,30 +77,24 @@ export function gioNgan(gio: string): string {
   return gio.slice(0, 5);
 }
 
+/** Bộ lọc theo ca ở bảng "Hôm nay". `null` là không lọc, hiện cả thực đơn. */
+export type LocCa = string | null;
+
 /**
- * So sánh số suất dự kiến đã nhập với số đang lưu, chỉ trả về những món THẬT SỰ đổi.
+ * Lọc danh sách món theo ca đang chọn, để người nhập tìm nhanh món của ca sắp mở.
  *
- * Ba giá trị, ba nghĩa, và hai trong ba trông giống nhau khi đọc vội — cùng cái bẫy của ô số suất
- * hằng ngày, nhưng ở đây hậu quả khác:
- *
- *   ""    -> null   ca này KHÔNG quản số suất cho món đó; tác vụ nạp lại bỏ qua nó
- *   "0"   -> 0      ca mở ra với 0 suất, tức món không bán trong ca này
- *   "25"  -> 25     ca mở ra với 25 suất
- *
- * `Number("")` trả về 0, nên chuỗi rỗng phải được kiểm TRƯỚC. Đọc nhầm ở đây làm mọi món chưa cấu
- * hình bị đặt về 0 suất mỗi khi ca mở — cả ca đó không bán được gì, và không có lỗi nào.
+ * MÓN BÁN CẢ NGÀY LUÔN HIỆN, kể cả khi đang lọc theo một ca. Món không gán ca nào thì nó được bán
+ * trong MỌI ca, nên loại nó ra khỏi danh sách "món của ca tối" là nói sai: người nhập sẽ tưởng
+ * món đó không bán buổi tối và không nhập số suất cho nó.
  */
-export function tinhThayDoiSuatCa(
-  nhap: Record<string, string>,
-  dangLuu: Record<string, number>,
-): { menuItemId: string; plannedQuantity: number | null }[] {
-  const ra: { menuItemId: string; plannedQuantity: number | null }[] = [];
-  for (const [menuItemId, tho] of Object.entries(nhap)) {
-    const moi = docSoSuat(tho);
-    const cu = menuItemId in dangLuu ? dangLuu[menuItemId] : null;
-    if (moi !== cu) {
-      ra.push({ menuItemId, plannedQuantity: moi });
-    }
-  }
-  return ra;
+export function locTheoCa<T extends { id: string }>(
+  mon: T[],
+  ganCa: Record<string, string[]>,
+  ca: LocCa,
+): T[] {
+  if (ca === null) return mon;
+  return mon.filter((m) => {
+    const cua = ganCa[m.id] ?? [];
+    return cua.length === 0 || cua.includes(ca);
+  });
 }

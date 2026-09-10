@@ -7,7 +7,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Quán tự khai ca phục vụ: "Trưa 10:00-14:00", "Lẩu đêm 18:00-02:00".
@@ -19,12 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ServingPeriodService {
 
 	private final ServingPeriodRepository servingPeriodRepository;
-	private final MenuItemPeriodStockRepository suatTheoCaRepository;
 
-	public ServingPeriodService(
-			ServingPeriodRepository servingPeriodRepository,
-			MenuItemPeriodStockRepository suatTheoCaRepository) {
-		this.suatTheoCaRepository = suatTheoCaRepository;
+	public ServingPeriodService(ServingPeriodRepository servingPeriodRepository) {
 		this.servingPeriodRepository = servingPeriodRepository;
 	}
 
@@ -69,49 +64,6 @@ public class ServingPeriodService {
 			throw ApiException.notFound("SERVING_PERIOD_NOT_FOUND", "Không thấy ca phục vụ này.");
 		}
 		servingPeriodRepository.deleteById(id);
-	}
-
-	public List<MenuItemPeriodStockEntity> suatTheoCa() {
-		return suatTheoCaRepository.findAll();
-	}
-
-	/**
-	 * Đặt số suất dự kiến cho CẢ MỘT CA, một lượt.
-	 *
-	 * <p>{@code plannedQuantity == null} là XOÁ dòng cấu hình: ca này không quản số suất cho món
-	 * đó, và tác vụ nạp lại sẽ không đụng tới nó. Khác hẳn 0, vốn là một lệnh có nghĩa — ca mở ra
-	 * với 0 suất, tức món không bán trong ca này.
-	 *
-	 * @return số dòng cấu hình còn lại của ca
-	 */
-	@Transactional
-	public int datSuatTheoCa(String caId, List<MenuDtos.SuatTheoCaDong> dong) {
-		if (!servingPeriodRepository.existsById(caId)) {
-			throw ApiException.notFound("SERVING_PERIOD_NOT_FOUND", "Không thấy ca phục vụ này.");
-		}
-		if (dong == null) {
-			throw ApiException.badRequest("REQUEST_INVALID", "Danh sách món trống.");
-		}
-
-		for (MenuDtos.SuatTheoCaDong d : dong) {
-			Integer so = d.plannedQuantity();
-			if (so != null && so < 0) {
-				throw ApiException.badRequest(
-						"MENU_ITEM_QUANTITY_INVALID", "Số suất không được âm.");
-			}
-			var dangCo = suatTheoCaRepository
-					.findByMenuItemIdAndServingPeriodId(d.menuItemId(), caId);
-			if (so == null) {
-				dangCo.ifPresent(suatTheoCaRepository::delete);
-			} else if (dangCo.isPresent()) {
-				dangCo.get().setPlannedQuantity(so);
-				suatTheoCaRepository.save(dangCo.get());
-			} else {
-				suatTheoCaRepository.save(new MenuItemPeriodStockEntity(
-						UUID.randomUUID().toString(), d.menuItemId(), caId, so));
-			}
-		}
-		return suatTheoCaRepository.findByServingPeriodId(caId).size();
 	}
 
 	/**
