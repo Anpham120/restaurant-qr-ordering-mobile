@@ -273,3 +273,34 @@ describe('đăng nhập bằng Google', () => {
     expect(screen.getByText(/liên kết số điện thoại/)).toBeTruthy();
   });
 });
+
+describe('đường vào cho khách vãng lai', () => {
+  /**
+   * MÀN ĐĂNG NHẬP ĐỨNG TRƯỚC NHƯNG KHÔNG ĐƯỢC CHẶN ĐƯỜNG.
+   *
+   * App có tài khoản, tích điểm và lịch sử đơn, nên mở ra bằng màn đăng nhập là đúng hình dạng sản
+   * phẩm. Nhưng việc chính của app là gọi món tại bàn: bắt đăng nhập trước khi cho gọi món sẽ chặn
+   * một khách vừa ngồi xuống, đang đói, chỉ muốn quét QR. Web cũng cho khách vãng lai gọi món.
+   */
+  it('hiện đường bỏ qua khi được phép vào không đăng nhập', async () => {
+    const boQua = jest.fn();
+    const man = await render(
+      <LoginScreen repository={repoVoi(jest.fn())} onDangNhapXong={jest.fn()} onBoQua={boQua} />,
+    );
+
+    fireEvent.press(man.getByText('Vào luôn, không đăng nhập'));
+    expect(boQua).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Khách tự bấm đăng nhập từ TRONG app thì đã có đường quay lại rồi. Hiện thêm "vào luôn" ở đó
+   * là hai đường làm cùng một việc, và người dùng phải đoán xem chúng khác nhau chỗ nào.
+   */
+  it('KHÔNG hiện đường bỏ qua khi không được truyền', async () => {
+    const man = await render(
+      <LoginScreen repository={repoVoi(jest.fn())} onDangNhapXong={jest.fn()} />,
+    );
+
+    expect(man.queryByText('Vào luôn, không đăng nhập')).toBeNull();
+  });
+});

@@ -93,6 +93,14 @@ export default function App() {
 
 function NoiDungApp() {
   const [cauHinh, setCauHinh] = useState<CauHinhMayChu | null>(null);
+  /**
+   * Khách đã tự chọn vào mà không đăng nhập.
+   *
+   * CHỈ sống trong lần mở app này, không cất xuống máy. Lần mở sau lại thấy màn đăng nhập, vì đó
+   * là lời mời chứ không phải rào chắn — và một lời mời hỏi một lần rồi thôi mãi mãi thì khách
+   * tạo tài khoản ở đâu.
+   */
+  const [daBoQuaDangNhap, setDaBoQuaDangNhap] = useState(false);
   const [dangNhap, setDangNhap] = useState<AuthSession | null>(null);
   const [phienBan, setPhienBan] = useState<TableSession | null>(null);
   const [soDienThoai, setSoDienThoai] = useState<string | null>(null);
@@ -269,6 +277,31 @@ function NoiDungApp() {
 
   // KHÔNG bắt đăng nhập trước khi vào bàn. Khách vãng lai phải dùng được app đúng như web; đăng
   // nhập chỉ đổi lấy việc đơn được gắn tài khoản (§9.4).
+  // MÀN ĐĂNG NHẬP ĐỨNG TRƯỚC, nhưng KHÔNG chặn đường.
+  //
+  // App có tài khoản, tích điểm và lịch sử đơn, nên mở ra bằng màn đăng nhập là đúng hình dạng
+  // sản phẩm. Nhưng việc chính của app là gọi món tại bàn: bắt đăng nhập trước khi cho gọi món sẽ
+  // chặn một khách vừa ngồi xuống, đang đói, chỉ muốn quét QR. Nên có đường "vào luôn".
+  //
+  // Đã đăng nhập rồi thì bỏ qua hẳn nhánh này — không ai muốn thấy màn đăng nhập mỗi lần mở app.
+  if (dangNhap === null && !daBoQuaDangNhap && phienBan === null) {
+    return (
+      <SafeAreaView style={kieuChung.man}>
+        <StatusBar style="dark" />
+        <LoginScreen
+          onDangNhapXong={(ses) => {
+            setDangNhap(ses);
+            void dongBo(ses, phienBan);
+          }}
+          layTokenGoogle={LAY_TOKEN_GOOGLE}
+          onTaoTaiKhoan={GUI_MA_OTP === undefined ? undefined : () => setManNgoai('dangKy')}
+          onBoQua={() => setDaBoQuaDangNhap(true)}
+          repository={client.auth}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (phienBan === null) {
     return (
       <SafeAreaView style={kieuChung.man}>

@@ -30,6 +30,16 @@ export interface LoginScreenProps {
    * bấm vào một màn không chạy được.
    */
   onTaoTaiKhoan?: (() => void) | undefined;
+  /**
+   * Vào app mà KHÔNG đăng nhập. Vắng mặt thì không hiện đường này.
+   *
+   * Có mặt khi màn đăng nhập là màn MỞ ĐẦU: việc chính của app là gọi món tại bàn, và bắt đăng
+   * nhập trước khi cho gọi món sẽ chặn một khách vừa ngồi xuống, đang đói, chỉ muốn quét QR. Web
+   * cũng cho khách vãng lai gọi món, nên hai bên nói cùng một luật.
+   *
+   * Vắng mặt khi khách tự bấm đăng nhập từ trong app — lúc đó đã có đường quay lại rồi.
+   */
+  onBoQua?: (() => void) | undefined;
 }
 
 /**
@@ -47,6 +57,7 @@ export function LoginScreen({
   onDangNhapXong,
   layTokenGoogle,
   onTaoTaiKhoan,
+  onBoQua,
 }: LoginScreenProps) {
   const [dinhDanh, setDinhDanh] = useState('');
   const [matKhau, setMatKhau] = useState('');
@@ -190,6 +201,21 @@ export function LoginScreen({
         <Text style={[kieuChung.chuPhu, { textAlign: 'center', paddingVertical: 10 }]}>
           Chưa có tài khoản? Bấm “Tiếp tục với Google” ở trên để tạo.
         </Text>
+      ) : null}
+
+      {/* Đường vào cho khách vãng lai. Đặt CUỐI và làm nhạt hơn hai nút trên: đăng nhập vẫn là
+          việc nên làm vì nó mang theo điểm thưởng và lịch sử đơn, nhưng không được chặn đường. */}
+      {onBoQua !== undefined ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          disabled={dangGui}
+          onPress={onBoQua}
+          style={{ alignItems: 'center', paddingVertical: 14 }}
+        >
+          <Text style={[kieuChung.chuPhu, { textDecorationLine: 'underline' }]}>
+            Vào luôn, không đăng nhập
+          </Text>
+        </TouchableOpacity>
       ) : null}
     </View>
   );
