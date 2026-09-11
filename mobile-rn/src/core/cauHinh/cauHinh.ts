@@ -117,3 +117,35 @@ export function suyRaDiaChiAnh(apiBaseUrl: string, congAnh = 8080): string {
     return apiBaseUrl;
   }
 }
+
+/**
+ * Địa chỉ máy chủ NƯỚNG SẴN vào bản dựng, dùng khi máy chưa có cấu hình nào.
+ *
+ * VÌ SAO CẦN, dù màn nhập địa chỉ vẫn giữ.
+ *
+ * Màn nhập sinh ra cho bản chạy thử: máy ảo Android dùng `10.0.2.2`, điện thoại thật dùng IP LAN,
+ * và hai thứ đó đổi theo từng máy nên không nướng vào bản dựng được.
+ *
+ * Nhưng bản PHÁT HÀNH cho khách thì khác hẳn. Khách tải app về không biết địa chỉ máy chủ, không
+ * nên biết, và một màn hỏi địa chỉ ngay khi mở app lần đầu là dấu hiệu của bản demo chứ không phải
+ * sản phẩm. Địa chỉ production thì cố định, nên nó thuộc về lúc dựng.
+ *
+ * Đọc `EXPO_PUBLIC_API_BASE_URL` — Expo thay biến này bằng giá trị thật lúc đóng gói, nên nó nằm
+ * sẵn trong bundle chứ không phải đọc lúc chạy. Bản dựng không khai biến thì hàm trả `null` và app
+ * quay về hành vi cũ: hỏi địa chỉ. Đó là điều đúng cho bản chạy thử.
+ *
+ * Màn cài đặt VẪN dùng được để đổi sang máy chủ khác — hữu ích khi thử trên mạng LAN của quán.
+ */
+export function cauHinhMacDinh(): CauHinhMayChu | null {
+  const tho = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (typeof tho !== 'string' || tho.trim() === '') return null;
+
+  // Đi qua đúng bộ chuẩn hoá mà ô nhập tay dùng, không tự ghép chuỗi. Một địa chỉ nướng sai định
+  // dạng sẽ hỏng ở mọi máy cài app, và không ai sửa được từ xa.
+  // Cổng mặc định 8081 chỉ dùng khi địa chỉ nướng vào thiếu cổng VÀ dùng http — tức bản dựng cho
+  // mạng LAN. Địa chỉ production dạng `https://...` không cổng thì bộ chuẩn hoá tự chọn 443.
+  const api = chuanHoaDiaChi(tho, 8081);
+  if (api === null) return null;
+
+  return { apiBaseUrl: api, imageBaseUrl: suyRaDiaChiAnh(api) };
+}
