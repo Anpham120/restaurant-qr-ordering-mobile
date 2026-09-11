@@ -5,7 +5,8 @@ import { BarChart3, Download } from "lucide-react";
 import "../../components/operations/operations.css";
 import { RevenueChart } from "./RevenueChart";
 
-type RangePreset = "today" | "7d" | "30d" | "custom";
+export type RangePreset = "today" | "7d" | "30d" | "3m" | "1y" | "ytd" | "custom";
+export type GroupBy = "day" | "week" | "month";
 
 function formatVnd(value: number): string {
   return `${value.toLocaleString("vi-VN")}đ`;
@@ -23,7 +24,7 @@ function endOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
-function getPresetRange(preset: RangePreset): { from: string; to: string } {
+export function getPresetRange(preset: RangePreset): { from: string; to: string } {
   const today = new Date();
   if (preset === "today") {
     return { from: toDateInput(today), to: toDateInput(today) };
@@ -36,6 +37,20 @@ function getPresetRange(preset: RangePreset): { from: string; to: string } {
   if (preset === "30d") {
     const from = new Date(today);
     from.setDate(today.getDate() - 29);
+    return { from: toDateInput(from), to: toDateInput(today) };
+  }
+  if (preset === "3m") {
+    const from = new Date(today);
+    from.setDate(today.getDate() - 89);
+    return { from: toDateInput(from), to: toDateInput(today) };
+  }
+  if (preset === "1y") {
+    const from = new Date(today);
+    from.setDate(today.getDate() - 364);
+    return { from: toDateInput(from), to: toDateInput(today) };
+  }
+  if (preset === "ytd") {
+    const from = new Date(today.getFullYear(), 0, 1);
     return { from: toDateInput(from), to: toDateInput(today) };
   }
   const from = new Date(today);
@@ -59,6 +74,7 @@ export function AdminReportsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [preset, setPreset] = useState<RangePreset>("30d");
+  const [granularity, setGranularity] = useState<"day" | "week" | "month">("day");
   const initialRange = getPresetRange("30d");
   const [from, setFrom] = useState(initialRange.from);
   const [to, setTo] = useState(initialRange.to);
@@ -89,6 +105,15 @@ export function AdminReportsPage() {
     const range = getPresetRange(nextPreset);
     setFrom(range.from);
     setTo(range.to);
+
+    // Tự động gợi ý chế độ gom nhóm tối ưu theo khung thời gian (TradingView style)
+    if (nextPreset === "1y" || nextPreset === "ytd") {
+      setGranularity("month");
+    } else if (nextPreset === "3m") {
+      setGranularity("week");
+    } else {
+      setGranularity("day");
+    }
   }
 
   const paidRate = useMemo(() => {
@@ -133,21 +158,29 @@ export function AdminReportsPage() {
       {error ? <div className="ops-notice ops-notice--danger">{error}</div> : null}
 
       <div className="ops-reports-toolbar">
-        {([
-          ["today", "Hôm nay"],
-          ["7d", "7 ngày"],
-          ["30d", "30 ngày"],
-          ["custom", "Tùy chọn"],
-        ] as Array<[RangePreset, string]>).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            className={`ops-btn ${preset === value ? "ops-btn--primary" : "ops-btn--ghost"}`}
-            onClick={() => applyPreset(value)}
-          >
-            {label}
-          </button>
-        ))}
+        <div className="ops-timeframe-group" role="group" aria-label="Khung thời gian">
+          {(
+            [
+              ["today", "Hôm nay"],
+              ["7d", "7 ngày"],
+              ["30d", "1 tháng"],
+              ["3m", "3 tháng (Quý)"],
+              ["1y", "1 năm"],
+              ["ytd", "Năm nay (YTD)"],
+              ["custom", "Tùy chọn"],
+            ] as Array<[RangePreset, string]>
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={`ops-btn ${preset === value ? "ops-btn--primary" : "ops-btn--ghost"}`}
+              onClick={() => applyPreset(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {preset === "custom" ? (
           <>
             <div className="ops-form-group ops-flush">
@@ -216,8 +249,14 @@ export function AdminReportsPage() {
             </div>
           </div>
 
-          <div className="ops-page-header"><h2>Doanh thu theo ngày</h2></div>
-          <RevenueChart dailyRevenue={report.dailyRevenue} from={from} to={to} />
+          <div className="ops-page-header"><h2>Doanh thu theo thời gian</h2></div>
+          <RevenueChart
+            dailyRevenue={report.dailyRevenue}
+            from={from}
+            to={to}
+            granularity={granularity}
+            onGranularityChange={setGranularity}
+          />
 
           <div className="ops-page-header"><h2>Món bán chạy</h2></div>
           <table className="ops-table">
