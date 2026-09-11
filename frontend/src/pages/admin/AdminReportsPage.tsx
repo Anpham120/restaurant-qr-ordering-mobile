@@ -3,6 +3,7 @@ import type { ReportSummaryResponse } from "@cmc/shared-types";
 import { api } from "../../services/apiClient";
 import { BarChart3, Download } from "lucide-react";
 import "../../components/operations/operations.css";
+import { RevenueChart } from "./RevenueChart";
 
 type RangePreset = "today" | "7d" | "30d" | "custom";
 
@@ -51,45 +52,6 @@ function downloadCsv(filename: string, rows: string[][]) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-function RevenueChart({ dailyRevenue }: { dailyRevenue: ReportSummaryResponse["dailyRevenue"] }) {
-  if (dailyRevenue.length === 0) {
-    return <div className="ops-empty">Chưa có dữ liệu doanh thu theo ngày</div>;
-  }
-
-  const maxRevenue = Math.max(...dailyRevenue.map((day) => day.revenue), 1);
-  const width = 640;
-  const height = 220;
-  const padding = 24;
-  const barGap = 8;
-  const barWidth = Math.max(12, (width - padding * 2 - barGap * (dailyRevenue.length - 1)) / dailyRevenue.length);
-
-  return (
-    <div className="ops-reports-chart" aria-label="Biểu đồ doanh thu theo ngày">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img">
-        {dailyRevenue.map((day, index) => {
-          const barHeight = (day.revenue / maxRevenue) * (height - padding * 2);
-          const x = padding + index * (barWidth + barGap);
-          const y = height - padding - barHeight;
-          return (
-            <g key={day.date}>
-              <rect
-                x={x}
-                y={y}
-                width={barWidth}
-                height={barHeight}
-                rx="4"
-                fill="var(--color-primary, #2563eb)"
-              >
-                <title>{`${day.date}: ${formatVnd(day.revenue)}`}</title>
-              </rect>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
 }
 
 export function AdminReportsPage() {
@@ -255,7 +217,7 @@ export function AdminReportsPage() {
           </div>
 
           <div className="ops-page-header"><h2>Doanh thu theo ngày</h2></div>
-          <RevenueChart dailyRevenue={report.dailyRevenue} />
+          <RevenueChart dailyRevenue={report.dailyRevenue} from={from} to={to} />
 
           <div className="ops-page-header"><h2>Món bán chạy</h2></div>
           <table className="ops-table">
