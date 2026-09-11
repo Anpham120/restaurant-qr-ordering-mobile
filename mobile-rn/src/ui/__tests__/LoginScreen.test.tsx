@@ -273,34 +273,39 @@ describe('đăng nhập bằng Google', () => {
     expect(screen.getByText(/liên kết số điện thoại/)).toBeTruthy();
   });
 });
-
-describe('đường vào cho khách vãng lai', () => {
+describe('app mobile bắt buộc đăng nhập', () => {
   /**
-   * MÀN ĐĂNG NHẬP ĐỨNG TRƯỚC NHƯNG KHÔNG ĐƯỢC CHẶN ĐƯỜNG.
+   * RANH GIỚI GIỮA HAI SẢN PHẨM, không phải một rào chắn tuỳ tiện.
    *
-   * App có tài khoản, tích điểm và lịch sử đơn, nên mở ra bằng màn đăng nhập là đúng hình dạng sản
-   * phẩm. Nhưng việc chính của app là gọi món tại bàn: bắt đăng nhập trước khi cho gọi món sẽ chặn
-   * một khách vừa ngồi xuống, đang đói, chỉ muốn quét QR. Web cũng cho khách vãng lai gọi món.
+   * Khách vãng lai quét mã QR trên bàn thì vào WEB — không cần tài khoản, không lưu danh tính.
+   * Ai TẢI APP về là đã chủ động muốn có tài khoản, và đó chính là lý do app tồn tại: xác minh
+   * được danh tính nên mới xem điểm và đổi điểm được.
+   *
+   * Một đường 'vào luôn' trên app là mời khách dùng bản nặng hơn của web mà không nhận thêm
+   * được gì. Ca này canh để nó không quay lại.
    */
-  it('hiện đường bỏ qua khi được phép vào không đăng nhập', async () => {
-    const boQua = jest.fn();
+  it('KHÔNG có đường vào mà bỏ qua đăng nhập', async () => {
     const man = await render(
-      <LoginScreen repository={repoVoi(jest.fn())} onDangNhapXong={jest.fn()} onBoQua={boQua} />,
+      <LoginScreen repository={repoVoi(new ApiGiaLap(PHIEN_HOP_LE))} onDangNhapXong={jest.fn()} />,
     );
 
-    fireEvent.press(man.getByText('Vào luôn, không đăng nhập'));
-    expect(boQua).toHaveBeenCalledTimes(1);
+    expect(man.queryByText(/không đăng nhập/i)).toBeNull();
+    expect(man.queryByText(/vào luôn/i)).toBeNull();
+    expect(man.queryByText(/bỏ qua/i)).toBeNull();
   });
 
-  /**
-   * Khách tự bấm đăng nhập từ TRONG app thì đã có đường quay lại rồi. Hiện thêm "vào luôn" ở đó
-   * là hai đường làm cùng một việc, và người dùng phải đoán xem chúng khác nhau chỗ nào.
-   */
-  it('KHÔNG hiện đường bỏ qua khi không được truyền', async () => {
+  /** Ba đường tạo hoặc dùng tài khoản phải còn nguyên, nếu không app thành ngõ cụt. */
+  it('vẫn đủ đường đăng nhập và tạo tài khoản', async () => {
     const man = await render(
-      <LoginScreen repository={repoVoi(jest.fn())} onDangNhapXong={jest.fn()} />,
+      <LoginScreen
+        repository={repoVoi(new ApiGiaLap(PHIEN_HOP_LE))}
+        onDangNhapXong={jest.fn()}
+        layTokenGoogle={jest.fn()}
+        onTaoTaiKhoan={jest.fn()}
+      />,
     );
 
-    expect(man.queryByText('Vào luôn, không đăng nhập')).toBeNull();
+    expect(man.getByText('Tiếp tục với Google')).toBeTruthy();
+    expect(man.getByText('Chưa có tài khoản? Tạo bằng số điện thoại')).toBeTruthy();
   });
 });

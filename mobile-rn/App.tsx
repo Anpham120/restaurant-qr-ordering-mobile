@@ -93,14 +93,6 @@ export default function App() {
 
 function NoiDungApp() {
   const [cauHinh, setCauHinh] = useState<CauHinhMayChu | null>(null);
-  /**
-   * Khách đã tự chọn vào mà không đăng nhập.
-   *
-   * CHỈ sống trong lần mở app này, không cất xuống máy. Lần mở sau lại thấy màn đăng nhập, vì đó
-   * là lời mời chứ không phải rào chắn — và một lời mời hỏi một lần rồi thôi mãi mãi thì khách
-   * tạo tài khoản ở đâu.
-   */
-  const [daBoQuaDangNhap, setDaBoQuaDangNhap] = useState(false);
   const [dangNhap, setDangNhap] = useState<AuthSession | null>(null);
   const [phienBan, setPhienBan] = useState<TableSession | null>(null);
   const [soDienThoai, setSoDienThoai] = useState<string | null>(null);
@@ -277,14 +269,18 @@ function NoiDungApp() {
 
   // KHÔNG bắt đăng nhập trước khi vào bàn. Khách vãng lai phải dùng được app đúng như web; đăng
   // nhập chỉ đổi lấy việc đơn được gắn tài khoản (§9.4).
-  // MÀN ĐĂNG NHẬP ĐỨNG TRƯỚC, nhưng KHÔNG chặn đường.
+  // APP MOBILE BẮT BUỘC ĐĂNG NHẬP. Đây là ranh giới giữa hai sản phẩm, không phải một rào chắn
+  // tuỳ tiện.
   //
-  // App có tài khoản, tích điểm và lịch sử đơn, nên mở ra bằng màn đăng nhập là đúng hình dạng
-  // sản phẩm. Nhưng việc chính của app là gọi món tại bàn: bắt đăng nhập trước khi cho gọi món sẽ
-  // chặn một khách vừa ngồi xuống, đang đói, chỉ muốn quét QR. Nên có đường "vào luôn".
+  // Khách vãng lai quét mã QR trên bàn thì vào WEB — không cần tài khoản, không lưu danh tính,
+  // và đó là đường đúng cho người chỉ ghé một lần.
   //
-  // Đã đăng nhập rồi thì bỏ qua hẳn nhánh này — không ai muốn thấy màn đăng nhập mỗi lần mở app.
-  if (dangNhap === null && !daBoQuaDangNhap && phienBan === null) {
+  // Ai TẢI APP về là đã chủ động muốn có tài khoản, và đó chính là lý do app tồn tại: xác minh
+  // được danh tính nên mới xem điểm và đổi điểm được. Một khách vãng lai trên app là một khách
+  // đang dùng bản nặng hơn của web mà không nhận thêm được gì.
+  //
+  // Cả hai vẫn quét QR để vào bàn. Khác nhau ở DANH TÍNH, không ở cách vào bàn.
+  if (dangNhap === null) {
     return (
       <SafeAreaView style={kieuChung.man}>
         <StatusBar style="dark" />
@@ -295,7 +291,6 @@ function NoiDungApp() {
           }}
           layTokenGoogle={LAY_TOKEN_GOOGLE}
           onTaoTaiKhoan={GUI_MA_OTP === undefined ? undefined : () => setManNgoai('dangKy')}
-          onBoQua={() => setDaBoQuaDangNhap(true)}
           repository={client.auth}
         />
       </SafeAreaView>
