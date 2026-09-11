@@ -95,10 +95,10 @@ export function AdminUserManager() {
   const [editingUser, setEditingUser] = useState<UserSummary | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [resetId, setResetId] = useState<string | null>(null);
-  const [newPassword, setNewPassword] = useState("");
+  const [resettingUser, setResettingUser] = useState<UserSummary | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
   const [confirmResetPassword, setConfirmResetPassword] = useState("");
-  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
@@ -224,24 +224,38 @@ export function AdminUserManager() {
     }
   }
 
-  async function handleResetPassword(userId: string) {
-    if (newPassword.length < 8) {
+  function openResetModal(user: UserSummary) {
+    setResettingUser(user);
+    setResetPassword("");
+    setConfirmResetPassword("");
+    setNotice("");
+  }
+
+  function closeResetModal() {
+    setResettingUser(null);
+    setResetPassword("");
+    setConfirmResetPassword("");
+  }
+
+  async function handleResetPassword() {
+    if (!resettingUser) return;
+    if (resetPassword.length < 8) {
       setNotice("Mật khẩu mới phải có ít nhất 8 ký tự.");
       return;
     }
-    if (newPassword !== confirmResetPassword) {
+    if (resetPassword !== confirmResetPassword) {
       setNotice("Mật khẩu xác nhận không khớp.");
       return;
     }
+    setIsResetting(true);
     try {
-      await api.users.resetPassword(userId, { newPassword });
-      setNotice("Đã đặt lại mật khẩu.");
-      setResetId(null);
-      setNewPassword("");
-      setConfirmResetPassword("");
-      setShowResetPassword(false);
+      await api.users.resetPassword(resettingUser.userId, { newPassword: resetPassword });
+      setNotice(`Đã đặt lại mật khẩu thành công cho tài khoản ${resettingUser.fullName} (${resettingUser.email}).`);
+      closeResetModal();
     } catch (err) {
       setNotice(translateError(err, "Đặt lại mật khẩu thất bại."));
+    } finally {
+      setIsResetting(false);
     }
   }
 
@@ -330,6 +344,48 @@ export function AdminUserManager() {
         </div>
       ) : null}
 
+      {resettingUser ? (
+        <div className="ops-modal-overlay" onClick={closeResetModal}>
+          <div
+            aria-labelledby="reset-password-title"
+            aria-modal="true"
+            className="ops-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+          >
+            <div className="ops-modal-header">
+              <h2 id="reset-password-title">Đặt lại mật khẩu</h2>
+              <button aria-label="Đóng" className="ops-modal-close" onClick={closeResetModal} type="button">
+                <X aria-hidden="true" size={18} />
+              </button>
+            </div>
+            <div className="ops-modal-body">
+              <div className="ops-notice ops-notice--info">
+                Đang đổi mật khẩu cho: <strong>{resettingUser.fullName}</strong> ({resettingUser.email}) - {ROLE_LABELS[resettingUser.role] ?? resettingUser.role}
+              </div>
+              <OpsPasswordInput
+                id="reset-user-password"
+                label="Mật khẩu mới * (tối thiểu 8 ký tự)"
+                onChange={setResetPassword}
+                value={resetPassword}
+              />
+              <OpsPasswordInput
+                id="reset-user-password-confirm"
+                label="Xác nhận mật khẩu mới *"
+                onChange={setConfirmResetPassword}
+                value={confirmResetPassword}
+              />
+            </div>
+            <div className="ops-modal-footer">
+              <button className="ops-btn ops-btn--ghost" onClick={closeResetModal} type="button">Hủy</button>
+              <button className="ops-btn ops-btn--primary" disabled={isResetting} onClick={handleResetPassword} type="button">
+                {isResetting ? "Đang xử lý..." : "Lưu mật khẩu mới"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <table className="ops-table">
         <thead>
           <tr>
@@ -353,52 +409,21 @@ export function AdminUserManager() {
               <td className="ops-note">{new Date(user.createdAt).toLocaleDateString("vi-VN")}</td>
               <td>
                 <div className="ops-row ops-row--wrap">
-                {resetId === user.userId ? (
-                  <div className="ops-row ops-row--wrap ops-row--capped">
-                    <input
-                      className="ops-form-input ops-inline-input"
-                      type={showResetPassword ? "text" : "password"}
-                      placeholder="Mật khẩu mới"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                    />
-                    <input
-                      className="ops-form-input ops-inline-input"
-                      type={showResetPassword ? "text" : "password"}
-                      placeholder="Xác nhận"
-                      value={confirmResetPassword}
-                      onChange={(e) => setConfirmResetPassword(e.target.value)}
-                    />
-                    <button
-                      aria-label={showResetPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                      className="ops-btn ops-btn--ghost"
-                      onClick={() => setShowResetPassword((v) => !v)}
-                      type="button"
-                    >
-                      {showResetPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                    <button className="ops-btn ops-btn--primary" onClick={() => handleResetPassword(user.userId)} type="button">Lưu</button>
-                    <button className="ops-btn ops-btn--ghost" onClick={() => { setResetId(null); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">Hủy</button>
-                  </div>
-                ) : (
-                  <>
-                    <button className="ops-btn ops-btn--ghost" onClick={() => openEditForm(user)} type="button">
-                      <Pencil aria-hidden="true" size={14} /> Sửa
-                    </button>
-                    <button className="ops-btn ops-btn--ghost" onClick={() => { setResetId(user.userId); setNewPassword(""); setConfirmResetPassword(""); setShowResetPassword(false); }} type="button">
-                      Reset mật khẩu
-                    </button>
-                    <button
-                      className="ops-btn ops-btn--danger"
-                      disabled={deletingId === user.userId || currentUser?.userId === user.userId}
-                      onClick={() => void handleDelete(user)}
-                      title={currentUser?.userId === user.userId ? "Không thể xóa tài khoản đang đăng nhập" : "Xóa tài khoản"}
-                      type="button"
-                    >
-                      <Trash2 aria-hidden="true" size={14} /> {deletingId === user.userId ? "Đang xóa..." : "Xóa"}
-                    </button>
-                  </>
-                )}
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openEditForm(user)} type="button">
+                    <Pencil aria-hidden="true" size={14} /> Sửa
+                  </button>
+                  <button className="ops-btn ops-btn--ghost" onClick={() => openResetModal(user)} type="button">
+                    Reset mật khẩu
+                  </button>
+                  <button
+                    className="ops-btn ops-btn--danger"
+                    disabled={deletingId === user.userId || currentUser?.userId === user.userId}
+                    onClick={() => void handleDelete(user)}
+                    title={currentUser?.userId === user.userId ? "Không thể xóa tài khoản đang đăng nhập" : "Xóa tài khoản"}
+                    type="button"
+                  >
+                    <Trash2 aria-hidden="true" size={14} /> {deletingId === user.userId ? "Đang xóa..." : "Xóa"}
+                  </button>
                 </div>
               </td>
             </tr>

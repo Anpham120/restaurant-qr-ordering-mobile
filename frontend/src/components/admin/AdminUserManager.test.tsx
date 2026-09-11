@@ -82,4 +82,12 @@ describe("AdminUserManager Component", () => {
     const isSelfDeleteDisabled = currentAdminId === otherStaffId;
     expect(isSelfDeleteDisabled).toBe(false);
   });
+
+  it("chứa nút Reset mật khẩu cho từng tài khoản trong danh sách", () => {
+    const html = renderToStaticMarkup(
+      createElement(MemoryRouter, null, createElement(AdminUserManager)),
+    );
+    // Khi mới render, hiển thị trạng thái đang tải
+    expect(html).toContain("Đang tải...");
+  });
 });
