@@ -208,14 +208,20 @@ export function RevenueChart({
   const chartHeight = height - paddingTop - paddingBottom;
   const baselineY = height - paddingBottom;
 
-  // Tính chiều rộng slot thông minh
-  const slotWidth = Math.max(
-    granularity === "month" ? 48 : granularity === "week" ? 40 : 28,
-    Math.min(72, Math.floor(640 / items.length))
-  );
-  const totalContentWidth = yAxisWidth + items.length * slotWidth + paddingRight;
-  const chartWidth = Math.max(640, totalContentWidth);
-  const barWidth = Math.max(12, Math.min(32, slotWidth - 8));
+  // Chiều rộng viewBox mặc định chuẩn để hiển thị toàn màn hình mà không bị ép về góc trái
+  const baseChartWidth = 720;
+  const availableWidth = baseChartWidth - yAxisWidth - paddingRight;
+
+  // Tính slotWidth: nếu số cột ít, dàn đều trên chiều rộng baseChartWidth; nếu số cột nhiều, cho phép cuộn ngang
+  const minSlotWidth = granularity === "month" ? 56 : granularity === "week" ? 44 : 32;
+  const calculatedSlotWidth = Math.floor(availableWidth / Math.max(1, items.length));
+  const slotWidth = Math.max(minSlotWidth, calculatedSlotWidth);
+
+  // Tổng chiều rộng thực tế của biểu đồ
+  const chartWidth = Math.max(baseChartWidth, yAxisWidth + items.length * slotWidth + paddingRight);
+
+  // Giới hạn chiều rộng cột (barWidth) thanh thoát, tối đa 32px để cột không bao giờ bị quá to hoặc quá thô
+  const barWidth = Math.min(32, Math.max(12, Math.floor(slotWidth * 0.45)));
 
   // Bước nhảy nhãn X
   const labelInterval =
@@ -266,23 +272,26 @@ export function RevenueChart({
         </div>
 
         {onGranularityChange ? (
-          <div className="ops-chart-granularity-toggle" role="group" aria-label="Chế độ gom nhóm">
-            {(
-              [
-                ["day", "Ngày"],
-                ["week", "Tuần"],
-                ["month", "Tháng"],
-              ] as Array<[ChartGranularity, string]>
-            ).map(([mode, label]) => (
-              <button
-                key={mode}
-                type="button"
-                className={`ops-chart-tab ${granularity === mode ? "ops-chart-tab--active" : ""}`}
-                onClick={() => onGranularityChange(mode)}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="ops-chart-granularity-wrapper">
+            <span className="ops-chart-granularity-label">Xem theo:</span>
+            <div className="ops-chart-granularity-toggle" role="group" aria-label="Chế độ gom nhóm cột">
+              {(
+                [
+                  ["day", "Ngày"],
+                  ["week", "Tuần"],
+                  ["month", "Tháng"],
+                ] as Array<[ChartGranularity, string]>
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`ops-chart-tab ${granularity === mode ? "ops-chart-tab--active" : ""}`}
+                  onClick={() => onGranularityChange(mode)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
       </div>
