@@ -273,3 +273,39 @@ describe('đăng nhập bằng Google', () => {
     expect(screen.getByText(/liên kết số điện thoại/)).toBeTruthy();
   });
 });
+describe('app mobile bắt buộc đăng nhập', () => {
+  /**
+   * RANH GIỚI GIỮA HAI SẢN PHẨM, không phải một rào chắn tuỳ tiện.
+   *
+   * Khách vãng lai quét mã QR trên bàn thì vào WEB — không cần tài khoản, không lưu danh tính.
+   * Ai TẢI APP về là đã chủ động muốn có tài khoản, và đó chính là lý do app tồn tại: xác minh
+   * được danh tính nên mới xem điểm và đổi điểm được.
+   *
+   * Một đường 'vào luôn' trên app là mời khách dùng bản nặng hơn của web mà không nhận thêm
+   * được gì. Ca này canh để nó không quay lại.
+   */
+  it('KHÔNG có đường vào mà bỏ qua đăng nhập', async () => {
+    const man = await render(
+      <LoginScreen repository={repoVoi(new ApiGiaLap(PHIEN_HOP_LE))} onDangNhapXong={jest.fn()} />,
+    );
+
+    expect(man.queryByText(/không đăng nhập/i)).toBeNull();
+    expect(man.queryByText(/vào luôn/i)).toBeNull();
+    expect(man.queryByText(/bỏ qua/i)).toBeNull();
+  });
+
+  /** Ba đường tạo hoặc dùng tài khoản phải còn nguyên, nếu không app thành ngõ cụt. */
+  it('vẫn đủ đường đăng nhập và tạo tài khoản', async () => {
+    const man = await render(
+      <LoginScreen
+        repository={repoVoi(new ApiGiaLap(PHIEN_HOP_LE))}
+        onDangNhapXong={jest.fn()}
+        layTokenGoogle={jest.fn()}
+        onTaoTaiKhoan={jest.fn()}
+      />,
+    );
+
+    expect(man.getByText('Tiếp tục với Google')).toBeTruthy();
+    expect(man.getByText('Chưa có tài khoản? Tạo bằng số điện thoại')).toBeTruthy();
+  });
+});

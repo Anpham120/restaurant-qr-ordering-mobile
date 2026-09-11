@@ -269,6 +269,34 @@ function NoiDungApp() {
 
   // KHÔNG bắt đăng nhập trước khi vào bàn. Khách vãng lai phải dùng được app đúng như web; đăng
   // nhập chỉ đổi lấy việc đơn được gắn tài khoản (§9.4).
+  // APP MOBILE BẮT BUỘC ĐĂNG NHẬP. Đây là ranh giới giữa hai sản phẩm, không phải một rào chắn
+  // tuỳ tiện.
+  //
+  // Khách vãng lai quét mã QR trên bàn thì vào WEB — không cần tài khoản, không lưu danh tính,
+  // và đó là đường đúng cho người chỉ ghé một lần.
+  //
+  // Ai TẢI APP về là đã chủ động muốn có tài khoản, và đó chính là lý do app tồn tại: xác minh
+  // được danh tính nên mới xem điểm và đổi điểm được. Một khách vãng lai trên app là một khách
+  // đang dùng bản nặng hơn của web mà không nhận thêm được gì.
+  //
+  // Cả hai vẫn quét QR để vào bàn. Khác nhau ở DANH TÍNH, không ở cách vào bàn.
+  if (dangNhap === null) {
+    return (
+      <SafeAreaView style={kieuChung.man}>
+        <StatusBar style="dark" />
+        <LoginScreen
+          onDangNhapXong={(ses) => {
+            setDangNhap(ses);
+            void dongBo(ses, phienBan);
+          }}
+          layTokenGoogle={LAY_TOKEN_GOOGLE}
+          onTaoTaiKhoan={GUI_MA_OTP === undefined ? undefined : () => setManNgoai('dangKy')}
+          repository={client.auth}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (phienBan === null) {
     return (
       <SafeAreaView style={kieuChung.man}>
