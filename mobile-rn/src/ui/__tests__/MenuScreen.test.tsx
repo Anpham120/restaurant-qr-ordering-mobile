@@ -17,6 +17,7 @@ function mon(id: string, ten: string, tuyChon: Partial<MenuItem> = {}): MenuItem
     categoryName: 'Khai vị',
     imageUrl: null,
     isAvailable: true,
+    remainingQuantity: null,
     tags: [],
     ...tuyChon,
   };

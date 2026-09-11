@@ -169,6 +169,23 @@ describe('khoiPhuc', () => {
     expect(await d.repo.khoiPhuc()).toBeNull();
     expect(d.store.soLanXoa).toBe(1);
   });
+  /**
+   * PHIÊN ĐÃ ĐÓNG PHẢI BỊ XOÁ, dù hạn giờ còn dài.
+   *
+   * Máy chủ đóng phiên ngay khi hoá đơn được chốt — kể cả khi webhook ngân hàng tự chốt, tức
+   * không ai bấm gì trên máy khách. Phép kiểm cũ chỉ nhìn hạn giờ, nên sau khi trả tiền xong app
+   * vẫn coi phiên là sống: khách quay lại thực đơn, bấm thêm món, rồi nhận lỗi 410 từ máy chủ mà
+   * không hiểu vì sao.
+   *
+   * Đo trên máy chủ thật: hoá đơn INV-20260910-DE9D0611 chốt lúc 14:30:12 và phiên đóng cùng giây.
+   */
+  it('phiên ĐÃ ĐÓNG thì trả null VÀ XOÁ, dù chưa tới hạn', async () => {
+    const d = dung();
+    await d.store.luu({ ...phienBan(gio(4)), status: 'Closed' });
+
+    expect(await d.repo.khoiPhuc()).toBeNull();
+    expect(d.store.soLanXoa).toBe(1);
+  });
 
   it('backend báo isExpired thì tin backend, kể cả khi đồng hồ máy nói còn hạn', async () => {
     // Đồng hồ điện thoại có thể lệch. Phiên bàn do backend đóng (nhân viên chốt bàn), nên cờ
