@@ -58,4 +58,5 @@ public interface MenuItemRepository extends JpaRepository<MenuItemEntity, String
 			   and remaining_quantity is not null
 			""", nativeQuery = true)
 	int traTonKho(@Param("id") String menuItemId, @Param("soLuong") int soLuong);
+
 }

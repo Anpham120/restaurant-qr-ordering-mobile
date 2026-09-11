@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { chiGiuChuSo, docTienDua, thieuTien, tinhThoiLai } from "./opsCashTendered";
+import {
+  chiGiuChuSo, docTienDua, quayDuocXacNhanTay, thieuTien, tinhThoiLai,
+} from "./opsCashTendered";
 
 describe("lọc chữ số trong ô nhập tiền", () => {
   it("giữ đúng chữ số người ta gõ", () => {
@@ -67,5 +69,28 @@ describe("tiền khách đưa ở quầy", () => {
     // đúng cái nhầm lẫn mà tính năng này sinh ra để chặn.
     expect(thieuTien("35000", 34999.5)).toBe(false);
     expect(tinhThoiLai("35000.99", 35000)).toBe(0);
+  });
+});
+
+describe("ai được xác nhận thu bằng tay", () => {
+  /**
+   * CHỈ TIỀN MẶT. Đây là ca canh một lỗi ĐÃ XẢY RA trên máy chủ thật.
+   *
+   * Nút "Xác nhận thu" trước đây hiện cho cả VietQR. Quầy bấm, hoá đơn rời trạng thái chờ, rồi vài
+   * giây sau tiền về thật và webhook thấy hoá đơn không còn chờ nên BỎ QUA:
+   *
+   *   outcome=already_settled lý_do=Hoá đơn này đã được tất toán trước đó.
+   *
+   * Đường tự động vẫn chạy đúng, nó chỉ luôn về đích sau người bấm nút.
+   */
+  it("tiền mặt thì được, VietQR thì không", () => {
+    expect(quayDuocXacNhanTay("COD")).toBe(true);
+    expect(quayDuocXacNhanTay("VietQR")).toBe(false);
+  });
+
+  /** Phương thức lạ mặc định là KHÔNG cho bấm tay — thà kẹt còn hơn ghi nhận tiền chưa về. */
+  it("phương thức lạ thì không cho bấm tay", () => {
+    expect(quayDuocXacNhanTay("Unselected")).toBe(false);
+    expect(quayDuocXacNhanTay("")).toBe(false);
   });
 });

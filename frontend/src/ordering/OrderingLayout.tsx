@@ -6,7 +6,7 @@ import { orderingNavigation } from "./orderingRoutes";
 import { OrderingCallStaffFab } from "./OrderingCallStaffFab";
 import "./ordering-layout.css";
 
-type UnavailableSessionState = "missing" | "invalid" | "expired" | "error";
+type UnavailableSessionState = "missing" | "invalid" | "expired" | "settled" | "error";
 
 function SessionState({
   onRetry,
@@ -16,7 +16,12 @@ function SessionState({
   state: UnavailableSessionState;
 }) {
   const { t } = useI18n();
-  const copy = state === "expired"
+  // Thanh toán xong là KẾT THÚC ĐẸP, không phải sự cố. Dùng chung khung màn hình này nhưng đổi
+  // hẳn lời: một câu báo lỗi sau khi khách vừa trả tiền là nói sai chuyện vừa xảy ra.
+  const daThanhToan = state === "settled";
+  const copy = daThanhToan
+    ? "Cảm ơn quý khách. Phiên gọi món của bàn đã kết thúc. Quét lại mã QR trên bàn nếu quý khách muốn gọi thêm."
+    : state === "expired"
     ? "Phiên bàn đã hết hạn hoặc đã được nhân viên đóng. Vui lòng quét QR tại bàn để mở phiên mới."
     : state === "error"
       ? "Không thể xác minh phiên bàn lúc này. Hãy kiểm tra kết nối và thử lại."
@@ -29,7 +34,7 @@ function SessionState({
     <main className="ordering-state" aria-live="polite">
       <p className="ordering-state-kicker">CMC Restaurant</p>
       <LanguageSwitcher variant="toggle" />
-      <h1>{t("Phiên gọi món chưa sẵn sàng")}</h1>
+      <h1>{t(daThanhToan ? "Đã thanh toán xong" : "Phiên gọi món chưa sẵn sàng")}</h1>
       <p>{t(copy)}</p>
       <div className="ordering-state-actions">
         {state === "error" ? <button type="button" onClick={() => void onRetry()}>{t("Thử lại")}</button> : null}

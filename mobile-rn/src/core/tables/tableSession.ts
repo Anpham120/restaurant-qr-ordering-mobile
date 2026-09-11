@@ -35,6 +35,17 @@ export interface TableSession {
 }
 
 export function conHieuLuc(phien: TableSession, bayGio: Date): boolean {
+  // PHIÊN ĐÃ ĐÓNG KHÔNG CÒN DÙNG ĐƯỢC, dù hạn giờ chưa tới.
+  //
+  // Máy chủ đóng phiên ngay khi hoá đơn được chốt — kể cả khi webhook ngân hàng tự chốt, tức
+  // không ai bấm gì trên máy khách. Phép kiểm cũ chỉ nhìn `expiresAt`, nên sau khi trả tiền xong
+  // app vẫn coi phiên là sống cho tới lúc hết hạn: khách quay lại thực đơn, bấm thêm món, rồi
+  // nhận lỗi 410 từ máy chủ mà không hiểu vì sao.
+  //
+  // Trả `false` ở đây là đủ để sửa cả luồng: `TableSessionRepository.khoiPhuc` sẽ XOÁ phiên đã
+  // chết rồi trả `null`, và app quay về màn quét QR — đúng việc cần làm sau khi khách trả tiền.
+  if (phien.status !== 'Open') return false;
+
   const han = Date.parse(phien.expiresAt);
   if (Number.isNaN(han)) return false;
   return !phien.isExpired && han > bayGio.getTime();

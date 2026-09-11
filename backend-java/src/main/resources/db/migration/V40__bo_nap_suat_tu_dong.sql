@@ -1,0 +1,24 @@
+-- GỠ PHẦN TỰ NẠP SỐ SUẤT THEO CA. Quản lý tự nhập, không có máy nào ghi hộ.
+--
+-- ---------------------------------------------------------------------------------------------
+-- VÌ SAO GỠ, chỉ một bản sau khi thêm
+--
+-- V39 cho quán khai trước "ca tối thường làm 25 nồi lẩu", rồi một tác vụ chép con số đó vào số
+-- suất sống mỗi khi ca mở. Nghe thì tiện, nhưng nó SAI VỀ NGHIỆP VỤ:
+--
+-- Số suất làm được phụ thuộc vào nguyên liệu nhập SÁNG HÔM ĐÓ. Một con số cấu hình từ tuần trước
+-- không biết hôm nay nhà cung cấp giao thiếu. Máy tự ghi 25 trong khi bếp chỉ đủ cho 12 thì tệ hơn
+-- là để trống: con số sai đó mang vẻ chính xác của tự động, nên không ai kiểm lại, và quán nhận
+-- đơn cho 13 suất không tồn tại.
+--
+-- Ô để trống thì người ta biết là chưa ai nhập. Một con số bịa thì không.
+--
+-- ---------------------------------------------------------------------------------------------
+-- CÒN LẠI GÌ
+--
+-- Ca phục vụ (V38) GIỮ NGUYÊN — "sáng bán phở, trưa bán cơm, tối bán lẩu" vẫn chạy, vì đó là việc
+-- quán quyết định một lần chứ không phải con số đổi theo ngày.
+--
+-- Số suất vẫn nhập tay ở tab "Hôm nay", nay lọc được theo ca để tìm nhanh món của ca sắp mở.
+DROP TABLE IF EXISTS public.serving_period_resets;
+DROP TABLE IF EXISTS public.menu_item_period_stock;

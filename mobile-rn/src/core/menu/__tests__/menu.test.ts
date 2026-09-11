@@ -14,6 +14,7 @@ function mon(id: string, categoryId: string, con = true, ten?: string): MenuItem
     categoryName: categoryId,
     imageUrl: null,
     isAvailable: con,
+    remainingQuantity: null,
     tags: [],
   };
 }

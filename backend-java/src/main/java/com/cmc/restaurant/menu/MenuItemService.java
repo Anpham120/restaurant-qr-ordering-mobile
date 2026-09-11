@@ -4,8 +4,13 @@ import com.cmc.restaurant.menu.MenuDtos.MenuItemRequest;
 import com.cmc.restaurant.shared.ApiException;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Mirrors the admin CRUD half of {@code RestaurantQrAiOrdering.Api.Menu.MenuEndpoints} (.NET). */
 @Service
@@ -17,9 +22,17 @@ public class MenuItemService {
 	private final MenuItemRepository menuItemRepository;
 	private final CategoryRepository categoryRepository;
 
-	public MenuItemService(MenuItemRepository menuItemRepository, CategoryRepository categoryRepository) {
+	private final MenuItemServingPeriodRepository ganCaRepository;
+	private final ServingPeriodRepository servingPeriodRepository;
+
+	public MenuItemService(
+			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository,
+			MenuItemServingPeriodRepository ganCaRepository,
+			ServingPeriodRepository servingPeriodRepository) {
 		this.menuItemRepository = menuItemRepository;
 		this.categoryRepository = categoryRepository;
+		this.ganCaRepository = ganCaRepository;
+		this.servingPeriodRepository = servingPeriodRepository;
 	}
 
 	public MenuItemEntity create(MenuItemRequest request) {
@@ -211,5 +224,102 @@ public class MenuItemService {
 		item.khaiDoTre(phut, phut == 0 ? null : now.plusMinutes(giu));
 		item.setUpdatedAt(now);
 		return menuItemRepository.save(item);
+	}
+
+	/**
+	 * Chuẩn bị thực đơn hôm nay: bật/tắt món và đặt số suất, MỘT GIAO DỊCH cho cả danh sách.
+	 *
+	 * <p><b>Vì sao một giao dịch.</b> Quản trị viên làm việc này mỗi sáng trước giờ mở cửa. Nửa
+	 * chừng mất mạng mà 40 món đã lưu còn 51 món chưa thì thực đơn hôm đó ở một trạng thái không
+	 * ai chọn — và người sửa không biết mình dừng ở đâu trong danh sách. Hoặc cả thực đơn hôm nay
+	 * được đặt, hoặc không gì cả.
+	 *
+	 * <p><b>{@code null} là KHÔNG ĐỔI, không phải xoá</b> — cùng luật với mọi trường khác của
+	 * module này. Gửi thiếu một trường không được im lặng thổi bay giá trị đang có.
+	 *
+	 * <p><b>Số suất KHÔNG tự tắt món.</b> Đặt 0 là hết suất; công tắc {@code isAvailable} vẫn là
+	 * quyết định riêng của người. Hai sự thật khác nhau — "bán hết mẻ hôm nay" và "hôm nay quán
+	 * không bán món này" — nên báo cáo phân biệt được chúng. Gộp vào một cờ là mất vĩnh viễn.
+	 *
+	 * @return số món thật sự đổi
+	 */
+	@Transactional
+	public int chuanBiThucDonHomNay(List<MenuDtos.ChuanBiMonRequest> dong) {
+		if (dong == null || dong.isEmpty()) {
+			throw ApiException.badRequest("REQUEST_INVALID", "Danh sách món trống.");
+		}
+
+		OffsetDateTime now = OffsetDateTime.now();
+		int daSua = 0;
+		Set<String> caCoThat = servingPeriodRepository.findAll().stream()
+				.map(ServingPeriodEntity::getId)
+				.collect(Collectors.toSet());
+
+		for (MenuDtos.ChuanBiMonRequest yeuCau : dong) {
+			if (yeuCau.remainingQuantity() != null && yeuCau.remainingQuantity() < 0) {
+				throw ApiException.badRequest(
+						"MENU_ITEM_QUANTITY_INVALID", "Số suất không được âm.");
+			}
+			MenuItemEntity mon = menuItemRepository.findById(yeuCau.menuItemId())
+					.orElseThrow(() -> ApiException.notFound(
+							"MENU_ITEM_NOT_FOUND", "Không thấy món " + yeuCau.menuItemId() + "."));
+
+			boolean coDoi = false;
+			if (yeuCau.isAvailable() != null && mon.isAvailable() != yeuCau.isAvailable()) {
+				mon.setAvailable(yeuCau.isAvailable());
+				coDoi = true;
+			}
+			if (yeuCau.remainingQuantity() != null
+					&& !yeuCau.remainingQuantity().equals(mon.getRemainingQuantity())) {
+				mon.setRemainingQuantity(yeuCau.remainingQuantity());
+				coDoi = true;
+			}
+			if (ganCa(yeuCau, caCoThat)) {
+				coDoi = true;
+			}
+			if (coDoi) {
+				mon.setUpdatedAt(now);
+				menuItemRepository.save(mon);
+				daSua++;
+			}
+		}
+		return daSua;
+	}
+
+	/**
+	 * Gán món vào các ca phục vụ. Trả về {@code true} nếu có thay đổi thật.
+	 *
+	 * <p>{@code null} là GIỮ NGUYÊN. Danh sách RỖNG là "bán cả ngày" — đó là một lệnh, khác hẳn
+	 * với việc không gửi trường này.
+	 *
+	 * <p><b>Ca lạ bị TỪ CHỐI, không bỏ qua.</b> Một id ca không có thật sẽ không khớp ca nào đang
+	 * mở, nên món đó biến mất khỏi thực đơn khách — im lặng, không lỗi, và không ai phát hiện cho
+	 * tới lúc khách hỏi. Thà hỏng ngay tại lượt lưu.
+	 */
+	private boolean ganCa(MenuDtos.ChuanBiMonRequest yeuCau, Set<String> caCoThat) {
+		if (yeuCau.servingPeriodIds() == null) {
+			return false;
+		}
+		Set<String> moi = new HashSet<>(yeuCau.servingPeriodIds());
+		for (String caId : moi) {
+			if (!caCoThat.contains(caId)) {
+				throw ApiException.badRequest(
+						"SERVING_PERIOD_NOT_FOUND", "Không thấy ca phục vụ " + caId + ".");
+			}
+		}
+
+		Set<String> cu = ganCaRepository.findByMenuItemId(yeuCau.menuItemId()).stream()
+				.map(MenuItemServingPeriodEntity::getServingPeriodId)
+				.collect(Collectors.toSet());
+		if (cu.equals(moi)) {
+			return false;
+		}
+
+		ganCaRepository.deleteByMenuItemId(yeuCau.menuItemId());
+		for (String caId : moi) {
+			ganCaRepository.save(new MenuItemServingPeriodEntity(
+					UUID.randomUUID().toString(), yeuCau.menuItemId(), caId));
+		}
+		return true;
 	}
 }

@@ -19,6 +19,7 @@ import {
   urlAnh,
 } from '../core/menu/menu';
 import { type MenuApi } from '../core/menu/menuApi';
+import { trangThaiTonKho } from '../core/menu/tonKho';
 import { tienVnd } from '../core/tien';
 import { BoGoc, MauQuan, kieuChung } from './theme';
 
@@ -232,7 +233,10 @@ interface TheMonProps {
 function TheMon({ mon: m, imageBaseUrl, dangThem, onThem }: TheMonProps) {
   const [anhHong, setAnhHong] = useState(false);
   const anh = urlAnh(m.imageUrl, imageBaseUrl);
-  const con = m.isAvailable;
+  // Tồn kho quyết định CẢ nhãn lẫn việc khoá nút, và luật nằm chung một chỗ với bản web để hai
+  // đầu không nói hai điều khác nhau về cùng một món.
+  const kho = trangThaiTonKho(m);
+  const con = !kho.hetMon;
   const goBoTren = { borderTopLeftRadius: BoGoc.the, borderTopRightRadius: BoGoc.the };
 
   return (
@@ -283,6 +287,21 @@ function TheMon({ mon: m, imageBaseUrl, dangThem, onThem }: TheMonProps) {
             {m.description}
           </Text>
         ) : null}
+        {/* Nhãn tồn kho đứng RIÊNG MỘT DÒNG trên hàng giá. Nhét chung hàng với giá và nút thì
+            tên món dài sẽ đẩy nó rớt xuống hoặc bị cắt, mà đây đúng là thứ khách cần đọc trước
+            khi bấm. */}
+        {kho.nhan !== null ? (
+          <Text
+            style={{
+              marginTop: 8,
+              fontSize: 13,
+              fontWeight: '600',
+              color: kho.hetMon ? MauQuan.danger : MauQuan.brass,
+            }}
+          >
+            {kho.nhan}
+          </Text>
+        ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
           <Text style={{ fontSize: 17, fontWeight: '700', color: MauQuan.chestnut }}>
             {tienVnd(m.price)}
@@ -292,12 +311,12 @@ function TheMon({ mon: m, imageBaseUrl, dangThem, onThem }: TheMonProps) {
             <TouchableOpacity
               accessibilityLabel={`Thêm ${m.name}`}
               accessibilityRole="button"
-              disabled={!con || dangThem !== null}
+              disabled={kho.khoaThem || dangThem !== null}
               onPress={() => void onThem(m)}
               style={[
                 kieuChung.nutChinh,
                 { paddingHorizontal: 18, paddingVertical: 10 },
-                !con || dangThem !== null ? kieuChung.nutTat : null,
+                kho.khoaThem || dangThem !== null ? kieuChung.nutTat : null,
               ]}
             >
               <Text style={kieuChung.chuNutChinh}>{dangThem === m.id ? 'Đang thêm…' : 'Thêm'}</Text>

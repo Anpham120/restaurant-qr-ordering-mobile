@@ -3,6 +3,7 @@ package com.cmc.restaurant.menu;
 import com.cmc.restaurant.menu.MenuDtos.MenuItemRequest;
 import com.cmc.restaurant.menu.MenuDtos.AdminMenuItemResponse;
 import com.cmc.restaurant.menu.MenuDtos.ToggleAvailabilityRequest;
+import com.cmc.restaurant.shared.ApiException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,11 +32,14 @@ public class AdminMenuItemController {
 	/** Qua CỔNG ứng dụng, không chọc thẳng vào repository của module orders — cùng lối mà
 	 * {@code AdminTableController} đã dùng, và là thứ ArchUnit đang canh. */
 	private final com.cmc.restaurant.orders.application.OrderLookup orderLookup;
+	private final MenuItemServingPeriodRepository ganCaRepository;
 
 	public AdminMenuItemController(
 			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository,
 			MenuItemService menuItemService,
-			com.cmc.restaurant.orders.application.OrderLookup orderLookup) {
+			com.cmc.restaurant.orders.application.OrderLookup orderLookup,
+			MenuItemServingPeriodRepository ganCaRepository) {
+		this.ganCaRepository = ganCaRepository;
 		this.menuItemRepository = menuItemRepository;
 		this.categoryRepository = categoryRepository;
 		this.menuItemService = menuItemService;
@@ -116,5 +120,45 @@ public class AdminMenuItemController {
 				.map(CategoryEntity::getName)
 				.orElse("");
 		return MenuQueryService.toAdminResponse(item, categoryName);
+	}
+
+	/**
+	 * CHUẨN BỊ THỰC ĐƠN HÔM NAY — bật/tắt món và đặt số suất cho cả thực đơn, MỘT LƯỢT.
+	 *
+	 * <p>Đây là việc quản trị viên làm mỗi sáng trước giờ mở cửa: hôm nay bán món gì, và nguyên
+	 * liệu vừa nhập làm được mấy suất mỗi món.
+	 *
+	 * <p>Endpoint RIÊNG chứ không bắt gọi {@code PUT /{id}} 91 lần. Sửa từng món qua modal là hình
+	 * dạng đúng cho việc đổi giá hay đổi mô tả — mỗi năm vài lần, mỗi lần một món. Nó là hình dạng
+	 * SAI cho một việc chạm vào cả thực đơn mỗi ngày, và đó là lý do tính năng số suất nằm im: cách
+	 * duy nhất để dùng nó tốn 91 lần mở-gõ-lưu-đóng.
+	 */
+	/**
+	 * Món nào đang gán vào ca nào: {@code {"m_pho": ["sp_sang"], ...}}.
+	 *
+	 * <p>Endpoint riêng thay vì thêm trường vào {@code AdminMenuItemResponse}. Bảng chuẩn bị thực
+	 * đơn là chỗ DUY NHẤT cần dữ liệu này; nhét vào DTO chung thì mọi màn hình khác đều phải tải
+	 * thêm, và hàm ánh xạ tĩnh {@code toAdminResponse} sẽ phải nhận thêm một tham số mà gần như mọi
+	 * chỗ gọi truyền rỗng. Cùng lối mà {@code /pending-quantities} ngay trên đã dùng.
+	 *
+	 * <p>Món KHÔNG có mặt trong bản đồ này là món bán CẢ NGÀY.
+	 */
+	@GetMapping("/serving-periods")
+	public Map<String, List<String>> ganCaTheoMon() {
+		return ganCaRepository.findAll().stream()
+				.collect(Collectors.groupingBy(
+						MenuItemServingPeriodEntity::getMenuItemId,
+						Collectors.mapping(
+								MenuItemServingPeriodEntity::getServingPeriodId, Collectors.toList())));
+	}
+
+	@PutMapping("/chuan-bi-hom-nay")
+	public Map<String, Integer> chuanBiHomNay(
+			@RequestBody(required = false) MenuDtos.ChuanBiThucDonRequest request) {
+		if (request == null) {
+			throw ApiException.badRequest("REQUEST_INVALID", "Request body is required.");
+		}
+		int daSua = menuItemService.chuanBiThucDonHomNay(request.items());
+		return Map.of("daSua", daSua);
 	}
 }

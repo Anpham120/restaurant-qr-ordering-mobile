@@ -1,6 +1,7 @@
 package com.cmc.restaurant.menu;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -79,6 +80,42 @@ public final class MenuDtos {
 	}
 
 	public record ToggleAvailabilityRequest(boolean isAvailable) {
+	}
+
+	/**
+	 * Một dòng trong lượt chuẩn bị thực đơn hôm nay.
+	 *
+	 * @param isAvailable        hôm nay quán CÓ bán món này không — quyết định của người
+	 * @param remainingQuantity  nguyên liệu nhập hôm nay làm được mấy suất; {@code null} = không đếm
+	 * @param servingPeriodIds   các ca bán món này; danh sách RỖNG = bán cả ngày, {@code null} = giữ nguyên
+	 */
+	public record ChuanBiMonRequest(
+			String menuItemId, Boolean isAvailable, Integer remainingQuantity,
+			List<String> servingPeriodIds) {
+	}
+
+	/**
+	 * Ca phục vụ do quán tự khai.
+	 *
+	 * <p>{@code startTime} LỚN HƠN {@code endTime} là hợp lệ và nghĩa là ca bọc qua nửa đêm —
+	 * "Lẩu đêm 18:00-02:00".
+	 */
+	public record ServingPeriodRequest(
+			String name, LocalTime startTime, LocalTime endTime, Integer displayOrder) {
+	}
+
+	public record ServingPeriodResponse(
+			String id, String name, LocalTime startTime, LocalTime endTime, int displayOrder) {
+	}
+
+	/**
+	 * Chuẩn bị thực đơn cho hôm nay — bật/tắt món và đặt số suất, MỘT LƯỢT cho cả thực đơn.
+	 *
+	 * <p>Phải là một lượt chứ không phải 91 lượt gọi. Quản trị viên làm việc này mỗi sáng trước giờ
+	 * mở cửa; nửa chừng mất mạng mà 40 món đã lưu, 51 món chưa, thì thực đơn hôm đó ở trạng thái
+	 * không ai chọn — và người sửa không biết mình đang ở đâu trong danh sách.
+	 */
+	public record ChuanBiThucDonRequest(List<ChuanBiMonRequest> items) {
 	}
 
 	/**

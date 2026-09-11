@@ -11,11 +11,11 @@
 
 ## Kiểm kê endpoint — SINH TỪ MÃ
 
-**91 endpoint** trong **11 module**, đọc trực tiếp từ
+**97 endpoint** trong **11 module**, đọc trực tiếp từ
 `backend-java/src/main/java/com/cmc/restaurant/**/*.java` bởi `docs/build_api_inventory.py`.
 
 > Bảng này **không thể thiếu endpoint**: CI chạy `--check` và đỏ nếu mã có endpoint mà
-> bảng chưa có. Trước khi có nó, tài liệu viết tay liệt kê 10/91 endpoint.
+> bảng chưa có. Trước khi có nó, tài liệu viết tay liệt kê 10/97 endpoint.
 >
 > Nhưng nó chỉ biết **đường dẫn và động từ**. Dạng phản hồi, mã lỗi, quy tắc phân quyền là
 > phần người viết — xem các mục bên dưới.
@@ -72,7 +72,7 @@
 | `POST` | `/api/loyalty/me/redeem` | `loyalty/LoyaltyController.java` |
 | `POST` | `/api/loyalty/redemptions/{redemptionId}/honour` | `loyalty/LoyaltyController.java` |
 
-### menu (16)
+### menu (22)
 
 | Động từ | Đường dẫn | Khai ở |
 |---|---|---|
@@ -83,11 +83,17 @@
 | `PUT` | `/api/admin/categories/{categoryId}` | `menu/AdminCategoryController.java` |
 | `GET` | `/api/admin/menu-items` | `menu/AdminMenuItemController.java` |
 | `POST` | `/api/admin/menu-items` | `menu/AdminMenuItemController.java` |
+| `PUT` | `/api/admin/menu-items/chuan-bi-hom-nay` | `menu/AdminMenuItemController.java` |
 | `GET` | `/api/admin/menu-items/pending-quantities` | `menu/AdminMenuItemController.java` |
+| `GET` | `/api/admin/menu-items/serving-periods` | `menu/AdminMenuItemController.java` |
 | `DELETE` | `/api/admin/menu-items/{menuItemId}` | `menu/AdminMenuItemController.java` |
 | `GET` | `/api/admin/menu-items/{menuItemId}` | `menu/AdminMenuItemController.java` |
 | `PUT` | `/api/admin/menu-items/{menuItemId}` | `menu/AdminMenuItemController.java` |
 | `PATCH` | `/api/admin/menu-items/{menuItemId}/availability` | `menu/AdminMenuItemController.java` |
+| `GET` | `/api/admin/serving-periods` | `menu/AdminServingPeriodController.java` |
+| `POST` | `/api/admin/serving-periods` | `menu/AdminServingPeriodController.java` |
+| `DELETE` | `/api/admin/serving-periods/{periodId}` | `menu/AdminServingPeriodController.java` |
+| `PUT` | `/api/admin/serving-periods/{periodId}` | `menu/AdminServingPeriodController.java` |
 | `GET` | `/api/kitchen/menu-items` | `menu/KitchenMenuController.java` |
 | `PATCH` | `/api/kitchen/menu-items/{menuItemId}/availability` | `menu/KitchenMenuController.java` |
 | `PATCH` | `/api/kitchen/menu-items/{menuItemId}/delay` | `menu/KitchenMenuController.java` |

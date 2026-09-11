@@ -20,7 +20,7 @@ import { locMonTheoTen } from "./kitchenMenuFilter";
 import { getKitchenDelay, setKitchenDelay } from "../../services/kitchenDelayService";
 import type { KitchenDelay } from "../../services/kitchenDelayService";
 import { moTaTreBep, sapHetHan } from "../../components/kitchen/kitchenDelayLabel";
-import { TRAN_PHUT, chiGiuChuSo, docSoPhut, phutDoTreTiepTheo } from "../../components/kitchen/kitchenDelayInput";
+import { TRAN_PHUT, chiGiuChuSo, docSoPhut, phutDoTreTiepTheo, phutDoTreTruoc } from "../../components/kitchen/kitchenDelayInput";
 import { ChefHat, RefreshCw, Timer, UtensilsCrossed } from "lucide-react";
 import "../../components/operations/operations.css";
 
@@ -187,8 +187,7 @@ export function KitchenRealtimePage() {
    * Không cần nút xoá riêng: bấm tiếp là về 0. Một nút làm hai việc thì không có nút thứ hai để
    * mà đặt nhầm chỗ.
    */
-  async function handleKhaiDoTre(item: MenuItemSummary) {
-    const phutMoi = phutDoTreTiepTheo(item.delayMinutes ?? 0);
+  async function handleKhaiDoTre(item: MenuItemSummary, phutMoi: number) {
     setTogglingId(item.id);
     try {
       await khaiDoTreMon(item.id, phutMoi);
@@ -365,6 +364,20 @@ export function KitchenRealtimePage() {
               <span className="ops-toggle-label">
                 {item.name}
                 {!item.isAvailable ? <span className="ops-badge ops-badge--cancelled kitchen-menu-flag">Hết</span> : null}
+              {/* Nút GIẢM chỉ hiện khi đang có độ trễ. Ở trạng thái thường hàng vẫn đúng một nút
+                  như cũ, nên không thêm chỗ bấm nhầm nào vào lúc bình thường. */}
+              {(item.delayMinutes ?? 0) > 0 ? (
+                <button
+                  className="ops-btn ops-btn--ghost kitchen-mon-delay-bot"
+                  disabled={togglingId === item.id}
+                  onClick={() => handleKhaiDoTre(item, phutDoTreTruoc(item.delayMinutes ?? 0))}
+                  type="button"
+                  aria-label={`Giảm 5 phút độ trễ của ${item.name}`}
+                  title={`Giảm 5 phút. Về 0 là xoá độ trễ của "${item.name}".`}
+                >
+                  −
+                </button>
+              ) : null}
               </span>
               {/* Độ trễ RIÊNG của món, đặt ngay cạnh công tắc "hết món".
                   Bếp đã mở đúng bảng này mỗi khi một món gặp vấn đề — hỏng lò, hết nguyên liệu
@@ -373,7 +386,7 @@ export function KitchenRealtimePage() {
               <button
                 className={`ops-btn ops-btn--ghost kitchen-mon-delay${(item.delayMinutes ?? 0) > 0 ? " kitchen-mon-delay--on" : ""}`}
                 disabled={togglingId === item.id}
-                onClick={() => handleKhaiDoTre(item)}
+                onClick={() => handleKhaiDoTre(item, phutDoTreTiepTheo(item.delayMinutes ?? 0))}
                 type="button"
                 title={`Độ trễ riêng của "${item.name}". Bấm để cộng 5 phút, tới 60 thì về 0.`}
               >

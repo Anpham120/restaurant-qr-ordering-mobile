@@ -664,13 +664,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Ba phần tử: tên món, các nút độ trễ, công tắc. Không có gap thì nút dính vào nhau. */
+  gap: 8px;
   padding: 10px 14px;
   background: var(--color-bg-subtle);
   border-radius: 8px;
   margin-bottom: 8px;
 }
 
+/* NHÃN CHIẾM HẾT PHẦN DƯ, để các nút bên phải thẳng hàng giữa các dòng.
+
+   Trước đây nhãn co theo tên món, mà hàng dùng `space-between` với ba phần tử, nên nút độ trễ bị
+   đẩy tới lui theo độ dài tên: mỗi dòng một chỗ khác nhau. Cho nhãn nuốt phần dư thì nút và công
+   tắc luôn dính vào mép phải, thẳng hàng dù tên món dài ngắn ra sao.
+
+   `min-width: 0` để tên dài vẫn cắt được thay vì phình ra đẩy nút khỏi hàng. */
 .ops-toggle-label {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 500;
 }
@@ -2332,4 +2343,79 @@
   border-color: var(--ops-warn);
   color: var(--ops-warn);
   font-weight: 700;
+}
+
+/* Ô số suất trong bảng "Chuẩn bị thực đơn hôm nay".
+   Hẹp lại vì nội dung là 1-3 chữ số; để rộng như ô tìm kiếm thì bảng trôi ngang trên tablet, mà
+   quản trị viên làm việc này trên chính máy ở quầy. */
+.chuan-bi-so-suat {
+  max-width: 150px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ô nhập giờ trong bảng "Ca phục vụ". Nội dung là HH:MM cố định, không cần rộng như ô tên. */
+.chuan-bi-gio {
+  max-width: 130px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Các chip chọn ca trong bảng "Chuẩn bị thực đơn hôm nay". */
+.chuan-bi-ca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chuan-bi-ca-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--ops-border, #e2e8f0);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ops-text-muted, #64748b);
+  font-size: var(--ops-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Chip được chọn phải khác chip không chọn bằng NHIỀU HƠN màu chữ: nền đặc và viền cùng màu. Chỉ
+   đổi mỗi màu thì người phân biệt màu kém nhìn cả hàng chip như nhau, mà đây là chỗ quyết định
+   món có hiện cho khách hay không. */
+.chuan-bi-ca-chip--chon {
+  background: var(--ops-accent, #2563eb);
+  border-color: var(--ops-accent, #2563eb);
+  color: #fff;
+}
+
+.chuan-bi-ca-doi {
+  color: var(--ops-warn, #b45309);
+  font-size: var(--ops-text-xs);
+  font-weight: 700;
+}
+
+/* Hoá đơn VietQR ở màn quầy: không có nút xác nhận, chỉ hiện trạng thái chờ ngân hàng.
+   Cao bằng nút "Xác nhận thu" để hai loại hoá đơn không làm thẻ nhảy chiều cao khi xen kẽ nhau. */
+.pos-cho-nganhang {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px dashed var(--ops-border, #e2e8f0);
+  border-radius: 10px;
+  color: var(--ops-text-muted, #64748b);
+  font-size: var(--ops-text-sm);
+  font-weight: 600;
+}
+
+/* Nút giảm độ trễ của món. Vuông và hẹp hơn nút cộng để hai nút không trông như một cặp ngang
+   hàng — nút cộng là thao tác chính, nút này chỉ để sửa khi bấm quá tay. */
+.kitchen-mon-delay-bot {
+  min-width: 36px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
 }

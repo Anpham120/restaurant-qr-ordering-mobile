@@ -8,12 +8,14 @@ import {
 } from "../services/orderService";
 import { useOpsRealtime } from "../hooks/useOpsRealtime";
 import { matchesTableFilter, normalizeTableCode } from "../components/operations/opsDeepLinkUtils";
-import { Banknote, Check, CreditCard, QrCode, RefreshCw, X } from "lucide-react";
+import { Banknote, Check, Clock, CreditCard, QrCode, RefreshCw, X } from "lucide-react";
 import "../components/operations/operations.css";
 import { useOpsConfirm } from "../components/operations/OpsConfirmProvider";
 import { PosNumpad } from "../components/operations/PosNumpad";
 import { locThanhToanTuDong, themThongBao } from "../components/operations/opsCashierAlerts";
-import { chiGiuChuSo, docTienDua, thieuTien, tinhThoiLai } from "../components/operations/opsCashTendered";
+import {
+  chiGiuChuSo, docTienDua, quayDuocXacNhanTay, thieuTien, tinhThoiLai,
+} from "../components/operations/opsCashTendered";
 import type { ThongBaoDaThu } from "../components/operations/opsCashierAlerts";
 
 const formatVnd = (value: number) => `${value.toLocaleString("vi-VN")}đ`;
@@ -318,6 +320,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
         <div className="pos-grid">
           {awaiting.map((invoice, index) => {
             const laTienMat = invoice.method === "COD";
+            const bamTayDuoc = quayDuocXacNhanTay(invoice.method);
             const dua = tienDua[invoice.tableSessionId];
             return (
               <article
@@ -392,6 +395,7 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
                   nhầm vào lúc đông khách.
                 */}
                 <div className="pos-act">
+                  {bamTayDuoc ? (
                   <button
                     className="ops-btn ops-btn--success pos-confirm"
                     disabled={pendingSessionId === invoice.tableSessionId || thieuTien(dua, invoice.totalAmount)}
@@ -409,6 +413,17 @@ export function StaffPaymentsPage({ embedded = false }: { embedded?: boolean }) 
                   >
                     <Check aria-hidden="true" size={16} /> Xác nhận thu
                   </button>
+                  ) : (
+                    /*
+                      VIETQR KHÔNG CÓ NÚT XÁC NHẬN. Webhook ngân hàng là nguồn sự thật; bấm tay ở
+                      đây là khẳng định tiền đã về khi chưa ai kiểm, VÀ nó đẩy hoá đơn rời trạng
+                      thái chờ nên lúc tiền về thật webhook bỏ qua. Đã xảy ra trên máy chủ thật.
+                    */
+                    <div className="pos-cho-nganhang">
+                      <Clock aria-hidden="true" size={16} />
+                      Đang chờ ngân hàng xác nhận
+                    </div>
+                  )}
                   <button
                     className="pos-cancel"
                     disabled={pendingSessionId === invoice.tableSessionId}

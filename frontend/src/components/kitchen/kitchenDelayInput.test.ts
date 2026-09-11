@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { TRAN_PHUT, chiGiuChuSo, docSoPhut } from "./kitchenDelayInput";
+import {
+  TRAN_PHUT, chiGiuChuSo, docSoPhut, phutDoTreTiepTheo, phutDoTreTruoc,
+} from "./kitchenDelayInput";
 
 /**
  * Ô nhập số phút trễ, thay cho ba nút cố định +10 / +20 / +30.
@@ -97,5 +99,30 @@ describe("màn bếp thật sự dùng ô nhập, không còn nút cố định"
 
   it("Enter cũng gửi được — bếp gõ số xong không phải với chuột", () => {
     expect(man).toContain('e.key === "Enter"');
+  });
+});
+
+describe("giảm độ trễ của món", () => {
+  /**
+   * Bản trước chỉ có nút cộng, và cách hoàn tác là bấm tiếp cho vòng về 0. Với bước 5 phút và trần
+   * 60, bấm nhầm một cái phải bấm thêm MƯỜI MỘT cái nữa mới quay lại chỗ cũ.
+   *
+   * Đó không còn là hoàn tác. Người ta sẽ bỏ mặc con số sai ở đó, và ước lượng sai chính là thứ
+   * tính năng độ trễ sinh ra để chống.
+   */
+  it("trừ dần theo đúng bước của nút cộng", () => {
+    expect(phutDoTreTruoc(15)).toBe(10);
+    expect(phutDoTreTruoc(5)).toBe(0);
+  });
+
+  /** Không âm. Số phút âm không có nghĩa gì, và máy chủ sẽ từ chối. */
+  it("chạm 0 là dừng, không xuống âm", () => {
+    expect(phutDoTreTruoc(0)).toBe(0);
+    expect(phutDoTreTruoc(3)).toBe(0);
+  });
+
+  /** Cộng rồi trừ phải về đúng chỗ cũ, nếu không thì hai nút dùng hai bước khác nhau. */
+  it("cộng rồi trừ về đúng chỗ cũ", () => {
+    expect(phutDoTreTruoc(phutDoTreTiepTheo(20))).toBe(20);
   });
 });

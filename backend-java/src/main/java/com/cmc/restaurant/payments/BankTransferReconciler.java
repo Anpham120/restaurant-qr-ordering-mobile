@@ -234,6 +234,10 @@ public class BankTransferReconciler {
 			// Thường là quầy bấm xác nhận tay trước. Bình thường, không phải lỗi.
 			case DA_TAT_TOAN -> result(transaction, "already_settled", maHoaDon,
 					"Hoá đơn này đã được tất toán trước đó.");
+			// Tiền THẬT về cho một hoá đơn đã huỷ. Không chốt được, và cũng không được im lặng:
+			// đây là khoản tiền của khách đang nằm trong tài khoản mà không đơn nào nhận.
+			case HOA_DON_DA_HUY -> result(transaction, "invoice_cancelled", maHoaDon,
+					"Hoá đơn này đã bị huỷ — tiền về nhưng KHÔNG có hoá đơn nào nhận.");
 			case LECH_SO_TIEN -> result(transaction, "amount_mismatch", maHoaDon,
 					"Số tiền nhận được không khớp hoá đơn.");
 		};
