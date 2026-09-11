@@ -12,7 +12,7 @@ import { AuthRepository } from './src/core/auth/authRepository';
 import { type AuthSession } from './src/core/auth/authSession';
 import { SecureTokenStore } from './src/core/auth/tokenStore';
 import { HttpCartApi } from './src/core/cart/cartApi';
-import { type CauHinhMayChu } from './src/core/cauHinh/cauHinh';
+import { type CauHinhMayChu, cauHinhMacDinh } from './src/core/cauHinh/cauHinh';
 import { CauHinhStore } from './src/core/cauHinh/cauHinhStore';
 import { dongBoTaiKhoan } from './src/core/loyalty/dongBoTaiKhoan';
 import { HttpLoyaltyApi } from './src/core/loyalty/loyaltyApi';
@@ -123,7 +123,12 @@ function NoiDungApp() {
   useEffect(() => {
     let huy = false;
     void (async () => {
-      const ch = await cauHinhStore.doc();
+      // Chưa lưu gì thì dùng địa chỉ NƯỚNG SẴN vào bản dựng.
+      //
+      // Khách tải app về không biết địa chỉ máy chủ và không nên biết. Một màn hỏi địa chỉ ngay
+      // khi mở app lần đầu là dấu hiệu của bản demo. Bản dựng không khai biến thì `cauHinhMacDinh`
+      // trả `null` và app quay về hỏi như cũ — đúng cho bản chạy thử trên máy ảo hay mạng LAN.
+      const ch = (await cauHinhStore.doc()) ?? cauHinhMacDinh();
       if (huy) return;
       setCauHinh(ch);
       setDangKhoiPhuc(false);
