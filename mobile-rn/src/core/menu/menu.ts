@@ -13,6 +13,14 @@ export interface MenuItem {
   /** Đường dẫn TƯƠNG ĐỐI như `/menu-images/04-banh-cuon-thanh-tri.webp` — xem `urlAnh`. */
   readonly imageUrl: string | null;
   readonly isAvailable: boolean;
+  /**
+   * Số phần còn bán được. `null` = KHÔNG đếm phần, không phải bằng 0.
+   *
+   * Máy chủ đã ẩn món hết phần khỏi thực đơn, nhưng khách mở trang từ trước vẫn còn món trong
+   * giỏ. Đọc trường này để khoá nút thêm NGAY, thay vì để máy chủ từ chối cả lượt gọi sau khi
+   * khách đã chọn xong.
+   */
+  readonly remainingQuantity: number | null;
   readonly tags: readonly string[];
 }
 
@@ -32,6 +40,7 @@ export function menuItemTuJson(json: unknown): MenuItem {
     categoryName: typeof o.categoryName === 'string' ? o.categoryName : '',
     imageUrl: typeof o.imageUrl === 'string' ? o.imageUrl : null,
     isAvailable: typeof o.isAvailable === 'boolean' ? o.isAvailable : true,
+    remainingQuantity: typeof o.remainingQuantity === 'number' ? o.remainingQuantity : null,
     tags: Array.isArray(o.tags) ? o.tags.map(String) : [],
   };
 }
