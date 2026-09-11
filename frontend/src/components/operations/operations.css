@@ -1352,6 +1352,19 @@
   min-width: 240px;
 }
 
+.ops-chart-granularity-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-chart-granularity-label {
+  font-size: var(--ops-text-xs, 12px);
+  color: var(--color-muted, #64748b);
+  font-weight: 500;
+  user-select: none;
+}
+
 .ops-chart-granularity-toggle {
   display: inline-flex;
   align-items: center;

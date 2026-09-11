@@ -158,15 +158,15 @@ export function AdminReportsPage() {
       {error ? <div className="ops-notice ops-notice--danger">{error}</div> : null}
 
       <div className="ops-reports-toolbar">
-        <div className="ops-timeframe-group" role="group" aria-label="Khung thời gian">
+        <div className="ops-timeframe-group" role="group" aria-label="Khung thời gian báo cáo">
           {(
             [
               ["today", "Hôm nay"],
               ["7d", "7 ngày"],
               ["30d", "1 tháng"],
-              ["3m", "3 tháng (Quý)"],
+              ["3m", "3 tháng"],
               ["1y", "1 năm"],
-              ["ytd", "Năm nay (YTD)"],
+              ["ytd", "Năm nay"],
               ["custom", "Tùy chọn"],
             ] as Array<[RangePreset, string]>
           ).map(([value, label]) => (

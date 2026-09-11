@@ -272,23 +272,26 @@ export function RevenueChart({
         </div>
 
         {onGranularityChange ? (
-          <div className="ops-chart-granularity-toggle" role="group" aria-label="Chế độ gom nhóm">
-            {(
-              [
-                ["day", "Ngày"],
-                ["week", "Tuần"],
-                ["month", "Tháng"],
-              ] as Array<[ChartGranularity, string]>
-            ).map(([mode, label]) => (
-              <button
-                key={mode}
-                type="button"
-                className={`ops-chart-tab ${granularity === mode ? "ops-chart-tab--active" : ""}`}
-                onClick={() => onGranularityChange(mode)}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="ops-chart-granularity-wrapper">
+            <span className="ops-chart-granularity-label">Xem theo:</span>
+            <div className="ops-chart-granularity-toggle" role="group" aria-label="Chế độ gom nhóm cột">
+              {(
+                [
+                  ["day", "Ngày"],
+                  ["week", "Tuần"],
+                  ["month", "Tháng"],
+                ] as Array<[ChartGranularity, string]>
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`ops-chart-tab ${granularity === mode ? "ops-chart-tab--active" : ""}`}
+                  onClick={() => onGranularityChange(mode)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
       </div>
