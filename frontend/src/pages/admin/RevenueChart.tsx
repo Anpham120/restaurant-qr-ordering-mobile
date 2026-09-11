@@ -1,15 +1,20 @@
 import { useMemo, useState } from "react";
 import type { DailyRevenueReport } from "@cmc/shared-types";
 
+export type ChartGranularity = "day" | "week" | "month";
+
 export interface RevenueChartProps {
   dailyRevenue: DailyRevenueReport[];
   from?: string;
   to?: string;
+  granularity?: ChartGranularity;
+  onGranularityChange?: (granularity: ChartGranularity) => void;
 }
 
-interface ProcessedDay {
-  date: string;
-  displayDate: string;
+export interface ProcessedItem {
+  id: string;
+  label: string;
+  subLabel?: string;
   revenue: number;
   orderCount: number;
 }
@@ -51,7 +56,7 @@ export function generateContinuousDays(
   from: string | undefined,
   to: string | undefined,
   data: DailyRevenueReport[],
-): ProcessedDay[] {
+): { date: string; displayDate: string; revenue: number; orderCount: number }[] {
   const dataMap = new Map<string, DailyRevenueReport>();
   for (const item of data) {
     dataMap.set(item.date, item);
@@ -71,7 +76,6 @@ export function generateContinuousDays(
   const end = parseDateUtc(endDateStr);
 
   if (!start || !end || start.getTime() > end.getTime()) {
-    // Fallback directly to provided data sorted by date
     return [...data]
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((item) => ({
@@ -82,10 +86,9 @@ export function generateContinuousDays(
       }));
   }
 
-  const days: ProcessedDay[] = [];
+  const days: { date: string; displayDate: string; revenue: number; orderCount: number }[] = [];
   const current = new Date(start);
 
-  // Safety cap at 366 days to avoid browser hang on extreme ranges
   let count = 0;
   while (current.getTime() <= end.getTime() && count < 366) {
     const isoDate = current.toISOString().slice(0, 10);
@@ -103,18 +106,100 @@ export function generateContinuousDays(
   return days;
 }
 
-export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
-  const days = useMemo(() => generateContinuousDays(from, to, dailyRevenue), [from, to, dailyRevenue]);
-  const [activeDay, setActiveDay] = useState<ProcessedDay | null>(null);
-
-  if (days.length === 0) {
-    return <div className="ops-empty">Chưa có dữ liệu doanh thu theo ngày</div>;
+export function aggregateRevenue(
+  days: { date: string; displayDate: string; revenue: number; orderCount: number }[],
+  granularity: ChartGranularity,
+): ProcessedItem[] {
+  if (days.length === 0) return [];
+  if (granularity === "day") {
+    return days.map((d) => ({
+      id: d.date,
+      label: d.displayDate,
+      subLabel: d.date,
+      revenue: d.revenue,
+      orderCount: d.orderCount,
+    }));
   }
 
-  const maxRevenue = Math.max(...days.map((d) => d.revenue), 0);
+  if (granularity === "week") {
+    const weeks: ProcessedItem[] = [];
+    let currentWeekDays: typeof days = [];
+    let weekIndex = 1;
+
+    for (let i = 0; i < days.length; i++) {
+      currentWeekDays.push(days[i]);
+      const dateObj = parseDateUtc(days[i].date);
+      // Kết thúc tuần vào Chủ Nhật (day 0) hoặc phần tử cuối cùng
+      const isWeekEnd = (dateObj && dateObj.getUTCDay() === 0) || i === days.length - 1;
+
+      if (isWeekEnd && currentWeekDays.length > 0) {
+        const startDay = currentWeekDays[0];
+        const endDay = currentWeekDays[currentWeekDays.length - 1];
+        const totalRev = currentWeekDays.reduce((acc, cur) => acc + cur.revenue, 0);
+        const totalOrders = currentWeekDays.reduce((acc, cur) => acc + cur.orderCount, 0);
+
+        weeks.push({
+          id: `w-${startDay.date}`,
+          label: `T${weekIndex}`,
+          subLabel: `${startDay.displayDate} - ${endDay.displayDate}`,
+          revenue: totalRev,
+          orderCount: totalOrders,
+        });
+
+        weekIndex++;
+        currentWeekDays = [];
+      }
+    }
+    return weeks;
+  }
+
+  // granularity === "month"
+  const monthMap = new Map<string, { label: string; subLabel: string; revenue: number; orderCount: number }>();
+  for (const day of days) {
+    const monthKey = day.date.slice(0, 7); // YYYY-MM
+    const [year, month] = monthKey.split("-");
+    const existing = monthMap.get(monthKey);
+    if (existing) {
+      existing.revenue += day.revenue;
+      existing.orderCount += day.orderCount;
+    } else {
+      monthMap.set(monthKey, {
+        label: `Th${Number(month)}`,
+        subLabel: `Tháng ${Number(month)}/${year}`,
+        revenue: day.revenue,
+        orderCount: day.orderCount,
+      });
+    }
+  }
+
+  return Array.from(monthMap.entries()).map(([monthKey, val]) => ({
+    id: monthKey,
+    label: val.label,
+    subLabel: val.subLabel,
+    revenue: val.revenue,
+    orderCount: val.orderCount,
+  }));
+}
+
+export function RevenueChart({
+  dailyRevenue,
+  from,
+  to,
+  granularity = "day",
+  onGranularityChange,
+}: RevenueChartProps) {
+  const continuousDays = useMemo(() => generateContinuousDays(from, to, dailyRevenue), [from, to, dailyRevenue]);
+  const items = useMemo(() => aggregateRevenue(continuousDays, granularity), [continuousDays, granularity]);
+  const [activeItem, setActiveItem] = useState<ProcessedItem | null>(null);
+
+  if (items.length === 0) {
+    return <div className="ops-empty">Chưa có dữ liệu doanh thu trong khoảng thời gian này</div>;
+  }
+
+  const maxRevenue = Math.max(...items.map((d) => d.revenue), 0);
   const effectiveMax = maxRevenue > 0 ? maxRevenue : 100_000;
 
-  // Chart dimensions
+  // Kích thước biểu đồ
   const yAxisWidth = 60;
   const paddingRight = 24;
   const paddingTop = 24;
@@ -123,16 +208,32 @@ export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
   const chartHeight = height - paddingTop - paddingBottom;
   const baselineY = height - paddingBottom;
 
-  // Compute dynamic width per slot
-  const slotWidth = Math.max(32, Math.min(64, Math.floor(640 / days.length)));
-  const totalContentWidth = yAxisWidth + days.length * slotWidth + paddingRight;
+  // Tính chiều rộng slot thông minh
+  const slotWidth = Math.max(
+    granularity === "month" ? 48 : granularity === "week" ? 40 : 28,
+    Math.min(72, Math.floor(640 / items.length))
+  );
+  const totalContentWidth = yAxisWidth + items.length * slotWidth + paddingRight;
   const chartWidth = Math.max(640, totalContentWidth);
-  const barWidth = Math.max(12, Math.min(28, slotWidth - 10));
+  const barWidth = Math.max(12, Math.min(32, slotWidth - 8));
 
-  // Determine tick label interval for X axis (prevent text overlap)
-  const labelInterval = days.length > 28 ? 4 : days.length > 14 ? 2 : 1;
+  // Bước nhảy nhãn X
+  const labelInterval =
+    granularity === "month"
+      ? 1
+      : granularity === "week"
+      ? items.length > 20
+        ? 2
+        : 1
+      : items.length > 60
+      ? 7
+      : items.length > 28
+      ? 4
+      : items.length > 14
+      ? 2
+      : 1;
 
-  // Y-axis grid levels (0, 33%, 66%, 100%)
+  // Các mốc trục Y
   const yTicks = [
     { ratio: 1.0, value: effectiveMax },
     { ratio: 0.66, value: Math.round(effectiveMax * 0.66) },
@@ -141,26 +242,49 @@ export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
   ];
 
   return (
-    <div className="ops-reports-chart" aria-label="Biểu đồ doanh thu theo ngày">
-      {/* Detail bar preview for touch and click */}
-      <div className="ops-reports-chart-detail" aria-live="polite">
-        {activeDay ? (
-          <>
-            <span className="ops-reports-detail-date">
-              Ngày <strong>{activeDay.date}</strong>:
+    <div className="ops-reports-chart" aria-label="Biểu đồ doanh thu">
+      {/* Thanh điều khiển phụ (TradingView Granularity Selector) */}
+      <div className="ops-reports-chart-header">
+        <div className="ops-reports-chart-detail" aria-live="polite">
+          {activeItem ? (
+            <>
+              <span className="ops-reports-detail-date">
+                <strong>{activeItem.subLabel || activeItem.label}</strong>:
+              </span>
+              <span className="ops-reports-detail-value">
+                Doanh thu: <strong>{formatVnd(activeItem.revenue)}</strong>
+              </span>
+              <span className="ops-reports-detail-orders">
+                ({activeItem.orderCount} đơn)
+              </span>
+            </>
+          ) : (
+            <span className="ops-reports-detail-hint">
+              Chạm hoặc rê chuột vào cột để xem chi tiết
             </span>
-            <span className="ops-reports-detail-value">
-              Doanh thu: <strong>{formatVnd(activeDay.revenue)}</strong>
-            </span>
-            <span className="ops-reports-detail-orders">
-              ({activeDay.orderCount} đơn)
-            </span>
-          </>
-        ) : (
-          <span className="ops-reports-detail-hint">
-            Chạm hoặc rê chuột vào cột để xem chi tiết từng ngày
-          </span>
-        )}
+          )}
+        </div>
+
+        {onGranularityChange ? (
+          <div className="ops-chart-granularity-toggle" role="group" aria-label="Chế độ gom nhóm">
+            {(
+              [
+                ["day", "Ngày"],
+                ["week", "Tuần"],
+                ["month", "Tháng"],
+              ] as Array<[ChartGranularity, string]>
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                className={`ops-chart-tab ${granularity === mode ? "ops-chart-tab--active" : ""}`}
+                onClick={() => onGranularityChange(mode)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="ops-reports-chart-scroll">
@@ -209,27 +333,27 @@ export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
             strokeWidth="1.5"
           />
 
-          {/* Day Bars */}
-          {days.map((day, index) => {
+          {/* Item Bars */}
+          {items.map((item, index) => {
             const slotX = yAxisWidth + index * slotWidth;
             const barX = slotX + (slotWidth - barWidth) / 2;
-            const barHeight = maxRevenue > 0 ? (day.revenue / maxRevenue) * chartHeight : 0;
+            const barHeight = maxRevenue > 0 ? (item.revenue / maxRevenue) * chartHeight : 0;
             const barY = baselineY - barHeight;
-            const isSelected = activeDay?.date === day.date;
-            const showLabel = index % labelInterval === 0 || index === days.length - 1;
+            const isSelected = activeItem?.id === item.id;
+            const showLabel = index % labelInterval === 0 || index === items.length - 1;
 
             return (
               <g
-                key={day.date}
+                key={item.id}
                 className="ops-chart-bar-group"
-                onMouseEnter={() => setActiveDay(day)}
-                onFocus={() => setActiveDay(day)}
-                onClick={() => setActiveDay(day)}
+                onMouseEnter={() => setActiveItem(item)}
+                onFocus={() => setActiveItem(item)}
+                onClick={() => setActiveItem(item)}
                 tabIndex={0}
                 role="button"
-                aria-label={`${day.date}: ${formatVnd(day.revenue)}, ${day.orderCount} đơn`}
+                aria-label={`${item.subLabel || item.label}: ${formatVnd(item.revenue)}, ${item.orderCount} đơn`}
               >
-                {/* Invisible larger hit area for easy touch selection */}
+                {/* Invisible hit area for touch/click */}
                 <rect
                   x={slotX}
                   y={paddingTop}
@@ -240,7 +364,7 @@ export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
                 />
 
                 {/* Actual Bar (or zero baseline tick if revenue is 0) */}
-                {day.revenue > 0 ? (
+                {item.revenue > 0 ? (
                   <rect
                     x={barX}
                     y={barY}
@@ -250,7 +374,7 @@ export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
                     className={`ops-chart-bar ${isSelected ? "ops-chart-bar--active" : ""}`}
                     fill={isSelected ? "var(--color-primary-hover, #1d4ed8)" : "var(--color-primary, #2563eb)"}
                   >
-                    <title>{`${day.date}: ${formatVnd(day.revenue)} (${day.orderCount} đơn)`}</title>
+                    <title>{`${item.subLabel || item.label}: ${formatVnd(item.revenue)} (${item.orderCount} đơn)`}</title>
                   </rect>
                 ) : (
                   <rect
@@ -262,11 +386,11 @@ export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
                     className="ops-chart-bar ops-chart-bar--zero"
                     fill="var(--color-border, #cbd5e1)"
                   >
-                    <title>{`${day.date}: 0đ (0 đơn)`}</title>
+                    <title>{`${item.subLabel || item.label}: 0đ (0 đơn)`}</title>
                   </rect>
                 )}
 
-                {/* X-axis Date Label */}
+                {/* X-axis Label */}
                 {showLabel ? (
                   <text
                     x={slotX + slotWidth / 2}
@@ -277,7 +401,7 @@ export function RevenueChart({ dailyRevenue, from, to }: RevenueChartProps) {
                     fontWeight={isSelected ? "600" : "normal"}
                     fontSize="11"
                   >
-                    {day.displayDate}
+                    {item.label}
                   </text>
                 ) : null}
               </g>

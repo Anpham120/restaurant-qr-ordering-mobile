@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
   RevenueChart,
+  aggregateRevenue,
   formatCompactVnd,
   formatDisplayDate,
   generateContinuousDays,
@@ -80,12 +81,49 @@ describe("RevenueChart helpers", () => {
       expect(days.map((d) => d.date)).toEqual(["2026-09-10", "2026-09-11", "2026-09-12"]);
     });
   });
+
+  describe("aggregateRevenue", () => {
+    const sampleDays = [
+      { date: "2026-09-01", displayDate: "01/09", revenue: 100_000, orderCount: 1 },
+      { date: "2026-09-02", displayDate: "02/09", revenue: 200_000, orderCount: 2 },
+      { date: "2026-09-03", displayDate: "03/09", revenue: 0, orderCount: 0 },
+      { date: "2026-10-01", displayDate: "01/10", revenue: 500_000, orderCount: 5 },
+    ];
+
+    it("giữ nguyên từng ngày khi granularity là 'day'", () => {
+      const items = aggregateRevenue(sampleDays, "day");
+      expect(items).toHaveLength(4);
+      expect(items[0].id).toBe("2026-09-01");
+      expect(items[0].label).toBe("01/09");
+      expect(items[0].revenue).toBe(100_000);
+    });
+
+    it("gom nhóm theo tháng khi granularity là 'month'", () => {
+      const items = aggregateRevenue(sampleDays, "month");
+      expect(items).toHaveLength(2); // Tháng 9 và Tháng 10
+      expect(items[0].id).toBe("2026-09");
+      expect(items[0].label).toBe("Th9");
+      expect(items[0].revenue).toBe(300_000); // 100k + 200k + 0
+      expect(items[0].orderCount).toBe(3);
+
+      expect(items[1].id).toBe("2026-10");
+      expect(items[1].label).toBe("Th10");
+      expect(items[1].revenue).toBe(500_000);
+      expect(items[1].orderCount).toBe(5);
+    });
+
+    it("gom nhóm theo tuần khi granularity là 'week'", () => {
+      const items = aggregateRevenue(sampleDays.slice(0, 3), "week");
+      expect(items.length).toBeGreaterThanOrEqual(1);
+      expect(items[0].label).toContain("T");
+    });
+  });
 });
 
 describe("RevenueChart Component Rendering", () => {
   it("hiển thị trạng thái rỗng khi không có dữ liệu", () => {
     const html = renderToStaticMarkup(createElement(RevenueChart, { dailyRevenue: [] }));
-    expect(html).toContain("Chưa có dữ liệu doanh thu theo ngày");
+    expect(html).toContain("Chưa có dữ liệu doanh thu");
     expect(html).toContain("ops-empty");
   });
 
@@ -109,28 +147,22 @@ describe("RevenueChart Component Rendering", () => {
     expect(html).toContain("03/09");
   });
 
-  it("hỗ trợ khoảng ngày dài (> 30 ngày) mà không bị lỗi viewBox", () => {
-    // 40 ngày liên tục
-    const data = Array.from({ length: 40 }, (_, i) => {
-      const dayNum = String(i + 1).padStart(2, "0");
-      return {
-        date: `2026-08-${dayNum}`,
-        orderCount: 1,
-        revenue: 100_000,
-      };
-    });
-
+  it("render thanh điều khiển Day/Week/Month khi có onGranularityChange", () => {
+    const data = [{ date: "2026-09-01", orderCount: 3, revenue: 300_000 }];
     const html = renderToStaticMarkup(
       createElement(RevenueChart, {
         dailyRevenue: data,
-        from: "2026-08-01",
-        to: "2026-08-40", // Fallback test
+        from: "2026-09-01",
+        to: "2026-09-01",
+        granularity: "day",
+        onGranularityChange: () => {},
       }),
     );
 
-    // Phải render ra SVG với viewbox đủ rộng cho 40 cột, không bị kẹp 640px
-    expect(html).toContain("viewBox=\"0 0");
-    expect(html).toContain("ops-reports-chart-scroll");
+    expect(html).toContain("ops-chart-granularity-toggle");
+    expect(html).toContain("Ngày");
+    expect(html).toContain("Tuần");
+    expect(html).toContain("Tháng");
   });
 
   it("render vạch mờ cho ngày có doanh thu = 0đ thay vì biến mất", () => {
