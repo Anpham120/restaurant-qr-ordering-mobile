@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
+import { type Cart, type CartItem } from '../../core/cart/cart';
 import { type TableSession } from '../../core/tables/tableSession';
 import { KhungChinh } from '../KhungChinh';
 
@@ -184,5 +185,85 @@ describe('điều hướng theo tab', () => {
     await dungKhung();
 
     await waitFor(() => expect(screen.getByPlaceholderText(/Tìm món/)).toBeTruthy());
+  });
+});
+
+describe('đặt đơn xong thì khách LUÔN được báo', () => {
+  const MON: CartItem = {
+    menuItemId: 'm1',
+    name: 'Phở bò',
+    price: 50_000,
+    quantity: 1,
+    lineTotal: 50_000,
+    isAvailable: true,
+    imageUrl: null,
+    note: null,
+  };
+
+  const GIO_CO_MON: Cart = {
+    tableSessionId: 'ts',
+    items: [MON],
+    itemCount: 1,
+    subtotal: 50_000,
+  };
+
+  async function datMotDon(luu: jest.Mock) {
+    const onBaoTin = jest.fn();
+    await render(
+      <KhungChinh
+        {...API_TRONG}
+        cartApi={{ ...API_TRONG.cartApi, gio: async () => GIO_CO_MON }}
+        guiMaOtp={async () => ({ xacNhan: async () => 'token-otp' })}
+        cauHinh={{ apiBaseUrl: 'http://test:8081', imageBaseUrl: 'http://test:8080' }}
+        dangNhap={null}
+        onBaoTin={onBaoTin}
+        onDangNhap={jest.fn()}
+        onDangXuat={jest.fn()}
+        onMoCaiDat={jest.fn()}
+        onRoiBan={jest.fn()}
+        phienBan={PHIEN}
+        soDienThoai={null}
+        tokenStore={
+          {
+            luu,
+            token: jest.fn().mockResolvedValue(null),
+            tatCa: jest.fn().mockResolvedValue({}),
+            xoaHet: jest.fn().mockResolvedValue(undefined),
+          } as never
+        }
+      />,
+    );
+
+    await fireEvent.press(screen.getByLabelText('Giỏ'));
+    await waitFor(() => expect(screen.getByLabelText('Đặt món')).toBeTruthy());
+    await fireEvent.press(screen.getByLabelText('Đặt món'));
+
+    return onBaoTin;
+  }
+
+  it('cất token hỏng vẫn báo "Đã gửi bếp" và vẫn chuyển sang tab Đơn', async () => {
+    // ĐÂY là ca đáng giá nhất của bộ này. Đơn ĐÃ lên bếp — backend nhận xong mới gọi `onDatXong`.
+    // Bản cũ treo lời báo và việc chuyển tab vào `.then()` của lời ghi Keystore, nên một lần ghi
+    // hỏng là khách không thấy gì: màn hình đứng im ở giỏ hàng còn đầy, và người ta bấm đặt lại.
+    //
+    // Keystore ném thật: `SecureStoreModule.kt` ném `DecryptException` khi khoá mã hoá mất hiệu
+    // lực — xảy ra khi khách đổi mã khoá màn hình hoặc phục hồi máy từ bản sao lưu.
+    const luu = jest.fn().mockRejectedValue(new Error('Keystore từ chối'));
+
+    const onBaoTin = await datMotDon(luu);
+
+    expect(luu).toHaveBeenCalledWith('DH1', 't');
+    expect(onBaoTin).toHaveBeenCalledWith('Đã gửi bếp — đơn DH1');
+    await waitFor(() => expect(screen.getByText(/Bàn chưa có đơn nào/)).toBeTruthy());
+  });
+
+  it('cất token xong thì báo đúng một lần, không báo hai lần', async () => {
+    // Đối chứng cho ca trên: sửa bằng cách gọi `onBaoTin` ở CẢ hai nhánh sẽ làm ca này đỏ.
+    const luu = jest.fn().mockResolvedValue(undefined);
+
+    const onBaoTin = await datMotDon(luu);
+
+    expect(onBaoTin).toHaveBeenCalledTimes(1);
+    expect(onBaoTin).toHaveBeenCalledWith('Đã gửi bếp — đơn DH1');
   });
 });

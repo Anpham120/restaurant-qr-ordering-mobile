@@ -1,4 +1,4 @@
-import { type KhoAnToan, khoThietBi } from '../luuTruAnToan';
+import { docHoacDon, type KhoAnToan, khoThietBi } from '../luuTruAnToan';
 
 /**
  * Cất `X-Order-Token` của những đơn CHÍNH MÁY NÀY đã đặt.
@@ -19,7 +19,7 @@ export class OrderTokenStore {
   constructor(private readonly kho: KhoAnToan = khoThietBi) {}
 
   private async doc(): Promise<Record<string, string>> {
-    const raw = await this.kho.doc(OrderTokenStore.KHOA);
+    const raw = await docHoacDon(this.kho, OrderTokenStore.KHOA);
     if (raw === null) return {};
     try {
       const o = JSON.parse(raw) as unknown;

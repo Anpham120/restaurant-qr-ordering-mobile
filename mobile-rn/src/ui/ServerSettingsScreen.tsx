@@ -94,7 +94,17 @@ export function ServerSettingsScreen({
       setKetQua('Địa chỉ không hợp lệ.');
       return;
     }
-    await onLuu({ apiBaseUrl: chuanApi, imageBaseUrl: chuanAnh });
+    try {
+      await onLuu({ apiBaseUrl: chuanApi, imageBaseUrl: chuanAnh });
+    } catch {
+      // `onLuu` ghi xuống kho an toàn, và kho an toàn ném được: `SecureStoreModule.kt` ném
+      // `WriteException` khi Keystore từ chối. Bản cũ không bắt, nên lần ghi hỏng nào cũng biến
+      // nút Lưu thành nút không làm gì — không lời báo, không đổi màn hình, không cách nào đoán.
+      //
+      // Nói ra và ĐỨNG YÊN là đúng: địa chỉ chưa xuống máy, nên đi tiếp như đã lưu sẽ là lời nói
+      // dối sống được đúng một phiên — mở lại app là quay về máy chủ cũ.
+      setKetQua('Không lưu được địa chỉ xuống máy. Thử lại, hoặc mở lại app rồi thử lại.');
+    }
   }, [api, anh, onLuu]);
 
   return (

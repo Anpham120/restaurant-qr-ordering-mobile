@@ -22,6 +22,20 @@ describe('CauHinhStore', () => {
     expect(await kho.doc('cau_hinh_may_chu_v1')).toBeNull();
   });
 
+  it('Keystore ném thì đọc ra null, KHÔNG ném ra ngoài', async () => {
+    // Trước đây `await kho.doc()` nằm NGOÀI try, nên `DecryptException` của Keystore đi thẳng ra
+    // `App.tsx` — và app đứng ở vòng quay khởi động vĩnh viễn. Xem `docHoacDon`.
+    const kho = {
+      doc: async () => {
+        throw new Error('DecryptException');
+      },
+      ghi: async () => undefined,
+      xoa: async () => undefined,
+    };
+
+    expect(await new CauHinhStore(kho).doc()).toBeNull();
+  });
+
   it('thiếu trường thì thành chuỗi rỗng chứ không phải undefined', async () => {
     // Màn hình cấu hình đổ thẳng hai giá trị này vào ô nhập. `undefined` biến ô nhập từ có kiểm
     // soát thành không kiểm soát, và React cảnh báo giữa lúc người dùng đang gõ.
