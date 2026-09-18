@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { type AuthApi, AuthException } from '../../core/auth/authApi';
 import { AuthRepository } from '../../core/auth/authRepository';
@@ -151,7 +151,12 @@ describe('màn hình đăng nhập', () => {
     await screen.findByText('Đang đăng nhập…');
     expect(nutDangNhap().props.accessibilityState?.disabled).toBe(true);
 
-    api.hoanThanh(PHIEN_HOP_LE);
+    // Thả cho lời gọi về, và CHỜ nó về hẳn. Không chờ thì `setDangGui(false)` ở nhánh `finally`
+    // chạy sau khi test đã kết thúc — React cảnh báo, và một lỗi ném ra lúc đó sẽ hiện ở một ca
+    // kiểm khác chứ không ở ca này.
+    await act(async () => {
+      api.hoanThanh(PHIEN_HOP_LE);
+    });
   });
 });
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { type AuthApi, AuthException } from '../../core/auth/authApi';
 import { AuthRepository } from '../../core/auth/authRepository';
@@ -134,7 +134,12 @@ describe('quét bằng camera', () => {
 
     await fireEvent.press(screen.getByText('Quét mã QR trên bàn'));
     await screen.findByText('camera');
-    mockBanKhung?.({ data: 'https://o.example.com/table/T01?qr=cmc-table-t01-qr' });
+    // `onBarcodeScanned` là lời gọi từ NGOÀI React — nó đổi state rồi chạy tiếp một việc bất đồng
+    // bộ. Không bọc `act` thì React cảnh báo, và phần bất đồng bộ đó có thể kết thúc sau khi test
+    // đã xong: lỗi sẽ hiện ở một test khác chứ không ở đây.
+    await act(async () => {
+      mockBanKhung?.({ data: 'https://o.example.com/table/T01?qr=cmc-table-t01-qr' });
+    });
 
     const o = await screen.findByLabelText('Mã QR của bàn');
     expect(o.props.value).toBe('cmc-table-t01-qr');
@@ -151,7 +156,9 @@ describe('quét bằng camera', () => {
 
     await fireEvent.press(screen.getByText('Quét mã QR trên bàn'));
     await screen.findByText('camera');
-    mockBanKhung?.({ data: 'cmc-table-t01-qr' });
+    await act(async () => {
+      mockBanKhung?.({ data: 'cmc-table-t01-qr' });
+    });
 
     await screen.findByText('Bàn đã ngừng phục vụ.');
     expect(screen.getByLabelText('Mã QR của bàn').props.value).toBe('cmc-table-t01-qr');
