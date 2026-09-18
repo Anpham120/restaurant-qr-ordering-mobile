@@ -123,7 +123,21 @@ function NoiDungApp() {
   useEffect(() => {
     let huy = false;
     void (async () => {
-      const ch = await cauHinhStore.doc();
+      let ch: CauHinhMayChu | null = null;
+      try {
+        ch = await cauHinhStore.doc();
+      } catch {
+        // Kho an toàn không đọc được. Có thật trên web: `expo-secure-store` không có bản cài cho
+        // nền tảng đó (`ExpoSecureStore.web.js` là một object rỗng), nên lời gọi ném
+        // `getValueWithKeyAsync is not a function`. Trên máy thật thì hiếm hơn, nhưng Keystore vẫn
+        // từ chối được.
+        //
+        // Để lỗi lọt ra ngoài thì `setDangKhoiPhuc(false)` KHÔNG BAO GIỜ chạy, và app đứng ở vòng
+        // quay vĩnh viễn — không thông báo, không lối thoát, không cách nào biết vì sao.
+        //
+        // Coi như chưa có cấu hình là hành vi đúng: màn hình nhập địa chỉ hiện ra, và khách đi
+        // tiếp được.
+      }
       if (huy) return;
       setCauHinh(ch);
       setDangKhoiPhuc(false);
@@ -149,6 +163,14 @@ function NoiDungApp() {
     };
     // `dongBo` chỉ đổi khi `client` đổi, nên thêm nó vào đây không làm effect chạy thêm lần nào.
   }, [client, dongBo]);
+
+  // Dải báo tin tự tắt. Không có nó thì lời báo nằm đè đáy màn hình cho tới khi khách bấm trúng
+  // đúng dải đó — mà không có gì nói cho khách biết là phải bấm. Bấm vào vẫn tắt được ngay.
+  useEffect(() => {
+    if (tin === null) return;
+    const hen = setTimeout(() => setTin(null), 4000);
+    return () => clearTimeout(hen);
+  }, [tin]);
 
   const luuCauHinh = useCallback(async (moi: CauHinhMayChu) => {
     await cauHinhStore.luu(moi);
