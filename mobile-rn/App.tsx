@@ -12,7 +12,7 @@ import { AuthRepository } from './src/core/auth/authRepository';
 import { type AuthSession } from './src/core/auth/authSession';
 import { SecureTokenStore } from './src/core/auth/tokenStore';
 import { HttpCartApi } from './src/core/cart/cartApi';
-import { type CauHinhMayChu } from './src/core/cauHinh/cauHinh';
+import { CAU_HINH_MAC_DINH, type CauHinhMayChu } from './src/core/cauHinh/cauHinh';
 import { CauHinhStore } from './src/core/cauHinh/cauHinhStore';
 import { dongBoTaiKhoan } from './src/core/loyalty/dongBoTaiKhoan';
 import { HttpLoyaltyApi } from './src/core/loyalty/loyaltyApi';
@@ -135,11 +135,17 @@ function NoiDungApp() {
         // Để lỗi lọt ra ngoài thì `setDangKhoiPhuc(false)` KHÔNG BAO GIỜ chạy, và app đứng ở vòng
         // quay vĩnh viễn — không thông báo, không lối thoát, không cách nào biết vì sao.
         //
-        // Coi như chưa có cấu hình là hành vi đúng: màn hình nhập địa chỉ hiện ra, và khách đi
-        // tiếp được.
+        // Coi như chưa có cấu hình là hành vi đúng: app rơi về máy chủ mặc định ngay dưới đây, và
+        // khách đi tiếp được.
       }
       if (huy) return;
-      setCauHinh(ch);
+      // Chưa lưu gì (lần mở đầu tiên) hoặc đọc kho hỏng → dùng máy chủ thật.
+      //
+      // Trước đây chỗ này để `null`, và `null` đẩy khách vào màn hình nhập địa chỉ máy chủ NGAY Ở
+      // MÀN ĐẦU TIÊN. Khách của một quán ăn không biết địa chỉ đó. Màn hình ấy sinh ra để kiểm thử
+      // trên máy thật trong mạng LAN, và nó vẫn còn — nhưng là lối rẽ trong Cài đặt, không phải cửa
+      // vào.
+      setCauHinh(ch ?? CAU_HINH_MAC_DINH);
       setDangKhoiPhuc(false);
     })();
     return () => {

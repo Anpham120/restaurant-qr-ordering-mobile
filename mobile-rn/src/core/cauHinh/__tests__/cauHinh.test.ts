@@ -1,4 +1,28 @@
-import { chuanHoaDiaChi, suyRaDiaChiAnh } from '../cauHinh';
+import { CAU_HINH_MAC_DINH, chuanHoaDiaChi, suyRaDiaChiAnh } from '../cauHinh';
+
+describe('cấu hình mặc định lúc mở app lần đầu', () => {
+  // Hằng số này là thứ DUY NHẤT đứng giữa khách và một ô nhập địa chỉ máy chủ ở màn hình đầu tiên.
+  // Nó viết tay trong nguồn, nên nó có thể lệch khỏi chính luật chuẩn hoá của app mà không ai thấy
+  // — cho tới khi một bản dựng ra tới tay khách và mọi lời gọi mạng đi vào hư không.
+  //
+  // Hai phép kiểm dưới đây chốt nó lại: sửa luật chuẩn hoá mà quên sửa hằng số thì đỏ ngay.
+  const DIA_CHI_GOC = 'https://api.cmcrestaurant.app';
+
+  it('apiBaseUrl ĐÚNG bằng thứ chuanHoaDiaChi trả về', () => {
+    expect(CAU_HINH_MAC_DINH.apiBaseUrl).toBe(chuanHoaDiaChi(DIA_CHI_GOC, 8081));
+  });
+
+  it('imageBaseUrl ĐÚNG bằng thứ suyRaDiaChiAnh trả về', () => {
+    expect(CAU_HINH_MAC_DINH.imageBaseUrl).toBe(suyRaDiaChiAnh(CAU_HINH_MAC_DINH.apiBaseUrl));
+  });
+
+  it('trỏ vào máy chủ thật qua https, KHÔNG phải địa chỉ máy ảo lúc dựng', () => {
+    // `10.0.2.2` chỉ có nghĩa bên trong máy ảo Android. Lọt vào đây thì bản dựng thật chết câm.
+    expect(CAU_HINH_MAC_DINH.apiBaseUrl.startsWith('https://')).toBe(true);
+    expect(CAU_HINH_MAC_DINH.apiBaseUrl).not.toContain('10.0.2.2');
+    expect(CAU_HINH_MAC_DINH.apiBaseUrl).not.toContain('localhost');
+  });
+});
 
 describe('chuẩn hoá địa chỉ người dùng gõ', () => {
   it('chỉ gõ IP thì thêm scheme và cổng mặc định', () => {

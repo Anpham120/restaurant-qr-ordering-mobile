@@ -16,6 +16,24 @@ export interface CauHinhMayChu {
   readonly imageBaseUrl: string;
 }
 
+/**
+ * Máy chủ app trỏ tới khi khách chưa từng lưu địa chỉ nào — tức là ở LẦN MỞ ĐẦU TIÊN.
+ *
+ * Không có hằng này thì màn hình đầu tiên khách nhìn thấy là một ô nhập địa chỉ máy chủ. Khách của
+ * một quán ăn không biết địa chỉ đó, và không có lý do gì để biết; hỏi họ là hỏi sai người. App
+ * thật biết sẵn mình gọi đi đâu.
+ *
+ * Hai giá trị dưới đây KHÔNG gõ tay: chúng là đúng thứ `chuanHoaDiaChi` và `suyRaDiaChiAnh` trả về
+ * cho `https://api.cmcrestaurant.app`, và có phép kiểm chốt lại điều đó. Gõ tay là mở đường cho
+ * một bản dựng mang địa chỉ lệch so với chính luật chuẩn hoá của app.
+ *
+ * `:443` là phần dễ mất nhất — xem lời giải thích dài trong {@link chuanHoaDiaChi}.
+ */
+export const CAU_HINH_MAC_DINH: CauHinhMayChu = {
+  apiBaseUrl: 'https://api.cmcrestaurant.app:443',
+  imageBaseUrl: 'https://order.cmcrestaurant.app',
+};
+
 export function cauHinhTuJson(json: unknown): CauHinhMayChu {
   const o = (json ?? {}) as Record<string, unknown>;
   return {
