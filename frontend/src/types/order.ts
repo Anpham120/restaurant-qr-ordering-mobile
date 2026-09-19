@@ -16,6 +16,7 @@ export type OrderItemStatus =
 export type CreateOrderItem = {
   menuItemId: string;
   quantity: number;
+  note?: string | null;
 };
 
 export type CreateOrderRequest = {
@@ -65,6 +66,7 @@ export type CreateOrderResponse = {
     status: OrderItemStatus;
     lineTotal: number;
     updatedAt: string;
+    note?: string | null;
   }>;
 };
 
@@ -87,6 +89,7 @@ export type OrderTrackingItem = {
   status: OrderItemStatus;
   lineTotal: number;
   updatedAt: string;
+  note?: string | null;
 
   /**
    * Ước lượng thời gian lên món, do máy chủ tính (gộp tải bếp + độ trễ bếp tự khai).
@@ -165,6 +168,7 @@ export type TableInvoiceLine = {
   unitPrice: number;
   quantity: number;
   lineTotal: number;
+  note?: string | null;
 };
 
 export type TableInvoiceOrderRound = {

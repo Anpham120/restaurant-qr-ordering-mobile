@@ -62,12 +62,16 @@ public class OrderItemEntity {
 	@Column(name = "cancelled_from_status")
 	private OrderItemStatus cancelledFromStatus;
 
+	/** Ghi chú món khách yêu cầu (V42). NULL = không có ghi chú. */
+	@Column(name = "note", length = 500)
+	private String note;
+
 	protected OrderItemEntity() {
 		// JPA
 	}
 
 	public OrderItemEntity(String id, String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity,
-			OffsetDateTime now, BigDecimal unitCost) {
+			OffsetDateTime now, BigDecimal unitCost, String note) {
 		this.id = id;
 		this.menuItemId = menuItemId;
 		this.menuItemName = menuItemName;
@@ -76,9 +80,15 @@ public class OrderItemEntity {
 		// CHỤP LẠI, không tra cứu về sau. Cùng lý do với `unitPrice`: sửa giá vốn một món hôm nay
 		// không được viết lại con số hao hụt của tháng trước.
 		this.unitCost = unitCost;
+		this.note = note;
 		this.status = OrderItemStatus.Pending;
 		this.createdAt = now;
 		this.updatedAt = now;
+	}
+
+	public OrderItemEntity(String id, String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity,
+			OffsetDateTime now, BigDecimal unitCost) {
+		this(id, menuItemId, menuItemName, unitPrice, quantity, now, unitCost, null);
 	}
 
 	public String getId() {
@@ -145,6 +155,14 @@ public class OrderItemEntity {
 
 	public void setCancelledFromStatus(OrderItemStatus cancelledFromStatus) {
 		this.cancelledFromStatus = cancelledFromStatus;
+	}
+
+	public String getNote() {
+		return note;
+	}
+
+	public void setNote(String note) {
+		this.note = note;
 	}
 
 	public BigDecimal lineTotal() {

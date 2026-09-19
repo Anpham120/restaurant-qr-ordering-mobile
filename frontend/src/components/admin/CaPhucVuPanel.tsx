@@ -16,14 +16,14 @@ type Nhap = { name: string; startTime: string; endTime: string };
  * thuộc ca nào đều do người dùng quyết định. Muốn bốn ca thì tạo bốn dòng, muốn hai ca thì hai
  * dòng, muốn không ca nào thì xoá hết và mọi món bán cả ngày như trước khi có tính năng này.
  *
- * Hai dòng có sẵn sau khi cài đặt chỉ là ĐIỂM BẮT ĐẦU theo giờ mở cửa đang ghi trong tài liệu.
+ * Các ca có sẵn sau khi cài đặt (Sáng, Trưa, Tối) chỉ là ĐIỂM BẮT ĐẦU theo giờ mở cửa của quán.
  * Chúng không kéo theo món nào, và sửa hay xoá được hết.
  */
 export function CaPhucVuPanel() {
   const confirm = useOpsConfirm();
   const [ca, setCa] = useState<CaPhucVu[]>([]);
   const [nhap, setNhap] = useState<Record<string, Nhap>>({});
-  const [moi, setMoi] = useState<Nhap>({ name: "", startTime: "06:00", endTime: "10:00" });
+  const [moi, setMoi] = useState<Nhap>({ name: "", startTime: "14:00", endTime: "18:00" });
   const [dangTai, setDangTai] = useState(true);
   const [loi, setLoi] = useState("");
 
@@ -102,8 +102,8 @@ export function CaPhucVuPanel() {
       {loi ? <div className="ops-notice ops-notice--danger">{loi}</div> : null}
 
       <p className="ops-form-hint">
-        Quán mở mấy ca và mỗi ca mấy giờ là do bạn đặt. Hai dòng có sẵn chỉ là điểm bắt đầu theo
-        giờ mở cửa hiện tại — sửa tên, sửa giờ hoặc xoá cả hai đều được.
+        Quán mở mấy ca và mỗi ca mấy giờ là do bạn đặt. Các ca có sẵn chỉ là điểm bắt đầu theo
+        giờ mở cửa hiện tại — sửa tên, sửa giờ, thêm ca mới hoặc xoá đều được.
       </p>
       <p className="ops-form-hint">
         Ca chỉ có tác dụng với món bạn gán vào nó ở tab <strong>Hôm nay</strong>. Món không gán ca
@@ -176,7 +176,7 @@ export function CaPhucVuPanel() {
             <td>
               <input
                 className="ops-form-input"
-                placeholder="Tên ca mới, ví dụ Sáng"
+                placeholder="Tên ca mới, ví dụ Chiều hoặc Đêm"
                 value={moi.name}
                 onChange={(e) => setMoi({ ...moi, name: e.target.value })}
                 aria-label="Tên ca mới"

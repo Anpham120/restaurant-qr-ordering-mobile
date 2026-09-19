@@ -498,7 +498,8 @@ function OrderTrackingPanel({
           <article className="cmc-ot-item" key={item.orderItemId}>
             <div>
               <strong>{localizeMenuItemName(item.menuItemId, item.name, locale)}</strong>
-              <p>x{item.quantity}</p>
+              <p>x{item.quantity}</p>
+              {item.note ? <p className="cmc-ot-item-note">({item.note})</p> : null}
               {/*
                 Ước lượng từng món CHỈ có ở màn danh sách. Khách bấm vào một đơn để xem KỸ HƠN thì
                 lại mất thông tin — màn chi tiết im lặng về thứ họ vào đây để hỏi: bao giờ có món.

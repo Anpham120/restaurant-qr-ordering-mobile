@@ -78,7 +78,7 @@ describe('tạo đơn', () => {
     expect(daGui(ghiLai).headers['X-Table-Session-Token']).toBe('tst');
   });
 
-  it('gửi items dạng {menuItemId, quantity} — KHÔNG phải delta', async () => {
+  it('gửi items dạng {menuItemId, quantity, note} — KHÔNG phải delta', async () => {
     // Giỏ dùng delta, đơn dùng số lượng tuyệt đối. Nhầm hai chỗ này là đặt sai số phần.
     const ghiLai = jest.fn();
     await donApi(201, DON_JSON, ghiLai).taoDon({
@@ -88,9 +88,25 @@ describe('tạo đơn', () => {
     });
 
     const b = daGui(ghiLai).body;
-    expect(b.items).toEqual([{ menuItemId: 'm1', quantity: 2 }]);
+    expect(b.items).toEqual([{ menuItemId: 'm1', quantity: 2, note: null }]);
     expect(b.tableSessionId).toBe('ts_abc');
     expect(b.orderType).toBe('DineIn');
+  });
+
+  it('gửi đúng ghi chú món từ giỏ hàng vào đơn', async () => {
+    const ghiLai = jest.fn();
+    const gioCoGhiChu: Cart = {
+      ...gioMau(),
+      items: [{ ...gioMau().items[0]!, note: 'ít cay' }],
+    };
+    await donApi(201, DON_JSON, ghiLai).taoDon({
+      phienBan: phienMau(),
+      gio: gioCoGhiChu,
+      khoaIdempotency: 'k2',
+    });
+
+    const b = daGui(ghiLai).body;
+    expect(b.items).toEqual([{ menuItemId: 'm1', quantity: 2, note: 'ít cay' }]);
   });
 
   it('gửi CẢ tableCode LẪN qrToken — đơn tại bàn đòi cả hai', async () => {

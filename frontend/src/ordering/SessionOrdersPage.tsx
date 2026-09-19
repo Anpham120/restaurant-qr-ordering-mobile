@@ -325,7 +325,10 @@ export function SessionOrdersPage() {
             <ul>
               {order.items.map((item) => (
                 <li key={item.orderItemId}>
-                  <span>{item.quantity}× {localizeMenuItemName(item.menuItemId, item.name, locale)}</span>
+                  <div>
+                    <span>{item.quantity}× {localizeMenuItemName(item.menuItemId, item.name, locale)}</span>
+                    {item.note ? <div className="ordering-order-item-note">({item.note})</div> : null}
+                  </div>
                   {/*
                     Máy chủ ĐÃ gửi ước lượng kèm từng món từ lâu, web thì vứt đi vì kiểu OrderItem
                     không khai ba trường đó. App di động hiển thị nó, web không — nên khách quét QR

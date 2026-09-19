@@ -36,16 +36,4 @@ export type {
   ValidatePromotionResponse,
   VietQrPaymentResponse,
 } from "./order";
-export type {
-  ChatGuardrailFlag,
-  ChatMessage,
-  ChatRecommendation,
-  ChatRole,
-  ChatHistoryResponse,
-  CreateChatSessionRequest,
-  CreateChatSessionResponse,
-  SendChatMessageRequest,
-  SendChatMessageResponse,
-  SuggestedCartAction,
-} from "./chat";
 

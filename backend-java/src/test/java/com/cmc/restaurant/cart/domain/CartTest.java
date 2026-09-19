@@ -103,4 +103,22 @@ class CartTest {
 		assertThat(c.lines()).isEmpty();
 		assertThat(c.itemCount()).isZero();
 	}
+
+	@Test
+	@DisplayName("delta = 0 nhưng có ghi chú thì cập nhật ghi chú dòng đã có")
+	void zeroDeltaUpdatesNote() {
+		Cart c = cart(new CartLine("m_1", 2, "ít cay"));
+
+		assertThat(c.applyDelta("m_1", 0, "không cay", Cart.InvoiceState.None))
+				.get().extracting(CartLine::note).isEqualTo("không cay");
+		assertThat(c.find("m_1")).get().extracting(CartLine::quantity).isEqualTo(2);
+	}
+
+	@Test
+	@DisplayName("Ghi chú vượt 500 ký tự bị chặn")
+	void noteTooLongRejected() {
+		String longNote = "a".repeat(501);
+		assertThatThrownBy(() -> cart().applyDelta("m_1", 1, longNote, Cart.InvoiceState.None))
+				.extracting(CartTest::codeOf).isEqualTo("CART_NOTE_TOO_LONG");
+	}
 }
