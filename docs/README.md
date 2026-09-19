@@ -23,21 +23,21 @@ Thêm tài liệu mới: đặt đúng thư mục rồi chạy `python docs/buil
 
 | Tài liệu | Nội dung |
 |---|---|
+| [DAC_TA_THIET_KE_VAN_HANH.md](DAC_TA_THIET_KE_VAN_HANH.md) | Đặc tả thiết kế lại giao diện vận hành |
+| [KE_HOACH_GIAO_DIEN.md](KE_HOACH_GIAO_DIEN.md) | Kế hoạch làm lại giao diện |
+| [KHAO_SAT_PHAN_TICH_NGHIEP_VU_NHA_HANG.md](KHAO_SAT_PHAN_TICH_NGHIEP_VU_NHA_HANG.md) | Khảo sát và phân tích nghiệp vụ quản lý nhà hàng |
+| [PHAN_TICH_HE_THONG.md](PHAN_TICH_HE_THONG.md) | Phân tích thiết kế hệ thống — CMC Restaurant QR |
+| [THIET_KE_HE_THONG_BAM_THEO.md](THIET_KE_HE_THONG_BAM_THEO.md) | Thiết kế hệ thống bám theo — CMC Restaurant |
+| [THIET_KE_HE_THONG_CHUAN.md](THIET_KE_HE_THONG_CHUAN.md) | BẢN THIẾT KẾ HỆ THỐNG CHUẨN — RESTAURANT MANAGEMENT SYSTEM (CMC RESTAURANT) |
+| [THIET_KE_NGHIEP_VU.md](THIET_KE_NGHIEP_VU.md) | Thiết kế nghiệp vụ — CMC Restaurant |
 | [API_CONTRACT.md](backend/API_CONTRACT.md) | Hop Dong API - CMC Restaurant |
 | [ARCHITECTURE.md](backend/ARCHITECTURE.md) | Kiến trúc backend |
 | [DATABASE.md](backend/DATABASE.md) | Database Setup Guide |
 | [KHUON_BAO_CAO.md](bao-cao/KHUON_BAO_CAO.md) | BÁO CÁO BÀI TẬP LỚN |
 | [cau-hinh-firebase-sepay.md](cau-hinh-firebase-sepay.md) | Cấu hình Firebase, Google và SePay |
-| [DAC_TA_THIET_KE_VAN_HANH.md](DAC_TA_THIET_KE_VAN_HANH.md) | Đặc tả thiết kế lại giao diện vận hành |
 | [PIPELINE_AND_DEPLOY.md](devops/PIPELINE_AND_DEPLOY.md) | CI/CD, triển khai và vận hành |
 | [OPS_APP.md](frontend/OPS_APP.md) | Ứng dụng vận hành — workspace và quầy |
-| [KE_HOACH_GIAO_DIEN.md](KE_HOACH_GIAO_DIEN.md) | Kế hoạch làm lại giao diện |
-| [KHAO_SAT_PHAN_TICH_NGHIEP_VU_NHA_HANG.md](KHAO_SAT_PHAN_TICH_NGHIEP_VU_NHA_HANG.md) | Khảo sát và phân tích nghiệp vụ quản lý nhà hàng |
-| [PHAN_TICH_HE_THONG.md](PHAN_TICH_HE_THONG.md) | Phân tích thiết kế hệ thống — CMC Restaurant QR |
 | [KE_HOACH_HOC_KY_2026-2.md](pm/KE_HOACH_HOC_KY_2026-2.md) | Kế hoạch học kỳ 2026-2 — fork cá nhân CMC Restaurant |
-| [THIET_KE_HE_THONG_BAM_THEO.md](THIET_KE_HE_THONG_BAM_THEO.md) | Thiết kế hệ thống bám theo — CMC Restaurant |
-| [THIET_KE_HE_THONG_CHUAN.md](THIET_KE_HE_THONG_CHUAN.md) | BẢN THIẾT KẾ HỆ THỐNG CHUẨN — RESTAURANT MANAGEMENT SYSTEM (CMC RESTAURANT) |
-| [THIET_KE_NGHIEP_VU.md](THIET_KE_NGHIEP_VU.md) | Thiết kế nghiệp vụ — CMC Restaurant |
 | [trien-khai-may-chu.md](trien-khai-may-chu.md) | Triển khai lên máy chủ |
 
 ## Quy trình nhóm

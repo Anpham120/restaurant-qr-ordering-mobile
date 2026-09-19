@@ -75,7 +75,7 @@ def thu_thap() -> dict[str, list[tuple[str, str]]]:
     ra: dict[str, list[tuple[str, str]]] = {k: [] for _, k in NHOM}
     goc = [REPO / "README.md", REPO / "SPEC.md", REPO / "CONTEXT.md", REPO / "CHANGELOG.md"]
     tep = [p for p in goc if p.exists()]
-    tep += sorted(DOCS.glob("**/*.md"))
+    tep += sorted(DOCS.glob("**/*.md"), key=lambda p: p.relative_to(REPO).as_posix())
     for p in tep:
         if p.resolve() == OUT.resolve():
             continue
