@@ -11,7 +11,10 @@ public final class OrderDtos {
 	private OrderDtos() {
 	}
 
-	public record CreateOrderItemRequest(String menuItemId, int quantity) {
+	public record CreateOrderItemRequest(String menuItemId, int quantity, String note) {
+		public CreateOrderItemRequest(String menuItemId, int quantity) {
+			this(menuItemId, quantity, null);
+		}
 	}
 
 	public record CreateOrderRequest(
@@ -38,7 +41,16 @@ public final class OrderDtos {
 			String orderItemId, String menuItemId, String name, BigDecimal unitPrice, int quantity,
 			String status, BigDecimal lineTotal, OffsetDateTime updatedAt,
 			Integer estimatedReadyMinutesLow, Integer estimatedReadyMinutesHigh,
-			boolean kitchenBusy) {
+			boolean kitchenBusy, String note) {
+
+		public OrderItemResponse(
+				String orderItemId, String menuItemId, String name, BigDecimal unitPrice, int quantity,
+				String status, BigDecimal lineTotal, OffsetDateTime updatedAt,
+				Integer estimatedReadyMinutesLow, Integer estimatedReadyMinutesHigh,
+				boolean kitchenBusy) {
+			this(orderItemId, menuItemId, name, unitPrice, quantity, status, lineTotal, updatedAt,
+					estimatedReadyMinutesLow, estimatedReadyMinutesHigh, kitchenBusy, null);
+		}
 	}
 
 	public record OrderStatusEventResponse(

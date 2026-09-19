@@ -11,7 +11,11 @@ public final class TableInvoiceDtos {
 	private TableInvoiceDtos() {
 	}
 
-	public record LineResponse(String menuItemId, String name, BigDecimal unitPrice, int quantity, BigDecimal lineTotal) {
+	public record LineResponse(
+			String menuItemId, String name, BigDecimal unitPrice, int quantity, BigDecimal lineTotal, String note) {
+		public LineResponse(String menuItemId, String name, BigDecimal unitPrice, int quantity, BigDecimal lineTotal) {
+			this(menuItemId, name, unitPrice, quantity, lineTotal, null);
+		}
 	}
 
 	public record OrderRoundResponse(String orderCode, String status, BigDecimal subtotalAmount, OffsetDateTime createdAt) {

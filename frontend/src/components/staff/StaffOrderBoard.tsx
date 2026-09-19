@@ -77,6 +77,7 @@ function StaffCard({
             }
           >
             {item.quantity}× {item.name}
+            {item.note ? <span className="kitchen-item-note"> ({item.note})</span> : null}
           </span>
         ))}
       </div>

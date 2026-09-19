@@ -5,7 +5,6 @@ export type OrderItemStatus = "Pending" | "Preparing" | "Ready" | "Served" | "Ca
 export type PaymentMethod = "Unselected" | "COD" | "VietQR";
 export type PaymentStatus = "NotRequested" | "Unpaid" | "Pending" | "Paid" | "Confirmed" | "Failed" | "Cancelled" | "Refunded";
 export type OrderEventSource = "Status" | "Payment";
-export type ChatRole = "user" | "assistant" | "system";
 
 export type AuthUser = { userId: string; fullName: string; email: string; role: UserRole };
 // `identifier`, KHÔNG phải `email`: backend nhận một ô cho cả hai loại người dùng — khách gõ số
@@ -36,11 +35,11 @@ export type MenuCategory = { categoryId: string; name: string };
 // gọi, chứ không phải nhận lỗi sau khi đã gửi bếp. Ngược với `costPrice`, thứ chỉ có ở đường admin.
 export type MenuItem = { id: string; name: string; description: string; price: number; categoryId: string; categoryName: string; imageUrl: string | null; isAvailable: boolean; tags: string[]; prepMinutes: number | null; remainingQuantity: number | null; delayMinutes: number };
 export type MenuResponse = { categories: MenuCategory[]; items: MenuItem[] };
-export type CreateOrderRequest = { orderType: OrderType; tableCode?: string | null; qrToken?: string | null; tableSessionId?: string | null; items: Array<{ menuItemId: string; quantity: number }>; promotionCode?: string | null; customerPhoneNumber?: string | null };
+export type CreateOrderRequest = { orderType: OrderType; tableCode?: string | null; qrToken?: string | null; tableSessionId?: string | null; items: Array<{ menuItemId: string; quantity: number; note?: string | null }>; promotionCode?: string | null; customerPhoneNumber?: string | null };
 // `estimatedReadyMinutes*` và `kitchenBusy`: máy chủ ĐÃ gửi ba trường này từ lâu (xem
 // `OrderDtos.OrderItemResponse` bên Java) nhưng kiểu của web không khai, nên web vứt đi và khách
 // trên web không thấy ước lượng nào — trong khi app di động có. `null` khi món không còn chờ nữa.
-export type OrderItem = { orderItemId: string; menuItemId: string; name: string; unitPrice: number; quantity: number; status: OrderItemStatus; lineTotal: number; updatedAt: string; estimatedReadyMinutesLow?: number | null; estimatedReadyMinutesHigh?: number | null; kitchenBusy?: boolean };
+export type OrderItem = { orderItemId: string; menuItemId: string; name: string; unitPrice: number; quantity: number; status: OrderItemStatus; lineTotal: number; updatedAt: string; estimatedReadyMinutesLow?: number | null; estimatedReadyMinutesHigh?: number | null; kitchenBusy?: boolean; note?: string | null };
 export type OrderStatusEvent = { status: OrderStatus | PaymentStatus; source?: OrderEventSource; changedByRole?: string | null; note?: string | null; createdAt: string };
 export type Order = { orderId: string; orderCode: string; orderType: OrderType; tableCode: string | null; tableSessionId?: string | null; status: OrderStatus; paymentStatus: PaymentStatus; paymentMethod: PaymentMethod; subtotalAmount: number; discountAmount: number; totalAmount: number; promotionCode?: string | null; createdAt: string; updatedAt: string; items: OrderItem[]; events: OrderStatusEvent[] };
 export type CreateOrderResponse = Order & { customerAccessToken: string };
@@ -50,7 +49,7 @@ export type Payment = { paymentId: string; orderCode: string; method: PaymentMet
 export type VietQrPayment = { orderCode: string; amount: number; transferContent: string; bankId: string; accountNumber: string; accountName: string; quickLink: string; qrPayload: string; qrImageDataUri: string; paymentStatus: PaymentStatus };
 export type PaymentRequest = { method: "COD" | "VietQR" };
 export type PaymentRequestResponse = { payment: Payment; vietQr: VietQrPayment | null };
-export type TableInvoiceLine = { menuItemId: string; name: string; unitPrice: number; quantity: number; lineTotal: number };
+export type TableInvoiceLine = { menuItemId: string; name: string; unitPrice: number; quantity: number; lineTotal: number; note?: string | null };
 export type TableInvoiceOrderRound = { orderCode: string; status: OrderStatus; subtotalAmount: number; createdAt: string };
 export type TableInvoiceVietQr = { invoiceCode: string; amount: number; transferContent: string; quickLink: string; qrImageDataUri: string };
 export type TableInvoice = { tableSessionId: string; invoiceCode: string | null; tableCode: string | null; status: PaymentStatus; subtotalAmount: number; discountAmount: number; loyaltyDiscountAmount: number | null; totalAmount: number; promotionCode: string | null; customerPhoneNumber: string | null; method: PaymentMethod; orderRounds: TableInvoiceOrderRound[]; items: TableInvoiceLine[]; vietQr: TableInvoiceVietQr | null };
