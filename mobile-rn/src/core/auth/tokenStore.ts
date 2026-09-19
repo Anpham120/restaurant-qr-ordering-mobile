@@ -1,4 +1,4 @@
-import { type KhoAnToan, khoThietBi } from '../luuTruAnToan';
+import { docHoacDon, type KhoAnToan, khoThietBi } from '../luuTruAnToan';
 import { type AuthSession, authSessionTuJson } from './authSession';
 
 /**
@@ -24,7 +24,7 @@ export class SecureTokenStore implements TokenStore {
   }
 
   async doc(): Promise<AuthSession | null> {
-    const raw = await this.kho.doc(SecureTokenStore.KHOA);
+    const raw = await docHoacDon(this.kho, SecureTokenStore.KHOA);
     if (raw === null) return null;
     try {
       return authSessionTuJson(JSON.parse(raw));

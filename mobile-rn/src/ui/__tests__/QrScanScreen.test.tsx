@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { QrScanScreen } from '../QrScanScreen';
 
@@ -63,7 +63,9 @@ describe('quét mã bàn', () => {
     const quetDuoc = jest.fn();
     await render(<QrScanScreen onHuy={jest.fn()} onQuetDuoc={quetDuoc} />);
 
-    mockBanKhung?.({ data: 'WIFI:S:QuanAn;T:WPA;P:12345678;;' });
+    await act(async () => {
+      mockBanKhung?.({ data: 'WIFI:S:QuanAn;T:WPA;P:12345678;;' });
+    });
 
     await screen.findByText(/không phải QR của bàn/);
     expect(quetDuoc).not.toHaveBeenCalled();
@@ -75,8 +77,14 @@ describe('quét mã bàn', () => {
     const quetDuoc = jest.fn();
     await render(<QrScanScreen onHuy={jest.fn()} onQuetDuoc={quetDuoc} />);
 
-    mockBanKhung?.({ data: 'WIFI:S:QuanAn;;' });
-    mockBanKhung?.({ data: 'cmc-table-t01-qr' });
+    // Hai lượt quét TÁCH RIÊNG: máy thật vẽ lại màn hình giữa hai lần, và lượt sau phải đi qua
+    // đúng cái `onBarcodeScanned` của lần vẽ mới. Gộp chung một act là bỏ qua khoảnh khắc đó.
+    await act(async () => {
+      mockBanKhung?.({ data: 'WIFI:S:QuanAn;;' });
+    });
+    await act(async () => {
+      mockBanKhung?.({ data: 'cmc-table-t01-qr' });
+    });
 
     expect(quetDuoc).toHaveBeenCalledWith({ qrToken: 'cmc-table-t01-qr', tableCode: null });
   });

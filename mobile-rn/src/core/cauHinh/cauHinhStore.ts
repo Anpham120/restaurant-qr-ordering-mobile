@@ -1,4 +1,4 @@
-import { type KhoAnToan, khoThietBi } from '../luuTruAnToan';
+import { docHoacDon, type KhoAnToan, khoThietBi } from '../luuTruAnToan';
 import { type CauHinhMayChu, cauHinhTuJson } from './cauHinh';
 
 /**
@@ -14,7 +14,7 @@ export class CauHinhStore {
   constructor(private readonly kho: KhoAnToan = khoThietBi) {}
 
   async doc(): Promise<CauHinhMayChu | null> {
-    const raw = await this.kho.doc(CauHinhStore.KHOA);
+    const raw = await docHoacDon(this.kho, CauHinhStore.KHOA);
     if (raw === null) return null;
     try {
       return cauHinhTuJson(JSON.parse(raw));

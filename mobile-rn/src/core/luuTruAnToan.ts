@@ -33,6 +33,35 @@ export const khoThietBi: KhoAnToan = {
   xoa: (khoa) => SecureStore.deleteItemAsync(khoa),
 };
 
+/**
+ * Đọc một khoá, coi MỌI thất bại là "chưa có gì" — và dọn luôn thứ đọc không được.
+ *
+ * Vì sao cần: `SecureStoreModule.kt` ném `DecryptException` khi khoá mã hoá của Keystore mất hiệu
+ * lực. Đó không phải chuyện hiếm trên máy thật — khách đổi mã khoá màn hình hoặc vân tay, hoặc
+ * phục hồi máy từ bản sao lưu, là khoá cũ chết và mọi giá trị đã cất trở thành rác không giải mã
+ * được.
+ *
+ * Vì sao phải XOÁ chứ không chỉ trả `null`: blob chết nằm lại thì lần mở app SAU vẫn ném y hệt.
+ * Khách sẽ bị đăng xuất mỗi lần mở app, mãi mãi, mà không có cách nào thoát ra ngoài việc gỡ app.
+ * Xoá một lần là lần sau sạch.
+ *
+ * Cùng luật với nhánh `catch` mà mỗi kho đã có sẵn cho dữ liệu hỏng — chỉ là trước đây lời gọi
+ * `doc()` nằm NGOÀI `try`, nên luật đó không bao giờ áp cho thất bại của chính Keystore.
+ */
+export async function docHoacDon(kho: KhoAnToan, khoa: string): Promise<string | null> {
+  try {
+    return await kho.doc(khoa);
+  } catch {
+    try {
+      await kho.xoa(khoa);
+    } catch {
+      // Xoá cũng hỏng thì không còn gì làm được ở đây. Trả `null` vẫn đúng: app đi tiếp như chưa
+      // từng cất gì, thay vì ném ra cho một nơi gọi không biết xử lý.
+    }
+    return null;
+  }
+}
+
 /** Kho trong bộ nhớ, cho test. Không dùng trong app thật. */
 export function khoTrongBoNho(banDau: Record<string, string> = {}): KhoAnToan {
   const bo = new Map<string, string>(Object.entries(banDau));

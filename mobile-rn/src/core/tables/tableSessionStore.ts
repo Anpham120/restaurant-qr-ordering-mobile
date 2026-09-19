@@ -1,4 +1,4 @@
-import { type KhoAnToan, khoThietBi } from '../luuTruAnToan';
+import { docHoacDon, type KhoAnToan, khoThietBi } from '../luuTruAnToan';
 import { type TableSession, tableSessionTuJson } from './tableSession';
 
 export interface TableSessionStore {
@@ -24,7 +24,7 @@ export class SecureTableSessionStore implements TableSessionStore {
   }
 
   async doc(): Promise<TableSession | null> {
-    const raw = await this.kho.doc(SecureTableSessionStore.KHOA);
+    const raw = await docHoacDon(this.kho, SecureTableSessionStore.KHOA);
     if (raw === null) return null;
     try {
       return tableSessionTuJson(JSON.parse(raw));

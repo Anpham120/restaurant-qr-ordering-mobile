@@ -59,6 +59,19 @@ describe('màn hình máy chủ', () => {
     expect(onLuu).not.toHaveBeenCalled();
   });
 
+  it('lưu hỏng thì NÓI RA, không im lặng', async () => {
+    // Kho an toàn ném thật: `SecureStoreModule.kt` ném `WriteException` khi Keystore từ chối ghi.
+    // Bản cũ `await onLuu(...)` trần, nên lần ghi hỏng nào cũng biến nút Lưu thành nút chết —
+    // khách bấm, không có gì đổi, và bấm lại cũng vậy.
+    const onLuu = jest.fn().mockRejectedValue(new Error('WriteException'));
+    await render(<ServerSettingsScreen hienTai={TRONG} onLuu={onLuu} />);
+
+    await fireEvent.changeText(screen.getByLabelText('Địa chỉ API'), '192.168.1.5');
+    await fireEvent.press(screen.getByText('Lưu'));
+
+    await screen.findByText(/Không lưu được địa chỉ xuống máy/);
+  });
+
   it('kiểm tra kết nối gọi đúng /api/health và báo khi máy chủ trả lời', async () => {
     const goiMang = jest.fn().mockResolvedValue({ status: 200 });
     await render(<ServerSettingsScreen hienTai={TRONG} onLuu={jest.fn()} goiMang={goiMang} />);

@@ -118,10 +118,20 @@ export function KhungChinh(p: KhungChinhProps) {
             onDatXong={(don) => {
               // Cất X-Order-Token NGAY: backend chỉ trả nó một lần, và mất nó là mất quyền huỷ
               // món của chính mình (#11).
-              void p.tokenStore.luu(don.orderCode, don.customerAccessToken).then(() => {
-                p.onBaoTin?.(`Đã gửi bếp — đơn ${don.orderCode}`);
-                setKhoaTab('don');
-              });
+              //
+              // Nhưng lời báo và việc chuyển tab KHÔNG treo vào kết quả cất. Đơn đã lên bếp rồi —
+              // backend nhận xong mới gọi tới đây. Bản cũ đặt cả hai việc trong `.then()` của lời
+              // ghi, nên một lần ghi hỏng là khách không thấy gì: đơn đã gửi mà màn hình đứng im,
+              // và người ta bấm đặt lại.
+              //
+              // Keystore ném thật, không phải giả định: `SecureStoreModule.kt` ném
+              // `DecryptException` khi khoá mã hoá mất hiệu lực — chuyện xảy ra khi khách đổi mã
+              // khoá màn hình hoặc phục hồi máy từ bản sao lưu.
+              //
+              // Mất token chỉ mất quyền huỷ món của chính mình; đơn vẫn nằm trong danh sách bàn.
+              void p.tokenStore.luu(don.orderCode, don.customerAccessToken).catch(() => undefined);
+              p.onBaoTin?.(`Đã gửi bếp — đơn ${don.orderCode}`);
+              setKhoaTab('don');
             }}
             phienBan={p.phienBan}
             soDienThoai={p.soDienThoai}

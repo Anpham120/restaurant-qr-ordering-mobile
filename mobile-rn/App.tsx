@@ -12,7 +12,7 @@ import { AuthRepository } from './src/core/auth/authRepository';
 import { type AuthSession } from './src/core/auth/authSession';
 import { SecureTokenStore } from './src/core/auth/tokenStore';
 import { HttpCartApi } from './src/core/cart/cartApi';
-import { type CauHinhMayChu } from './src/core/cauHinh/cauHinh';
+import { CAU_HINH_MAC_DINH, type CauHinhMayChu } from './src/core/cauHinh/cauHinh';
 import { CauHinhStore } from './src/core/cauHinh/cauHinhStore';
 import { dongBoTaiKhoan } from './src/core/loyalty/dongBoTaiKhoan';
 import { HttpLoyaltyApi } from './src/core/loyalty/loyaltyApi';
@@ -123,9 +123,29 @@ function NoiDungApp() {
   useEffect(() => {
     let huy = false;
     void (async () => {
-      const ch = await cauHinhStore.doc();
+      let ch: CauHinhMayChu | null = null;
+      try {
+        ch = await cauHinhStore.doc();
+      } catch {
+        // Kho an toàn không đọc được. Có thật trên web: `expo-secure-store` không có bản cài cho
+        // nền tảng đó (`ExpoSecureStore.web.js` là một object rỗng), nên lời gọi ném
+        // `getValueWithKeyAsync is not a function`. Trên máy thật thì hiếm hơn, nhưng Keystore vẫn
+        // từ chối được.
+        //
+        // Để lỗi lọt ra ngoài thì `setDangKhoiPhuc(false)` KHÔNG BAO GIỜ chạy, và app đứng ở vòng
+        // quay vĩnh viễn — không thông báo, không lối thoát, không cách nào biết vì sao.
+        //
+        // Coi như chưa có cấu hình là hành vi đúng: app rơi về máy chủ mặc định ngay dưới đây, và
+        // khách đi tiếp được.
+      }
       if (huy) return;
-      setCauHinh(ch);
+      // Chưa lưu gì (lần mở đầu tiên) hoặc đọc kho hỏng → dùng máy chủ thật.
+      //
+      // Trước đây chỗ này để `null`, và `null` đẩy khách vào màn hình nhập địa chỉ máy chủ NGAY Ở
+      // MÀN ĐẦU TIÊN. Khách của một quán ăn không biết địa chỉ đó. Màn hình ấy sinh ra để kiểm thử
+      // trên máy thật trong mạng LAN, và nó vẫn còn — nhưng là lối rẽ trong Cài đặt, không phải cửa
+      // vào.
+      setCauHinh(ch ?? CAU_HINH_MAC_DINH);
       setDangKhoiPhuc(false);
     })();
     return () => {
@@ -136,25 +156,53 @@ function NoiDungApp() {
   useEffect(() => {
     if (client === null) return;
     let huy = false;
-    void Promise.all([client.auth.khoiPhuc(), client.ban.khoiPhuc()]).then(([ses, ban]) => {
+    void (async () => {
+      let ses: AuthSession | null = null;
+      let ban: TableSession | null = null;
+      try {
+        [ses, ban] = await Promise.all([client.auth.khoiPhuc(), client.ban.khoiPhuc()]);
+      } catch {
+        // Cùng nguyên nhân với effect khôi phục cấu hình ở trên: kho an toàn ném được.
+        //
+        // Bản cũ dùng `.then()` không kèm `.catch()`, nên một lần ném là `setDangNhap` và
+        // `setPhienBan` KHÔNG BAO GIỜ chạy — khách bị đăng xuất âm thầm và mất luôn phiên bàn, mà
+        // không có câu nào giải thích. Kèm theo một lời hứa bị bỏ rơi.
+        //
+        // Coi như chưa đăng nhập và chưa vào bàn là hành vi đúng: quét lại mã bàn là đi tiếp được.
+      }
       if (huy) return;
       setDangNhap(ses);
       setPhienBan(ban);
       // Mở lại app cũng phải đồng bộ: số điện thoại KHÔNG được cất xuống máy, nên không khôi phục
       // được cùng hai thứ kia.
       void dongBo(ses, ban);
-    });
+    })();
     return () => {
       huy = true;
     };
     // `dongBo` chỉ đổi khi `client` đổi, nên thêm nó vào đây không làm effect chạy thêm lần nào.
   }, [client, dongBo]);
 
+  // Dải báo tin tự tắt. Không có nó thì lời báo nằm đè đáy màn hình cho tới khi khách bấm trúng
+  // đúng dải đó — mà không có gì nói cho khách biết là phải bấm. Bấm vào vẫn tắt được ngay.
+  useEffect(() => {
+    if (tin === null) return;
+    const hen = setTimeout(() => setTin(null), 4000);
+    return () => clearTimeout(hen);
+  }, [tin]);
+
   const luuCauHinh = useCallback(async (moi: CauHinhMayChu) => {
+    // Cố ý KHÔNG bắt lỗi ở đây: `ServerSettingsScreen` bắt và báo "không lưu được" ngay trên màn
+    // hình khách đang nhìn. Dải báo tin ở cuối tệp này KHÔNG vẽ ở màn hình đó, nên `setTin` sẽ
+    // rơi vào hư không.
     await cauHinhStore.luu(moi);
     // Đổi máy chủ thì token cũ vô nghĩa. Xoá hết thay vì để app gửi token của máy khác và nhận
     // 401 ở một chỗ ngẫu nhiên.
-    await Promise.all([tokenStore.xoa(), banStore.xoa(), orderTokenStore.xoaHet()]);
+    //
+    // `allSettled` chứ không `all`: địa chỉ ĐÃ ghi xong ở dòng trên. Để một lần xoá hỏng ném ra
+    // ngoài là báo "không lưu được" cho một việc đã lưu rồi — rồi mở lại app, khách thấy máy chủ
+    // mới, trái hẳn lời vừa báo. Token thừa nằm lại chỉ đổi lấy vài lần 401.
+    await Promise.allSettled([tokenStore.xoa(), banStore.xoa(), orderTokenStore.xoaHet()]);
     setDangNhap(null);
     setPhienBan(null);
     setCauHinh(moi);
@@ -163,15 +211,38 @@ function NoiDungApp() {
 
   const roiBan = useCallback(async () => {
     if (client === null) return;
-    await client.ban.roiBan();
-    // Token đơn của bàn cũ không dùng được nữa — không có lý do giữ.
-    await orderTokenStore.xoaHet();
+    try {
+      await client.ban.roiBan();
+    } catch {
+      // Xoá phiên bàn hỏng thì KHÔNG được dọn màn hình. Kho vẫn giữ phiên, nên mở lại app là
+      // khách ngồi lại đúng bàn vừa "rời" — một nút bấm xong tự hoàn tác là thứ không ai hiểu nổi.
+      //
+      // Bản cũ không bắt gì: `onRoiBan={() => void roiBan()}` nuốt lời hứa bị từ chối, nút Rời bàn
+      // đứng im, và không có câu nào nói vì sao.
+      setTin('Không rời bàn được. Thử lại.');
+      return;
+    }
+    // Token đơn của bàn cũ không dùng được nữa — không có lý do giữ. Nhưng phiên bàn đã xoá xong
+    // rồi: chặn khách rời bàn vì một việc dọn dẹp là đổi lỗi nhỏ lấy lỗi to.
+    try {
+      await orderTokenStore.xoaHet();
+    } catch {
+      // Token thừa của bàn cũ chỉ còn mở được quyền huỷ món trên những đơn của phiên đã đóng.
+    }
     setPhienBan(null);
   }, [client]);
 
   const dangXuat = useCallback(async () => {
     if (client === null) return;
-    await client.auth.dangXuat();
+    try {
+      await client.auth.dangXuat();
+    } catch {
+      // Cùng luật với `roiBan`, và ở đây là chuyện bảo mật chứ không chỉ chuyện khó hiểu: token
+      // còn nguyên trong Keystore. Dọn màn hình như thể đã đăng xuất sẽ cho khách tin là mình đã
+      // ra — rồi người cầm máy tiếp theo mở app và vào thẳng tài khoản đó.
+      setTin('Không đăng xuất được. Thử lại.');
+      return;
+    }
     setDangNhap(null);
     setSoDienThoai(null);
   }, [client]);
