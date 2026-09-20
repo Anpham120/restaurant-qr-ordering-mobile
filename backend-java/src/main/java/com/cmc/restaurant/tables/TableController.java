@@ -1,12 +1,14 @@
 package com.cmc.restaurant.tables;
 
 import com.cmc.restaurant.shared.ApiException;
+import com.cmc.restaurant.shared.ActorContext;
 import com.cmc.restaurant.tables.TableDtos.OpenTableSessionRequest;
 import com.cmc.restaurant.tables.TableDtos.OpenTableSessionResponse;
 import com.cmc.restaurant.tables.TableDtos.TableResponse;
 import com.cmc.restaurant.tables.TableDtos.TableSessionResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -101,10 +103,11 @@ public class TableController {
 	@PreAuthorize("hasAnyRole('CounterStaff', 'Staff', 'Admin')")
 	public TableSessionResponse closeTableSession(
 			@PathVariable String sessionId,
-			@RequestBody(required = false) TableDtos.CloseSessionRequest request) {
+			@RequestBody(required = false) TableDtos.CloseSessionRequest request,
+			Authentication authentication) {
 		boolean force = request != null && request.force();
 		String reason = request == null ? null : request.reason();
-		return sessionService.closeSession(sessionId, force, reason);
+		return sessionService.closeSession(sessionId, force, reason, ActorContext.fromAuthentication(authentication));
 	}
 
 	@GetMapping("/api/table-sessions/{sessionId}/invoice")

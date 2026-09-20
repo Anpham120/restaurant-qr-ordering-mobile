@@ -23,6 +23,7 @@ import com.cmc.restaurant.promotions.domain.Promotion;
 import com.cmc.restaurant.realtime.OrderRealtimeNotifier;
 import com.cmc.restaurant.realtime.RealtimeDtos;
 import com.cmc.restaurant.shared.ActorContext;
+import com.cmc.restaurant.audit.AuditLogService;
 import com.cmc.restaurant.shared.ApiException;
 import com.cmc.restaurant.shared.RequestIdempotency;
 import com.cmc.restaurant.payments.BankTransferReconciler;
@@ -76,6 +77,7 @@ public class TableInvoicePaymentService {
 	private final OrderService orderService;
 	private final OrderRealtimeNotifier realtimeNotifier;
 	private final TableInvoiceService invoiceReader;
+	private final AuditLogService auditLogService;
 
 	public TableInvoicePaymentService(
 			TableSessionRepository sessionRepository, TableInvoiceRepository invoiceRepository,
@@ -85,7 +87,8 @@ public class TableInvoicePaymentService {
 			com.cmc.restaurant.loyalty.LoyaltyRedemptionRepository phieuDoiDiem,
 			LoyaltyService loyaltyService, CounterService counterService,
 			OrderLookup orderLookup, OrderService orderService,
-			OrderRealtimeNotifier realtimeNotifier, TableInvoiceService invoiceReader) {
+			OrderRealtimeNotifier realtimeNotifier, TableInvoiceService invoiceReader,
+			AuditLogService auditLogService) {
 		this.sessionRepository = sessionRepository;
 		this.invoiceRepository = invoiceRepository;
 		this.tableRepository = tableRepository;
@@ -102,6 +105,7 @@ public class TableInvoicePaymentService {
 		this.orderService = orderService;
 		this.realtimeNotifier = realtimeNotifier;
 		this.invoiceReader = invoiceReader;
+		this.auditLogService = auditLogService;
 	}
 
 	// --- khách yêu cầu thanh toán ---------------------------------------------------------------
@@ -286,7 +290,16 @@ public class TableInvoicePaymentService {
 		}
 
 		loyaltyService.accrue(s.invoice().getCustomerPhoneNumber(), s.invoice().getTotalAmount(),
-				s.invoice().getInvoiceCode(), now);
+				s.invoice().getInvoiceCode(), now).ifPresent(accrual -> {
+			auditLogService.record(actor, "LOYALTY_ACCRUED", "TableSession", sessionId,
+					s.tableCode(), accrual.amount(), null, null, java.util.Map.of("invoiceCode", accrual.documentCode(),
+							"amount", accrual.amount(), "points", accrual.points()));
+			if (loyaltyService.actorOwnsPhone(actor, accrual.phoneNumber())) {
+				auditLogService.record(actor, "STAFF_SELF_LOYALTY_ACCRUAL", "TableSession", sessionId,
+						s.tableCode(), accrual.amount(), null, null, java.util.Map.of("invoiceCode", accrual.documentCode(),
+								"points", accrual.points(), "amount", accrual.amount()));
+			}
+		});
 		if (PaymentMethod.COD.name().equals(s.invoice().getMethod())) {
 			counterService.recordTableInvoiceCash(
 					s.invoice().getTotalAmount(), sessionId, s.invoice().getInvoiceCode(), actor.userId());
@@ -448,6 +461,9 @@ public class TableInvoicePaymentService {
 					"Payment was modified by another request. Reload and try again.");
 		}
 		transactionRepository.save(settlementTransaction(payment, "Refunded", note, now));
+		auditLogService.record(actor, "TABLE_INVOICE_REFUNDED", "TableSession", sessionId,
+				session.getTableCode(), invoice.getTotalAmount(), note, java.util.Map.of("invoiceStatus", "Confirmed"),
+				java.util.Map.of("invoiceStatus", "Refunded", "invoiceCode", invoice.getInvoiceCode()));
 
 		// Từ đây trở xuống là việc PHỤ TRỢ — tiền đã ghi xong, và không việc nào dưới đây được phép
 		// làm hỏng lệnh hoàn tiền. Cùng nguyên tắc mà chiều thu đã áp cho việc cộng điểm.

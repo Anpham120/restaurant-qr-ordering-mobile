@@ -5,6 +5,8 @@ import com.cmc.restaurant.auth.AuthenticatedPrincipal;
 import com.cmc.restaurant.auth.UserRole;
 import com.cmc.restaurant.auth.JwtProperties;
 import com.cmc.restaurant.shared.ApiException;
+import com.cmc.restaurant.shared.ActorContext;
+import com.cmc.restaurant.audit.AuditLogService;
 import com.cmc.restaurant.tables.TableDtos.OpenTableSessionRequest;
 import com.cmc.restaurant.tables.TableDtos.OpenTableSessionResponse;
 import java.time.Duration;
@@ -19,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -41,19 +44,29 @@ public class TableSessionService {
 	private final ResumeStateQueryService resumeStateQueryService;
 	private final TableSessionCapability capability;
 	private final JwtProperties jwtProperties;
+	private final AuditLogService auditLogService;
 	private final ConcurrentHashMap<String, ReentrantLock> sessionOpenGates = new ConcurrentHashMap<>();
 
+	public TableSessionService(
+			RestaurantTableRepository tableRepository, TableSessionRepository sessionRepository,
+			ResumeStateQueryService resumeStateQueryService, TableSessionCapability capability,
+			JwtProperties jwtProperties) {
+		this(tableRepository, sessionRepository, resumeStateQueryService, capability, jwtProperties, null);
+	}
+
+	@Autowired
 	public TableSessionService(
 			RestaurantTableRepository tableRepository,
 			TableSessionRepository sessionRepository,
 			ResumeStateQueryService resumeStateQueryService,
 			TableSessionCapability capability,
-			JwtProperties jwtProperties) {
+			JwtProperties jwtProperties, AuditLogService auditLogService) {
 		this.tableRepository = tableRepository;
 		this.sessionRepository = sessionRepository;
 		this.resumeStateQueryService = resumeStateQueryService;
 		this.capability = capability;
 		this.jwtProperties = jwtProperties;
+		this.auditLogService = auditLogService;
 	}
 
 	public OpenTableSessionResponse openOrResumeSession(OpenTableSessionRequest request) {
@@ -198,6 +211,11 @@ public class TableSessionService {
 	 * @param reason bắt buộc khi {@code force}; bỏ qua khi phiên không nợ gì
 	 */
 	public TableDtos.TableSessionResponse closeSession(String sessionId, boolean force, String reason) {
+		return closeSession(sessionId, force, reason, new ActorContext(null, "System"));
+	}
+
+	public TableDtos.TableSessionResponse closeSession(
+			String sessionId, boolean force, String reason, ActorContext actor) {
 		TableSessionEntity session = sessionRepository.findById(sessionId)
 				.orElseThrow(() -> ApiException.notFound("TABLE_SESSION_NOT_FOUND", "Table session was not found."));
 
@@ -209,6 +227,11 @@ public class TableSessionService {
 			session.setCloseReason(lyDo);
 			session.setUpdatedAt(now);
 			sessionRepository.save(session);
+			if (force && lyDo != null && auditLogService != null) {
+				auditLogService.record(actor, "TABLE_SESSION_FORCE_CLOSED", "TableSession", session.getId(),
+						session.getTableCode(), null, lyDo, java.util.Map.of("status", "Open"),
+						java.util.Map.of("status", "Closed", "tableCode", session.getTableCode()));
+			}
 		}
 		// Note: .NET also deletes chat sessions linked to this table session here
 		// (IChatStore.DeleteSessionsByTableSession) — no-op until the Chat module exists (#14).
