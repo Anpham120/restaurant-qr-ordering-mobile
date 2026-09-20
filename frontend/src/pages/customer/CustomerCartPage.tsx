@@ -4,7 +4,7 @@ import { localizeMenuItem } from "@cmc/i18n/menu";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, ReceiptText, ShoppingBasket } from "lucide-react";
 import { clearMenuCart, applyCartDelta, CART_UPDATED_EVENT, loadMenuCart, reconcileCartOnLoad } from "../../components/customer/customerMenuStorage";
-import { formatCartErrorMessage } from "../../services/cartService";
+import { cartApi, formatCartErrorMessage } from "../../services/cartService";
 import "../../components/customer/customer-menu.css";
 import "../../components/customer/customer-cart.css";
 import { fetchCustomerMenu, type CustomerMenuResponse } from "../../services/menuService";
@@ -35,6 +35,7 @@ function getCartItems(cart: MenuCart, items: MenuItem[]) {
 
 function buildOrderPayload(
   cart: MenuCart,
+  notes: Record<string, string>,
   selectedItems: MenuItem[],
   context: { tableCode: string; qrToken: string; sessionId: string; sessionToken: string },
 ): CreateOrderRequest {
@@ -46,6 +47,7 @@ function buildOrderPayload(
     items: selectedItems.map((item) => ({
       menuItemId: item.id,
       quantity: cart[item.id] ?? 0,
+      note: notes[item.id]?.trim() || null,
     })),
     promotionCode: null,
     customerPhoneNumber: null,
@@ -58,6 +60,7 @@ export function CustomerCartPage() {
   const { context: orderContext, refresh } = useOrderingSession();
   const [customerMenu, setCustomerMenu] = useState(initialMenu);
   const [cart, setCart] = useState<MenuCart>(getInitialCart);
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isSubmittingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -92,6 +95,13 @@ export function CustomerCartPage() {
       .then((nextCart) => {
         if (isMounted) {
           setCart(nextCart);
+          return cartApi.getCart(orderContext.sessionId);
+        }
+        return null;
+      })
+      .then((serverCart) => {
+        if (isMounted && serverCart) {
+          setNotes(Object.fromEntries(serverCart.items.map((item) => [item.menuItemId, item.note ?? ""])));
         }
       })
       .catch(() => undefined);
@@ -105,7 +115,7 @@ export function CustomerCartPage() {
       isMounted = false;
       window.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated);
     };
-  }, []);
+  }, [orderContext.sessionId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -170,6 +180,12 @@ export function CustomerCartPage() {
       .catch((error) => setErrorMessage(formatCartErrorMessage(error, t("Không cập nhật được giỏ hàng. Vui lòng thử lại."))));
   }
 
+  function updateNote(itemId: string, note: string) {
+    setNotes((current) => ({ ...current, [itemId]: note }));
+    void applyCartDelta(itemId, 0, note)
+      .catch((error) => setErrorMessage(formatCartErrorMessage(error, t("Không cập nhật được ghi chú món."))));
+  }
+
   async function submitOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmittingRef.current) return;
@@ -187,6 +203,7 @@ export function CustomerCartPage() {
 
     const payload = buildOrderPayload(
       cart,
+      notes,
       selectedItems,
       orderContext,
     );
@@ -277,6 +294,16 @@ export function CustomerCartPage() {
                       {formatMoney(item.price)} / {item.categoryName}
                     </span>
                     {!item.isAvailable ? <em>{t("Tạm hết, không thể đặt món này")}</em> : null}
+                    <label className="cmc-cart-note">
+                      {t("Ghi chú cho bếp")}
+                      <input
+                        aria-label={t("Ghi chú cho {item}", { item: item.name })}
+                        maxLength={500}
+                        onChange={(event) => updateNote(item.id, event.target.value)}
+                        placeholder={t("Ví dụ: ít cay, không hành")}
+                        value={notes[item.id] ?? ""}
+                      />
+                    </label>
                   </div>
                   <strong className="cmc-cart-line-total">
                     {formatMoney((cart[item.id] ?? 0) * item.price)}
