@@ -1,5 +1,7 @@
 import type {
   AdminCategory,
+  AuditLogListResponse,
+  SelfLoyaltyAccrualReport,
   AdminCategoryRequest,
   AdminTableListResponse,
   AdminTable,
@@ -300,6 +302,21 @@ export function createApiClient(options: ApiClientOptions = {}) {
         if (range.to) params.set("to", range.to);
         const query = params.toString();
         return request<ReportSummaryResponse>(`/admin/reports/summary${query ? `?${query}` : ""}`);
+      },
+    },
+    auditLog: {
+      list: (filters: { from?: string; to?: string; actorUserId?: string; tableCode?: string; action?: string } = {}) => {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); });
+        const query = params.toString();
+        return request<AuditLogListResponse>(`/audit-log${query ? `?${query}` : ""}`);
+      },
+      selfLoyaltyReport: (range: { from?: string; to?: string } = {}) => {
+        const params = new URLSearchParams();
+        if (range.from) params.set("from", range.from);
+        if (range.to) params.set("to", range.to);
+        const query = params.toString();
+        return request<SelfLoyaltyAccrualReport[]>(`/audit-log/self-loyalty-report${query ? `?${query}` : ""}`);
       },
     },
   };

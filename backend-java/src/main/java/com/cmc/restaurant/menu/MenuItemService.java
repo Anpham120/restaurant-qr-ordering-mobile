@@ -2,6 +2,8 @@ package com.cmc.restaurant.menu;
 
 import com.cmc.restaurant.menu.MenuDtos.MenuItemRequest;
 import com.cmc.restaurant.shared.ApiException;
+import com.cmc.restaurant.shared.ActorContext;
+import com.cmc.restaurant.audit.AuditLogService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
@@ -10,6 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Mirrors the admin CRUD half of {@code RestaurantQrAiOrdering.Api.Menu.MenuEndpoints} (.NET). */
@@ -24,15 +27,25 @@ public class MenuItemService {
 
 	private final MenuItemServingPeriodRepository ganCaRepository;
 	private final ServingPeriodRepository servingPeriodRepository;
+	private final AuditLogService auditLogService;
 
 	public MenuItemService(
 			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository,
 			MenuItemServingPeriodRepository ganCaRepository,
 			ServingPeriodRepository servingPeriodRepository) {
+		this(menuItemRepository, categoryRepository, ganCaRepository, servingPeriodRepository, null);
+	}
+
+	@Autowired
+	public MenuItemService(
+			MenuItemRepository menuItemRepository, CategoryRepository categoryRepository,
+			MenuItemServingPeriodRepository ganCaRepository,
+			ServingPeriodRepository servingPeriodRepository, AuditLogService auditLogService) {
 		this.menuItemRepository = menuItemRepository;
 		this.categoryRepository = categoryRepository;
 		this.ganCaRepository = ganCaRepository;
 		this.servingPeriodRepository = servingPeriodRepository;
+		this.auditLogService = auditLogService;
 	}
 
 	public MenuItemEntity create(MenuItemRequest request) {
@@ -56,10 +69,15 @@ public class MenuItemService {
 	}
 
 	public MenuItemEntity update(String menuItemId, MenuItemRequest request) {
+		return update(menuItemId, request, new ActorContext(null, "System"));
+	}
+
+	public MenuItemEntity update(String menuItemId, MenuItemRequest request, ActorContext actor) {
 		validate(request);
 
 		MenuItemEntity item = menuItemRepository.findById(menuItemId)
 				.orElseThrow(() -> ApiException.notFound("MENU_ITEM_NOT_FOUND", "Menu item was not found."));
+		BigDecimal previousPrice = item.getPrice();
 
 		item.setCategoryId(request.categoryId().trim());
 		item.setName(request.name().trim());
@@ -86,7 +104,13 @@ public class MenuItemService {
 		}
 		item.setUpdatedAt(OffsetDateTime.now());
 
-		return menuItemRepository.save(item);
+		MenuItemEntity saved = menuItemRepository.save(item);
+		if (auditLogService != null && previousPrice.compareTo(saved.getPrice()) != 0) {
+			auditLogService.record(actor, "MENU_ITEM_PRICE_CHANGED", "MenuItem", saved.getId(),
+					null, saved.getPrice().subtract(previousPrice), null,
+					java.util.Map.of("price", previousPrice), java.util.Map.of("price", saved.getPrice()));
+		}
+		return saved;
 	}
 
 	public MenuItemEntity toggleAvailability(String menuItemId, boolean available) {

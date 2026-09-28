@@ -2,7 +2,7 @@ package com.cmc.restaurant.loyalty;
 
 import com.cmc.restaurant.auth.UserEntity;
 import com.cmc.restaurant.auth.UserRepository;
-import com.cmc.restaurant.auth.UserRole;
+import com.cmc.restaurant.shared.ActorContext;
 import com.cmc.restaurant.loyalty.domain.LoyaltyMember;
 import com.cmc.restaurant.loyalty.domain.MemberTier;
 import com.cmc.restaurant.loyalty.domain.PhoneNumber;
@@ -48,21 +48,19 @@ public class LoyaltyService {
 	 * tên tài khoản là xoá công của họ mà không ai yêu cầu.
 	 */
 	@Transactional
-	/**
-	 * Số này có thuộc một tài khoản nhân sự không.
-	 *
-	 * <p>Người đứng quầy gõ số điện thoại hộ khách, và không có gì ngăn họ gõ số của chính mình.
-	 * Mỗi hoá đơn của khách lạ sẽ chảy vào hồ sơ điểm của nhân viên đó, và vì hạng xét theo chi
-	 * tiêu 12 tháng nên nó còn tự lên hạng. Đây không phải chuyện giả định — đó là con đường dễ
-	 * nhất và không để lại dấu vết nào trong hệ thống.
-	 *
-	 * <p>Chặn ở tầng tích điểm chứ không ở màn hình: màn hình nào cũng có thể quên, còn đường ghi
-	 * điểm thì chỉ có một.
-	 */
-	private boolean laSoCuaNhanVien(String phone) {
-		return users.findByPhoneNumber(phone)
-				.map(UserEntity::getRole)
-				.filter(vaiTro -> !UserRole.CUSTOMER.equals(vaiTro))
+	/** Result of one actual point accrual, including the exact tier-adjusted points awarded. */
+	public record AccrualResult(String phoneNumber, int points, BigDecimal amount, String documentCode) {
+	}
+
+	/** True only when the authenticated operator owns the phone typed at the counter. */
+	public boolean actorOwnsPhone(ActorContext actor, String normalizedPhone) {
+		if (actor == null || actor.userId() == null || normalizedPhone == null) {
+			return false;
+		}
+		return users.findById(actor.userId())
+				.map(UserEntity::getPhoneNumber)
+				.map(PhoneNumber::normalize)
+				.filter(normalizedPhone::equals)
 				.isPresent();
 	}
 
@@ -93,16 +91,12 @@ public class LoyaltyService {
 	 * matches .NET: the customer types their phone at checkout, and that is the whole enrolment.
 	 */
 	@Transactional
-	public Optional<LoyaltyMember> accrue(
+	public Optional<AccrualResult> accrue(
 			String phoneNumber, BigDecimal totalAmount, String maChungTu, OffsetDateTime now) {
 		String phone = PhoneNumber.normalize(phoneNumber);
 		if (phone == null || LoyaltyMember.pointsFor(totalAmount) <= 0) {
 			return Optional.empty();
 		}
-		if (laSoCuaNhanVien(phone)) {
-			return Optional.empty();
-		}
-
 		LoyaltyMemberEntity entity = members.findByPhoneNumber(phone)
 				.orElseGet(() -> members.save(new LoyaltyMemberEntity(
 						"loy_" + UUID.randomUUID().toString().replace("-", ""), phone, now)));
@@ -131,7 +125,7 @@ public class LoyaltyService {
 		// Hồ sơ vừa có thể mới sinh ra ở dòng trên. Điền tên ngay nếu số này đã thuộc một tài
 		// khoản — nếu đợi tới lúc nào đó khác thì không có "lúc nào đó" nào cả.
 		datTenNeuThieu(phone);
-		return Optional.of(member);
+		return Optional.of(new AccrualResult(phone, diemVuaTich, totalAmount, maChungTu));
 	}
 
 	/**

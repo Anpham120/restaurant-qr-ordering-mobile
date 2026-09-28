@@ -4,12 +4,14 @@ import com.cmc.restaurant.menu.MenuDtos.MenuItemRequest;
 import com.cmc.restaurant.menu.MenuDtos.AdminMenuItemResponse;
 import com.cmc.restaurant.menu.MenuDtos.ToggleAvailabilityRequest;
 import com.cmc.restaurant.shared.ApiException;
+import com.cmc.restaurant.shared.ActorContext;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -99,8 +101,9 @@ public class AdminMenuItemController {
 	}
 
 	@PutMapping("/{menuItemId}")
-	public AdminMenuItemResponse update(@PathVariable String menuItemId, @RequestBody MenuItemRequest request) {
-		return toResponse(menuItemService.update(menuItemId, request));
+	public AdminMenuItemResponse update(
+			@PathVariable String menuItemId, @RequestBody MenuItemRequest request, Authentication authentication) {
+		return toResponse(menuItemService.update(menuItemId, request, ActorContext.fromAuthentication(authentication)));
 	}
 
 	@PatchMapping("/{menuItemId}/availability")

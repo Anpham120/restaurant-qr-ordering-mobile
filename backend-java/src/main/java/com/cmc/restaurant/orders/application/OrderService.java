@@ -6,6 +6,7 @@ import com.cmc.restaurant.menu.MenuItemRepository;
 import com.cmc.restaurant.menu.MenuItemServingPeriodRepository;
 import com.cmc.restaurant.menu.ServingPeriodRepository;
 import com.cmc.restaurant.shared.ActorContext;
+import com.cmc.restaurant.audit.AuditLogService;
 import com.cmc.restaurant.orders.adapter.out.persistence.OrderEntity;
 import com.cmc.restaurant.orders.adapter.out.persistence.OrderItemEntity;
 import com.cmc.restaurant.orders.adapter.out.persistence.OrderItemRepository;
@@ -43,6 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,9 +73,26 @@ public class OrderService {
 	private final OrderPersistenceAdapter persistence;
 	private final com.cmc.restaurant.cart.CartService cartService;
 	private final com.cmc.restaurant.promotions.PromotionService promotionService;
+	private final AuditLogService auditLogService;
 
 	private final org.springframework.context.ApplicationEventPublisher suKien;
 
+	public OrderService(
+			OrderRepository orderRepository, OrderItemRepository orderItemRepository,
+			OrderStatusHistoryRepository orderStatusHistoryRepository, PaymentRepository paymentRepository,
+			MenuItemRepository menuItemRepository, RestaurantTableRepository tableRepository,
+			ServingPeriodRepository caRepository, MenuItemServingPeriodRepository ganCaRepository,
+			TableSessionRepository tableSessionRepository, OrderItemEstimationService estimationService,
+			OrderRealtimeNotifier realtimeNotifier, OrderPersistenceAdapter persistence,
+			com.cmc.restaurant.cart.CartService cartService,
+			com.cmc.restaurant.promotions.PromotionService promotionService,
+			org.springframework.context.ApplicationEventPublisher suKien) {
+		this(orderRepository, orderItemRepository, orderStatusHistoryRepository, paymentRepository,
+				menuItemRepository, tableRepository, caRepository, ganCaRepository, tableSessionRepository,
+				estimationService, realtimeNotifier, persistence, cartService, promotionService, suKien, null);
+	}
+
+	@Autowired
 	public OrderService(
 			OrderRepository orderRepository, OrderItemRepository orderItemRepository,
 			OrderStatusHistoryRepository orderStatusHistoryRepository, PaymentRepository paymentRepository,
@@ -84,10 +103,11 @@ public class OrderService {
 			OrderItemEstimationService estimationService, OrderRealtimeNotifier realtimeNotifier,
 			OrderPersistenceAdapter persistence, com.cmc.restaurant.cart.CartService cartService,
 			com.cmc.restaurant.promotions.PromotionService promotionService,
-			org.springframework.context.ApplicationEventPublisher suKien) {
+			org.springframework.context.ApplicationEventPublisher suKien, AuditLogService auditLogService) {
 		this.suKien = suKien;
 		this.cartService = cartService;
 		this.promotionService = promotionService;
+		this.auditLogService = auditLogService;
 		this.realtimeNotifier = realtimeNotifier;
 		this.persistence = persistence;
 		this.orderRepository = orderRepository;
@@ -244,6 +264,13 @@ public class OrderService {
 		// One save. Cascade writes the lines and the first history row in the same unit of work,
 		// so there is no window where an order exists without its items.
 		orderRepository.save(order);
+		if (auditLogService != null && order.getPromotionCode() != null) {
+			auditLogService.record(actor, "ORDER_PROMOTION_APPLIED", "TableSession", session.getId(),
+					session.getTableCode(), order.getDiscountAmount(), null,
+					java.util.Map.of("subtotal", orderSubtotal),
+					java.util.Map.of("promotionCode", order.getPromotionCode(),
+							"discountAmount", order.getDiscountAmount(), "total", order.getTotalAmount()));
+		}
 
 		PaymentEntity payment = new PaymentEntity("pay_" + UUID.randomUUID().toString().replace("-", ""), orderId, now);
 		payment.setAmount(order.getTotalAmount());
@@ -424,6 +451,13 @@ public class OrderService {
 		OrderStatus previousOrderStatus = order.status();
 		OrderItem item = order.updateItemStatus(orderItemId, status, actor.toDomain(), now);
 		persistence.save(order);
+		if (auditLogService != null && status == OrderItemStatus.Cancelled) {
+			auditLogService.record(actor, "ORDER_ITEM_CANCELLED", "TableSession", order.tableSessionId(),
+					order.tableCode(), item.lineTotal(), null,
+					Map.of("orderCode", order.orderCode(), "itemId", item.id(), "status", item.cancelledFromStatus().name()),
+					Map.of("orderCode", order.orderCode(), "itemId", item.id(), "status", item.status().name(),
+							"amount", item.lineTotal()));
+		}
 
 		publishItemStatusChanged(order, item, previousOrderStatus);
 		return toResponse(reload(order.orderCode()));

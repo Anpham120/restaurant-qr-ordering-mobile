@@ -27,6 +27,7 @@ import { AdminUserManagementPage } from "../../../src/pages/admin/AdminUserManag
 import { AdminPromotionsPage } from "../../../src/pages/admin/AdminPromotionsPage";
 import { AdminLoyaltyPage } from "../../../src/pages/admin/AdminLoyaltyPage";
 import { AdminReportsPage } from "../../../src/pages/admin/AdminReportsPage";
+import { AdminAuditLogPage } from "../../../src/pages/admin/AdminAuditLogPage";
 import { KitchenPage } from "../../../src/pages/KitchenPage";
 import { CounterHubPage } from "../../../src/pages/counter/CounterHubPage";
 import { OpsNavBadgesProvider, useOpsNavBadges } from "../../../src/components/operations/OpsNavBadgesProvider";
@@ -48,6 +49,7 @@ import {
   BadgePercent,
   Star,
   BarChart3,
+  ScrollText,
   Armchair,
 } from "lucide-react";
 
@@ -67,6 +69,7 @@ const BASE_ADMIN_LINKS: PortalLink[] = [
   { to: "/promotions", label: "Khuyến mãi", icon: <BadgePercent size={18} />, section: "Khách hàng" },
   { to: "/loyalty", label: "Tích điểm", icon: <Star size={18} />, section: "Khách hàng" },
   { to: "/reports", label: "Báo cáo", icon: <BarChart3 size={18} />, section: "Hệ thống" },
+  { to: "/audit-log", label: "Nhật ký thao tác", icon: <ScrollText size={18} />, section: "Hệ thống" },
   { to: "/users", label: "Người dùng", icon: <Users size={18} />, section: "Hệ thống" },
 ];
 
@@ -170,6 +173,7 @@ const router = createBrowserRouter([
       { path: "promotions", element: <ProtectedRoute allowedRoles={["Admin"]}><AdminPromotionsPage /></ProtectedRoute> },
       { path: "loyalty", element: <ProtectedRoute allowedRoles={["Admin"]}><AdminLoyaltyPage /></ProtectedRoute> },
       { path: "reports", element: <ProtectedRoute allowedRoles={["Admin"]}><AdminReportsPage /></ProtectedRoute> },
+      { path: "audit-log", element: <ProtectedRoute allowedRoles={["Admin"]}><AdminAuditLogPage /></ProtectedRoute> },
       { path: "access", element: <Navigate to="/users" replace /> },
       { path: "sessions", element: <Navigate to="/tables?tab=sessions" replace /> },
       { path: "tables/:tableCode/orders", element: <ProtectedRoute allowedRoles={["Admin", "CounterStaff", "Staff"]}><TableOrdersPage /></ProtectedRoute> },

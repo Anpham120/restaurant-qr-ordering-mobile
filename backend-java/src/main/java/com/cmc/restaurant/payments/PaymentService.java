@@ -1,6 +1,7 @@
 package com.cmc.restaurant.payments;
 
 import com.cmc.restaurant.shared.ActorContext;
+import com.cmc.restaurant.audit.AuditLogService;
 import com.cmc.restaurant.shared.RequestIdempotency;
 import com.cmc.restaurant.orders.application.OrderLookup;
 import com.cmc.restaurant.orders.application.OrderService;
@@ -36,13 +37,15 @@ public class PaymentService {
 	private final VietQrProvider vietQrProvider;
 	private final OrderRealtimeNotifier realtimeNotifier;
 	private final com.cmc.restaurant.loyalty.LoyaltyService loyaltyService;
+	private final AuditLogService auditLogService;
 
 	public PaymentService(
 			PaymentRepository paymentRepository, PaymentTransactionRepository transactionRepository,
 			OrderLookup orderLookup, OrderService orderService, VietQrProvider vietQrProvider,
 			OrderRealtimeNotifier realtimeNotifier,
-			com.cmc.restaurant.loyalty.LoyaltyService loyaltyService) {
+			com.cmc.restaurant.loyalty.LoyaltyService loyaltyService, AuditLogService auditLogService) {
 		this.loyaltyService = loyaltyService;
+		this.auditLogService = auditLogService;
 		this.paymentRepository = paymentRepository;
 		this.transactionRepository = transactionRepository;
 		this.orderLookup = orderLookup;
@@ -185,7 +188,7 @@ public class PaymentService {
 		PaymentDtos.PaymentResponse response = applyManualAction(
 				orderCode, request == null ? null : request.note(), "Manual staff confirmation.", actor,
 				(payment, now) -> payment.confirmManually(providerTransactionId, now));
-		accrueLoyalty(orderCode, response.amount());
+		accrueLoyalty(orderCode, response.amount(), actor);
 		return response;
 	}
 
@@ -204,6 +207,10 @@ public class PaymentService {
 				orderCode, request == null ? null : request.note(), "Manual payment refund.", actor,
 				(payment, now) -> payment.refund(now));
 		daoDiemDaTich(orderCode);
+		orderLookup.findByOrderCode(orderCode).ifPresent(order -> auditLogService.record(actor,
+				"ORDER_PAYMENT_REFUNDED", "Order", order.id(), order.tableCode(), ketQua.amount(),
+				request == null ? null : request.note(), java.util.Map.of("paymentStatus", "Paid"),
+				java.util.Map.of("paymentStatus", "Refunded", "orderCode", order.orderCode())));
 		return ketQua;
 	}
 
@@ -235,11 +242,23 @@ public class PaymentService {
 	 * never in a way that can fail the payment: a customer who paid must not see an error because a
 	 * points row could not be written, and points can always be added later by hand.
 	 */
-	private void accrueLoyalty(String orderCode, java.math.BigDecimal amount) {
+	private void accrueLoyalty(String orderCode, java.math.BigDecimal amount, ActorContext actor) {
 		try {
 			orderLookup.findByOrderCode(orderCode)
-					.map(OrderLookup.OrderSummary::customerPhoneNumber)
-					.ifPresent(phone -> loyaltyService.accrue(phone, amount, orderCode, OffsetDateTime.now()));
+					.ifPresent(order -> {
+						if (order.customerPhoneNumber() == null) return;
+						loyaltyService.accrue(order.customerPhoneNumber(), amount, orderCode, OffsetDateTime.now())
+								.ifPresent(accrual -> {
+									auditLogService.record(actor, "LOYALTY_ACCRUED", "Order", order.id(), order.tableCode(), amount, null,
+											null, java.util.Map.of("orderCode", order.orderCode(), "amount", amount,
+													"points", accrual.points()));
+									if (loyaltyService.actorOwnsPhone(actor, accrual.phoneNumber())) {
+										auditLogService.record(actor, "STAFF_SELF_LOYALTY_ACCRUAL", "Order", order.id(),
+													order.tableCode(), amount, null, null, java.util.Map.of("orderCode", order.orderCode(),
+														"points", accrual.points(), "amount", amount));
+									}
+								});
+					});
 		} catch (RuntimeException e) {
 			org.slf4j.LoggerFactory.getLogger(PaymentService.class)
 					.warn("Loyalty accrual failed for {}; payment stands.", orderCode, e);
