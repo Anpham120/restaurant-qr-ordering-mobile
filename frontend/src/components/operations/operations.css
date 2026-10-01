@@ -154,6 +154,19 @@
   border-color: var(--ops-focus);
 }
 
+.kitchen-item-note {
+  font-weight: 700;
+  color: var(--ops-warn);
+  font-style: italic;
+}
+
+.ops-item-note {
+  font-size: var(--ops-text-xs);
+  font-weight: 600;
+  color: var(--ops-warn);
+  margin-top: 2px;
+}
+
 /* ---- Hành động chính ----------------------------------------------------
    Một nút, rộng hết thẻ, 56px — ở mọi bậc. Người trực bếp bấm nó bằng ngón tay
    dính dầu mỡ, thường là không nhìn kỹ. */

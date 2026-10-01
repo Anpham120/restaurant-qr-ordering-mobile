@@ -56,6 +56,11 @@ describe('dấu vết giỏ để đổi khoá idempotency', () => {
     expect(dauVetGio(gio([mon('m1', 1)]))).not.toBe(dauVetGio(gio([mon('m2', 1)])));
   });
 
+  it('đổi ghi chú thì đổi dấu vết', () => {
+    const coGhiChu = { ...mon('m1', 1), note: 'ít đá' };
+    expect(dauVetGio(gio([coGhiChu]))).not.toBe(dauVetGio(gio([mon('m1', 1)])));
+  });
+
   it('GIÁ đổi thì dấu vết KHÔNG đổi', () => {
     // Giá không đi vào thân request tạo đơn, nên giá đổi không làm đơn thành đơn khác. Tính giá
     // vào dấu vết sẽ khiến mỗi lần quán sửa giá là vô hiệu hoá khoá đang chờ gửi lại — tức biến

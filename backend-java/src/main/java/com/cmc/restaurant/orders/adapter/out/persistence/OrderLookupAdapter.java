@@ -67,7 +67,7 @@ public class OrderLookupAdapter implements OrderLookup {
 				.findBillableByTableSession(tableSessionId, OrderStatus.Cancelled, OrderItemStatus.Cancelled)
 				.stream()
 				.map(i -> new BillableItem(
-						i.getMenuItemId(), i.getMenuItemName(), i.getUnitPrice(), i.getQuantity()))
+						i.getMenuItemId(), i.getMenuItemName(), i.getUnitPrice(), i.getQuantity(), i.getNote()))
 				.toList();
 	}
 

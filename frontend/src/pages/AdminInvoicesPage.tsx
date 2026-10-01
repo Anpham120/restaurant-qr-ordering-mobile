@@ -146,7 +146,16 @@ export function AdminInvoicesPanel({ embedded = false }: { embedded?: boolean })
               <div className="ops-card-meta ops-card-meta--spaced"><span className="ops-card-table">Bàn {detail.tableCode}</span><span className={`ops-badge ops-badge--${detail.status.toLowerCase()}`}>{labelPaymentChip(detail.method, detail.status)}</span></div>
               <p>{detail.orderRounds.length} lần gọi món trong phiên</p>
               <div className="ops-item-list">
-                {detail.items.map((item) => <div className="ops-item-row" key={item.menuItemId}><div className="ops-item-info"><div className="ops-item-name">{item.quantity}× {item.name}</div><span className="ops-item-qty">{formatVnd(item.unitPrice)} × {item.quantity}</span></div><strong>{formatVnd(item.lineTotal)}</strong></div>)}
+                {detail.items.map((item, index) => (
+                  <div className="ops-item-row" key={`${item.menuItemId}-${item.note ?? ""}-${index}`}>
+                    <div className="ops-item-info">
+                      <div className="ops-item-name">{item.quantity}× {item.name}</div>
+                      {item.note ? <div className="ops-item-note">Ghi chú: {item.note}</div> : null}
+                      <span className="ops-item-qty">{formatVnd(item.unitPrice)} × {item.quantity}</span>
+                    </div>
+                    <strong>{formatVnd(item.lineTotal)}</strong>
+                  </div>
+                ))}
               </div>
               <div className="ops-inset">
                 <div>Tạm tính: <strong>{formatVnd(detail.subtotalAmount)}</strong></div>

@@ -36,7 +36,10 @@ public interface OrderLookup {
 	}
 
 	/** Món tính tiền được của phiên bàn (V19). Đã loại món huỷ và món thuộc đơn huỷ. */
-	record BillableItem(String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity) {
+	record BillableItem(String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity, String note) {
+		public BillableItem(String menuItemId, String menuItemName, BigDecimal unitPrice, int quantity) {
+			this(menuItemId, menuItemName, unitPrice, quantity, null);
+		}
 	}
 
 	Optional<OrderSummary> findByOrderCode(String orderCode);

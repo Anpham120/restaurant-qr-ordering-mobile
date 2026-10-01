@@ -58,7 +58,11 @@ export class HttpCreateOrderApi implements CreateOrderApi {
       // là không đủ, dù nó đã xác định đúng một cái bàn.
       tableCode: phienBan.tableCode,
       qrToken: phienBan.qrToken,
-      items: gio.items.map((i) => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
+      items: gio.items.map((i) => ({
+        menuItemId: i.menuItemId,
+        quantity: i.quantity,
+        note: i.note,
+      })),
     };
     // TỰ ĐIỀN SỐ ĐIỆN THOẠI — §9.7 gọi đây là tính năng lõi của app, không phải điểm thưởng.
     // Khách gõ tay dễ sai, không kiểm định dạng, không tra trùng; app đã có số đã liên kết nên bỏ

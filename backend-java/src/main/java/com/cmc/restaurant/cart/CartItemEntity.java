@@ -64,6 +64,10 @@ public class CartItemEntity {
 		return note;
 	}
 
+	public void setNote(String note) {
+		this.note = note;
+	}
+
 	public OffsetDateTime getUpdatedAt() {
 		return updatedAt;
 	}

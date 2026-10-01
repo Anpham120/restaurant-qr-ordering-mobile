@@ -138,8 +138,14 @@ export function TableInvoicePaymentModal({ invoice, onClose, onRequest }: Props)
           <section className="table-invoice-receipt" aria-label={t("Tóm tắt hóa đơn")}>
             <div className="table-invoice-receipt-title"><ReceiptText aria-hidden="true" size={20} /><strong>{t("{count} lần gọi món", { count: invoice.orderRounds.length })}</strong></div>
             <ul>
-              {invoice.items.map((item) => (
-                <li key={item.menuItemId}><span>{item.quantity}× {localizeMenuItemName(item.menuItemId, item.name, locale)}</span><strong data-money>{formatMoney(item.lineTotal)}</strong></li>
+              {invoice.items.map((item, index) => (
+                <li key={`${item.menuItemId}-${item.note ?? ""}-${index}`}>
+                  <div>
+                    <span>{item.quantity}× {localizeMenuItemName(item.menuItemId, item.name, locale)}</span>
+                    {item.note ? <div className="table-invoice-item-note">({item.note})</div> : null}
+                  </div>
+                  <strong data-money>{formatMoney(item.lineTotal)}</strong>
+                </li>
               ))}
             </ul>
             <div className="table-invoice-total-row"><span>{t("Tạm tính")}</span><strong data-money>{formatMoney(invoice.subtotalAmount)}</strong></div>

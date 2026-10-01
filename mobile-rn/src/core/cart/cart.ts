@@ -70,7 +70,7 @@ export function coMonHetHang(cart: Cart): boolean {
  */
 export function dauVetGio(cart: Cart): string {
   return cart.items
-    .map((i) => `${i.menuItemId}:${i.quantity}`)
+    .map((i) => `${i.menuItemId}:${i.quantity}:${i.note ?? ''}`)
     .sort()
     .join(',');
 }

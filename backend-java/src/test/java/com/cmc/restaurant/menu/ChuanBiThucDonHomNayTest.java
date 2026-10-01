@@ -44,10 +44,12 @@ class ChuanBiThucDonHomNayTest {
 		when(monAn.save(any(MenuItemEntity.class))).thenAnswer(call -> call.getArgument(0));
 		when(ganCa.findByMenuItemId(any())).thenReturn(List.of());
 		when(caRepo.findAll()).thenReturn(List.of(
+				new ServingPeriodEntity("sp_sang", "Sáng", LocalTime.parse("06:00"),
+						LocalTime.parse("10:00"), 1, OffsetDateTime.now()),
 				new ServingPeriodEntity("sp_trua", "Trưa", LocalTime.parse("10:00"),
-						LocalTime.parse("14:00"), 1, OffsetDateTime.now()),
+						LocalTime.parse("14:00"), 2, OffsetDateTime.now()),
 				new ServingPeriodEntity("sp_toi", "Tối", LocalTime.parse("18:00"),
-						LocalTime.parse("22:00"), 2, OffsetDateTime.now())));
+						LocalTime.parse("22:00"), 3, OffsetDateTime.now())));
 	}
 
 	/** Không đụng tới ca phục vụ — `null` ở trường đó nghĩa là giữ nguyên. */

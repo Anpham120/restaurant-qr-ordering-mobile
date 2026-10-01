@@ -75,13 +75,17 @@ public class TableInvoiceService {
 
 		Map<String, LineResponse> grouped = new LinkedHashMap<>();
 		for (OrderLookup.BillableItem row : itemRows) {
-			String key = row.menuItemId() + "|" + row.menuItemName() + "|" + row.unitPrice();
+			String note = (row.note() == null || row.note().isBlank()) ? null : row.note().trim();
+			String key = row.menuItemId() + "|" + row.menuItemName() + "|" + row.unitPrice() + "|" + (note == null ? "" : note);
 			LineResponse existing = grouped.get(key);
 			int quantity = row.quantity() + (existing == null ? 0 : existing.quantity());
 			BigDecimal lineTotal = row.unitPrice().multiply(BigDecimal.valueOf(quantity));
-			grouped.put(key, new LineResponse(row.menuItemId(), row.menuItemName(), row.unitPrice(), quantity, lineTotal));
+			grouped.put(key, new LineResponse(row.menuItemId(), row.menuItemName(), row.unitPrice(), quantity, lineTotal, note));
 		}
-		List<LineResponse> items = grouped.values().stream().sorted((a, b) -> a.name().compareTo(b.name())).toList();
+		List<LineResponse> items = grouped.values().stream()
+				.sorted(java.util.Comparator.comparing(LineResponse::name)
+						.thenComparing(r -> r.note() == null ? "" : r.note()))
+				.toList();
 
 		BigDecimal subtotal = items.stream().map(LineResponse::lineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
 

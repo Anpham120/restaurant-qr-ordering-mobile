@@ -335,8 +335,10 @@ export function moTaChipMon(
   soLuong: number,
   ten: string,
   status: OrderItemStatus,
+  note?: string | null,
 ): string {
   const nut = itemActionLabel(status);
-  const goc = `${soLuong}× ${ten} — ${labelKitchenItemStatus(status)}`;
+  const ghiChu = note ? ` (${note})` : "";
+  const goc = `${soLuong}× ${ten}${ghiChu} — ${labelKitchenItemStatus(status)}`;
   return nut ? `${goc}. Chạm để ${nut.toLowerCase()}` : goc;
 }

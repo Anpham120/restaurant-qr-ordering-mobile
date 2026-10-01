@@ -87,6 +87,7 @@ public class CartService {
 			row.ifPresent(cartItemRepository::delete);
 		} else if (row.isPresent()) {
 			row.get().setQuantity(result.get().quantity());
+			row.get().setNote(result.get().note());
 			row.get().setUpdatedAt(now);
 			cartItemRepository.save(row.get());
 		} else {
@@ -103,6 +104,13 @@ public class CartService {
 		requireSession(tableSessionId, suppliedToken);
 		cartItemRepository.deleteByTableSessionId(tableSessionId);
 		return toResponse(tableSessionId, List.of());
+	}
+
+	/** Trả về bảng ánh xạ mã món -> ghi chú của các món đang có trong giỏ hàng. */
+	public Map<String, String> notesOf(String tableSessionId) {
+		return cartItemRepository.findByTableSessionId(tableSessionId).stream()
+				.filter(i -> i.getNote() != null && !i.getNote().isBlank())
+				.collect(Collectors.toMap(CartItemEntity::getMenuItemId, CartItemEntity::getNote, (a, b) -> a));
 	}
 
 	/** Called by Orders once a cart has become an order — replaces the raw {@code DELETE} statement

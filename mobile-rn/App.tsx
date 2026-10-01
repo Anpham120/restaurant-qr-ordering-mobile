@@ -12,7 +12,7 @@ import { AuthRepository } from './src/core/auth/authRepository';
 import { type AuthSession } from './src/core/auth/authSession';
 import { SecureTokenStore } from './src/core/auth/tokenStore';
 import { HttpCartApi } from './src/core/cart/cartApi';
-import { type CauHinhMayChu } from './src/core/cauHinh/cauHinh';
+import { type CauHinhMayChu, cauHinhMacDinh } from './src/core/cauHinh/cauHinh';
 import { CauHinhStore } from './src/core/cauHinh/cauHinhStore';
 import { dongBoTaiKhoan } from './src/core/loyalty/dongBoTaiKhoan';
 import { HttpLoyaltyApi } from './src/core/loyalty/loyaltyApi';
@@ -123,7 +123,12 @@ function NoiDungApp() {
   useEffect(() => {
     let huy = false;
     void (async () => {
-      const ch = await cauHinhStore.doc();
+      // Chưa lưu gì thì dùng địa chỉ NƯỚNG SẴN vào bản dựng.
+      //
+      // Khách tải app về không biết địa chỉ máy chủ và không nên biết. Một màn hỏi địa chỉ ngay
+      // khi mở app lần đầu là dấu hiệu của bản demo. Bản dựng không khai biến thì `cauHinhMacDinh`
+      // trả `null` và app quay về hỏi như cũ — đúng cho bản chạy thử trên máy ảo hay mạng LAN.
+      const ch = (await cauHinhStore.doc()) ?? cauHinhMacDinh();
       if (huy) return;
       setCauHinh(ch);
       setDangKhoiPhuc(false);
@@ -264,6 +269,34 @@ function NoiDungApp() {
 
   // KHÔNG bắt đăng nhập trước khi vào bàn. Khách vãng lai phải dùng được app đúng như web; đăng
   // nhập chỉ đổi lấy việc đơn được gắn tài khoản (§9.4).
+  // APP MOBILE BẮT BUỘC ĐĂNG NHẬP. Đây là ranh giới giữa hai sản phẩm, không phải một rào chắn
+  // tuỳ tiện.
+  //
+  // Khách vãng lai quét mã QR trên bàn thì vào WEB — không cần tài khoản, không lưu danh tính,
+  // và đó là đường đúng cho người chỉ ghé một lần.
+  //
+  // Ai TẢI APP về là đã chủ động muốn có tài khoản, và đó chính là lý do app tồn tại: xác minh
+  // được danh tính nên mới xem điểm và đổi điểm được. Một khách vãng lai trên app là một khách
+  // đang dùng bản nặng hơn của web mà không nhận thêm được gì.
+  //
+  // Cả hai vẫn quét QR để vào bàn. Khác nhau ở DANH TÍNH, không ở cách vào bàn.
+  if (dangNhap === null) {
+    return (
+      <SafeAreaView style={kieuChung.man}>
+        <StatusBar style="dark" />
+        <LoginScreen
+          onDangNhapXong={(ses) => {
+            setDangNhap(ses);
+            void dongBo(ses, phienBan);
+          }}
+          layTokenGoogle={LAY_TOKEN_GOOGLE}
+          onTaoTaiKhoan={GUI_MA_OTP === undefined ? undefined : () => setManNgoai('dangKy')}
+          repository={client.auth}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (phienBan === null) {
     return (
       <SafeAreaView style={kieuChung.man}>

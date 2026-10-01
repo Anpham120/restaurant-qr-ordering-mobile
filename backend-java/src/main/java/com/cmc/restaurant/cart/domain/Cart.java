@@ -41,7 +41,14 @@ public class Cart {
 		if (menuItemId == null || menuItemId.isBlank()) {
 			throw new CartRuleViolation("REQUEST_INVALID", "menuItemId is required.");
 		}
-		if (delta == 0) {
+		if (note != null && note.length() > 500) {
+			throw new CartRuleViolation("CART_NOTE_TOO_LONG", "Item note must not exceed 500 characters.");
+		}
+
+		String id = menuItemId.trim();
+		Optional<CartLine> existing = find(id);
+
+		if (delta == 0 && (note == null || existing.isEmpty())) {
 			throw new CartRuleViolation("CART_DELTA_INVALID", "delta must not be zero.");
 		}
 
@@ -56,10 +63,11 @@ public class Cart {
 				throw new CartRuleViolation("TABLE_SESSION_SETTLED",
 						"New cart items are disabled after the table invoice is settled.");
 			}
+		} else if (delta == 0 && settledState == InvoiceState.Settled) {
+			throw new CartRuleViolation("TABLE_SESSION_SETTLED",
+					"New cart items are disabled after the table invoice is settled.");
 		}
 
-		String id = menuItemId.trim();
-		Optional<CartLine> existing = find(id);
 		int nextQuantity = existing.map(CartLine::quantity).orElse(0) + delta;
 
 		if (nextQuantity <= 0) {
@@ -72,7 +80,7 @@ public class Cart {
 		}
 
 		CartLine updated = existing
-				.map(line -> line.withQuantity(nextQuantity))
+				.map(line -> new CartLine(id, nextQuantity, note != null ? note : line.note()))
 				.orElseGet(() -> new CartLine(id, nextQuantity, note));
 		existing.ifPresent(lines::remove);
 		lines.add(updated);

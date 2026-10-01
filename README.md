@@ -67,7 +67,7 @@ flowchart LR
 ## Giao diện sản phẩm
 
 Ảnh chụp trực tiếp từ ứng dụng đang chạy, ngày **17/07/2026**.
-
+Cần có ảnh chụp trực tiếp tu man hinh chinh hien thi day du. Co day du de nguoi dung co the hinh dung duoc
 <table>
   <tr>
     <td width="50%" align="center">

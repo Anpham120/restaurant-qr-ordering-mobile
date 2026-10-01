@@ -70,11 +70,14 @@ export function TableElectronicReceiptModal({ invoice, paidAt, tableDisplayName,
               <strong>{t("{count} lần gọi món", { count: invoice.orderRounds.length })}</strong>
             </div>
             <ul>
-              {invoice.items.map((item) => (
-                <li key={item.menuItemId}>
-                  <span>
-                    {item.quantity}× {localizeMenuItemName(item.menuItemId, item.name, locale)}
-                  </span>
+              {invoice.items.map((item, index) => (
+                <li key={`${item.menuItemId}-${item.note ?? ""}-${index}`}>
+                  <div>
+                    <span>
+                      {item.quantity}× {localizeMenuItemName(item.menuItemId, item.name, locale)}
+                    </span>
+                    {item.note ? <div className="table-invoice-item-note">({item.note})</div> : null}
+                  </div>
                   <strong data-money>{formatMoney(item.lineTotal)}</strong>
                 </li>
               ))}

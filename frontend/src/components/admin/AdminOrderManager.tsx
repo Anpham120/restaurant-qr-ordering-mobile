@@ -236,6 +236,7 @@ export function AdminOrderManager({
                         {item.quantity}× {item.name}
                         <span className={`ops-badge ops-badge--${item.status.toLowerCase()}`}>{labelOrderItemStatus(item.status)}</span>
                       </div>
+                      {item.note ? <div className="ops-item-note">Ghi chú: {item.note}</div> : null}
                       <span className="ops-item-qty">{formatVnd(item.lineTotal)}</span>
                     </div>
                   </div>

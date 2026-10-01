@@ -226,10 +226,17 @@ function OrderCard({
                 event.stopPropagation();
                 if (next) onItemTap(order, item.orderItemId, next);
               }}
-              aria-label={moTaChipMon(item.quantity, item.name, item.status)}
-              title={moTaChipMon(item.quantity, item.name, item.status)}
+              aria-label={moTaChipMon(item.quantity, item.name, item.status, item.note)}
+              title={moTaChipMon(item.quantity, item.name, item.status, item.note)}
             >
-              {isItemPending ? "..." : `${item.quantity}× ${item.name}`}
+              {isItemPending ? (
+                "..."
+              ) : (
+                <>
+                  <span>{item.quantity}× {item.name}</span>
+                  {item.note ? <span className="kitchen-item-note"> ({item.note})</span> : null}
+                </>
+              )}
             </button>
           );
         })}
@@ -292,6 +299,7 @@ function OrderDetailModal({
                       <span>{item.quantity}× {item.name}</span>
                       <span className={statusBadgeClass(item.status)}>{labelKitchenItemStatus(item.status)}</span>
                     </div>
+                    {item.note ? <div className="ops-item-note">Ghi chú: {item.note}</div> : null}
                     <span className="ops-item-qty">{formatVnd(item.lineTotal)}</span>
                   </div>
                   <div className="ops-item-actions">

@@ -163,6 +163,8 @@ public class OrderService {
 				caRepository.findAll(), ganCaRepository.findAll(),
 				LocalTime.now(LichPhucVu.MUI_GIO_QUAN));
 
+		Map<String, String> cartNotes = cartService.notesOf(session.getId());
+
 		BigDecimal subtotal = BigDecimal.ZERO;
 		for (OrderDtos.CreateOrderItemRequest requestItem : request.items()) {
 			MenuItemEntity menuItem = menuItemRepository.findById(requestItem.menuItemId().trim())
@@ -202,9 +204,17 @@ public class OrderService {
 								+ " phần, không đủ " + requestItem.quantity() + " phần bạn chọn.");
 			}
 
+			String note = (requestItem.note() != null && !requestItem.note().isBlank())
+					? requestItem.note().trim()
+					: cartNotes.get(menuItem.getId());
+			if (note != null && note.length() > 500) {
+				throw ApiException.badRequest(
+						"ORDER_NOTE_TOO_LONG", "Item note cannot exceed 500 characters.");
+			}
+
 			OrderItemEntity item = new OrderItemEntity(
 					"oi_" + UUID.randomUUID().toString().replace("-", ""), menuItem.getId(), menuItem.getName(),
-					menuItem.getPrice(), requestItem.quantity(), now, menuItem.getCostPrice());
+					menuItem.getPrice(), requestItem.quantity(), now, menuItem.getCostPrice(), note);
 			order.addItem(item);
 			subtotal = subtotal.add(item.lineTotal());
 		}
@@ -658,7 +668,8 @@ public class OrderService {
 				item.getStatus().name(), item.lineTotal(), item.getUpdatedAt(),
 				estimate == null ? null : estimate.lowMinutes(),
 				estimate == null ? null : estimate.highMinutes(),
-				estimate != null && estimate.bepDong());
+				estimate != null && estimate.bepDong(),
+				item.getNote());
 	}
 
 	private OrderDtos.OrderStatusEventResponse toEventResponse(OrderStatusHistoryEntity event) {
